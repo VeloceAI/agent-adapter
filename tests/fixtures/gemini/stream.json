@@ -1,0 +1,6 @@
+[
+  {"candidates": [{"content": {"role": "model", "parts": [{"text": "Hel"}]}, "index": 0}], "modelVersion": "gemini-2.5-flash", "responseId": "s1"},
+  {"candidates": [{"content": {"role": "model", "parts": [{"text": "lo"}]}, "index": 0}]},
+  {"candidates": [{"content": {"role": "model", "parts": [{"functionCall": {"name": "get_weather", "args": {"city": "Rome"}}, "thoughtSignature": "c2ln"}, {"functionCall": {"name": "get_time", "args": {}}}]}, "finishReason": "STOP", "index": 0}],
+   "usageMetadata": {"promptTokenCount": 4, "candidatesTokenCount": 9, "totalTokenCount": 13}}
+]

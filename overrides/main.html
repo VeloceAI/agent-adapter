@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{#- Icons: the SVG favicon for current browsers, a PNG for the rest, a home-screen icon for iOS. -#}
+{% block site_meta %}
+  {{ super() }}
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ 'assets/favicon-32.png' | url }}">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="{{ config.theme.favicon | url }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ 'assets/apple-touch-icon.png' | url }}">
+{% endblock %}
+
+{#- Link previews in chat and mail; og:url and og:image follow site_url; the description is
+    the page's front matter or first paragraph (scripts/docs_hooks.py). -#}
+{% block extrahead %}
+  {% if page and page.meta and page.meta.title %}
+    {% set og_title = page.meta.title ~ " - " ~ config.site_name %}
+  {% elif page and page.title and not page.is_homepage %}
+    {% set og_title = (page.title | striptags) ~ " - " ~ config.site_name %}
+  {% else %}
+    {% set og_title = config.site_name %}
+  {% endif %}
+  {% if page and page.meta and page.meta.description %}
+    {% set og_description = page.meta.description %}
+  {% else %}
+    {% set og_description = config.site_description %}
+  {% endif %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ config.site_name | e }}">
+  <meta property="og:title" content="{{ og_title | e }}">
+  {#- Unescaped like the theme's own description tag: docs_hooks stores it escaped. -#}
+  <meta property="og:description" content="{{ og_description }}">
+  {% if page and page.canonical_url %}
+    <meta property="og:url" content="{{ page.canonical_url }}">
+  {% endif %}
+  {% if config.site_url %}
+    <meta property="og:image" content="{{ config.site_url }}assets/social-card.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="{{ config.site_name | e }} logo">
+  {% endif %}
+  <meta name="twitter:card" content="summary_large_image">
+{% endblock %}

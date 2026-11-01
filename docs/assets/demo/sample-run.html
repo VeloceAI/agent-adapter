@@ -1,0 +1,2865 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="aa-csrf" content="">
+<meta name="aa-approvals" content="">
+<meta name="aa-chat" content="">
+<title>Agent Adapter Runs</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsPSJBZ2VudCBBZGFwdGVyIj48dGl0bGU+QWdlbnQgQWRhcHRlcjwvdGl0bGU+PHN0eWxlPkBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6IGRhcmspey50aWxle2ZpbGw6IzRGNDZFNX19PC9zdHlsZT48cmVjdCBjbGFzcz0idGlsZSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNS41IiBmaWxsPSIjNDMzOENBIi8+PHJlY3QgeD0iMTMuNSIgeT0iNy43NSIgd2lkdGg9IjciIGhlaWdodD0iMyIgcng9IjAuOSIgZmlsbD0iIzVFRUFENCIvPjxyZWN0IHg9IjEzLjUiIHk9IjEzLjI1IiB3aWR0aD0iNyIgaGVpZ2h0PSIzIiByeD0iMC45IiBmaWxsPSIjNUVFQUQ0Ii8+PGNpcmNsZSBjeD0iOS4yNSIgY3k9IjEyIiByPSI0LjI1IiBmaWxsPSJub25lIiBzdHJva2U9IiNGRkZGRkYiIHN0cm9rZS13aWR0aD0iMyIvPjxyZWN0IHg9IjEyIiB5PSI2LjI1IiB3aWR0aD0iMyIgaGVpZ2h0PSIxMS41IiByeD0iMC42IiBmaWxsPSIjRkZGRkZGIi8+PC9zdmc+Cg==">
+<style>
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --text: #1c2330;
+  --muted: #667085;
+  --line: #d9dee7;
+  --accent: #3a5bd9;
+  --accent-soft: #e7ecfc;
+  --ok: #1f8a4c;
+  --error: #c4352b;
+  --paused: #b26a00;
+  --cached: #6a4fc2;
+  --running: #2b7bb9;
+  --tool: #3a5bd9;
+  --llm: #0f8f86;
+  --node: #8a6d3b;
+  --context: #a1478f;
+  --flow: #7c8799;
+  --embedding: #4b7f2a;
+  --rerank: #4b7f2a;
+  --code-bg: #f1f3f7;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151b; --card: #1a1f27; --text: #e4e8ef; --muted: #98a2b3; --line: #2e3542;
+    --accent: #7f9cff; --accent-soft: #232c45; --ok: #4cc27f; --error: #ff7a6e;
+    --paused: #f0a93b; --cached: #a98cff; --running: #63b3ed; --tool: #7f9cff;
+    --llm: #3fc7bc; --node: #d0b07a; --context: #e17fcc; --flow: #8c96a8;
+    --embedding: #8fcf63; --rerank: #8fcf63; --code-bg: #141820; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151b; --card: #1a1f27; --text: #e4e8ef; --muted: #98a2b3; --line: #2e3542;
+  --accent: #7f9cff; --accent-soft: #232c45; --ok: #4cc27f; --error: #ff7a6e;
+  --paused: #f0a93b; --cached: #a98cff; --running: #63b3ed; --tool: #7f9cff;
+  --llm: #3fc7bc; --node: #d0b07a; --context: #e17fcc; --flow: #8c96a8;
+  --embedding: #8fcf63; --rerank: #8fcf63; --code-bg: #141820; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+h1 { font-size: 16px; margin: 0; }
+h2 { font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+h3 { font-size: 14px; margin: 12px 0 4px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+pre { background: var(--code-bg); padding: 8px; border-radius: 6px; overflow: auto; max-height: 60vh; margin: 6px 0; white-space: pre-wrap; word-break: break-word; }
+.muted { color: var(--muted); }
+.spacer { flex: 1; }
+[hidden] { display: none !important; }
+.chat-off { max-width: 720px; margin: 24px auto; padding: 20px 24px; }
+.chat-off h2 { margin-top: 0; }
+
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--card); }
+.bar h1, .bar #exported { white-space: nowrap; }
+.live { font-size: 12px; color: var(--ok); border: 1px solid var(--ok); border-radius: 10px; padding: 0 8px; }
+.ghost { background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 3px 10px; }
+.ghost:hover { border-color: var(--accent); }
+
+.shell { display: grid; grid-template-columns: 260px minmax(0, 1fr) 320px; gap: 12px; padding: 12px; align-items: start; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+.main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card-head { display: flex; align-items: baseline; gap: 10px; }
+.detail { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+@media (max-width: 1180px) {
+  .shell { grid-template-columns: 230px minmax(0, 1fr); }
+  .detail { grid-column: 1 / -1; position: static; max-height: none; }
+}
+@media (max-width: 760px) {
+  .shell { grid-template-columns: minmax(0, 1fr); padding: 8px; }
+}
+
+.run-list { display: flex; flex-direction: column; gap: 4px; max-height: calc(100vh - 110px); overflow: auto; }
+.run { text-align: left; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 6px 8px; display: grid; grid-template-columns: 1fr auto; gap: 0 8px; }
+.run:hover { background: var(--accent-soft); }
+.run.selected { border-color: var(--accent); background: var(--accent-soft); }
+.run .when { font-weight: 600; }
+.run .meta { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+
+.status { font-size: 11px; font-weight: 600; border-radius: 10px; padding: 0 7px; border: 1px solid currentColor; white-space: nowrap; }
+.status.ok { color: var(--ok); }
+.status.failed, .status.error { color: var(--error); }
+.status.paused, .status.pending { color: var(--paused); }
+.status.running { color: var(--running); }
+.status.unfinished, .status.cached { color: var(--muted); }
+
+.facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 6px; }
+.facts div span { color: var(--muted); margin-right: 4px; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: -4px 0 10px; overflow-x: auto; scrollbar-width: thin; }
+.tab { flex: none; background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 6px 10px; color: var(--muted); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+.axis { position: relative; height: 18px; margin-left: 150px; border-bottom: 1px solid var(--line); font-size: 10px; color: var(--muted); }
+.axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.axis span:first-child { transform: none; }
+.axis span:last-child { transform: translateX(-100%); }
+.lanes { position: relative; }
+.lane { display: flex; align-items: center; height: 28px; border-bottom: 1px dashed var(--line); }
+.lane-label { width: 150px; flex: none; font-size: 11px; color: var(--muted); padding-right: 6px; }
+.lane-track { position: relative; flex: 1; height: 100%; }
+.span { position: absolute; top: 4px; height: 20px; min-width: 3px; border-radius: 4px; border: 0; padding: 0 5px; font-size: 11px; color: #fff; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: left; opacity: .92; }
+.span:hover, .span.selected { opacity: 1; outline: 2px solid var(--text); }
+.span.tool { background: var(--tool); }
+.span.llm { background: var(--llm); }
+.span.node { background: var(--node); }
+.span.flow { background: var(--flow); }
+.span.context { background: var(--context); }
+.span.embedding, .span.rerank { background: var(--embedding); }
+.span.error { box-shadow: inset 0 0 0 2px var(--error); }
+.span.cached { background-image: repeating-linear-gradient(45deg, transparent 0 6px, rgba(255,255,255,.25) 6px 12px); }
+.span.paused, .span.pending { box-shadow: inset 0 0 0 2px var(--paused); }
+.span.running { opacity: .6; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; color: var(--muted); margin-top: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.legend i.tool { background: var(--tool); } .legend i.llm { background: var(--llm); }
+.legend i.node { background: var(--node); } .legend i.context { background: var(--context); }
+.legend i.flow { background: var(--flow); } .legend i.embedding { background: var(--embedding); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.chip { font-size: 11px; border: 1px solid var(--line); border-radius: 10px; padding: 0 7px; }
+.chip.warn { border-color: var(--paused); color: var(--paused); }
+.chip.bad { border-color: var(--error); color: var(--error); }
+
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.ev { cursor: pointer; }
+.ev:hover, .ev.selected { background: var(--accent-soft); }
+
+.tool-card { border: 1px solid var(--line); border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+.tool-card summary { cursor: pointer; font-weight: 600; }
+
+.approval { border: 1px solid var(--line); border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+.approval .actions { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.approval input { flex: 1; min-width: 120px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--text); }
+.approve { background: var(--ok); color: #fff; border: 0; border-radius: 6px; padding: 4px 12px; }
+.deny { background: var(--error); color: #fff; border: 0; border-radius: 6px; padding: 4px 12px; }
+.notice { font-size: 12px; margin-top: 4px; }
+.notice.bad { color: var(--error); }
+.notice.good { color: var(--ok); }
+</style>
+<style>
+/* The flow graph: toolbar, stage, nodes by status, edges, minimap, legend. */
+.graph { position: relative; }
+.ghost.small { padding: 1px 8px; font-size: 12px; }
+.ghost:disabled { opacity: .45; cursor: default; }
+
+.gv-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+.gv-search { width: 150px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--text); font: inherit; font-size: 12px; }
+.gv-replay { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: 6px; min-width: 0; max-width: 100%; }
+.gv-slider { width: 150px; min-width: 0; max-width: 100%; accent-color: var(--accent); }
+.gv-step { font-size: 12px; min-width: 11em; }
+.gv-notice { font-size: 12px; }
+.gv-copy { width: 100%; margin-bottom: 6px; font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code-bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
+
+.gv-stage { position: relative; height: 440px; min-height: 220px; resize: vertical; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); cursor: grab; touch-action: none; }
+.gv-stage:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gv-stage.panning { cursor: grabbing; }
+/* Narrow screens: leave room above and below the stage so the page itself can still scroll. */
+@media (max-width: 760px) { .gv-stage { height: 55vh; max-height: 55vh; } .gv-replay { margin-left: 0; } .gv-step { min-width: 0; } }
+.gv-svg { display: block; width: 100%; height: 100%; user-select: none; }
+
+.gv-mini { position: absolute; right: 8px; bottom: 8px; width: 170px; height: 110px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; opacity: .94; cursor: pointer; }
+.gv-mini.whole { opacity: 0; pointer-events: none; }
+.mini-node { fill: var(--line); }
+.mini-node.st-running { fill: var(--running); }
+.mini-node.st-ok { fill: var(--ok); }
+.mini-node.st-error { fill: var(--error); }
+.mini-node.st-paused { fill: var(--paused); }
+.mini-node.st-stopped { fill: var(--muted); }
+.mini-view { fill: var(--accent); fill-opacity: .12; stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+
+.g-node { cursor: pointer; }
+.g-node:focus { outline: none; }
+.g-node .main { fill: var(--card); stroke: var(--line); stroke-width: 1.5; transition: stroke .2s, stroke-width .2s; }
+.g-node .stack { fill: var(--accent-soft); stroke: var(--line); }
+.g-node.st-running .main { stroke: var(--running); stroke-width: 2.5; animation: aa-pulse 1.2s ease-in-out infinite; }
+.g-node.st-ok .main { stroke: var(--ok); stroke-width: 2; }
+.g-node.st-error .main { stroke: var(--error); stroke-width: 2.5; }
+.g-node.st-paused .main { stroke: var(--paused); stroke-width: 2.5; }
+.g-node.st-stopped .main { stroke: var(--muted); stroke-width: 2.5; stroke-dasharray: 2 3; }
+.g-node.pause-gate .main { stroke-dasharray: 5 4; }
+.g-node.match .main { stroke: var(--accent); stroke-width: 2.5; }
+.g-node.selected .main, .g-node:focus-visible .main { stroke: var(--accent); stroke-width: 3.5; stroke-dasharray: none; }
+.g-node text { fill: var(--text); font-size: 12px; }
+.g-node .g-name { font-weight: 600; }
+.g-node text.sub { fill: var(--muted); font-size: 10px; }
+.g-icon { font-weight: 700; }
+.g-node.st-pending .g-icon { fill: var(--muted); }
+.g-node.st-running .g-icon { fill: var(--running); }
+.g-node.st-ok .g-icon { fill: var(--ok); }
+.g-node.st-error .g-icon { fill: var(--error); }
+.g-node.st-paused .g-icon { fill: var(--paused); }
+.g-node.st-stopped .g-icon { fill: var(--muted); }
+.g-node .g-badge { fill: var(--accent); font-size: 10px; font-weight: 700; }
+.g-node .g-progress { fill: var(--tool); font-size: 10px; font-weight: 700; }
+.g-node .g-gate { fill: var(--paused); font-size: 10px; }
+
+.g-terminal { fill: var(--muted); }
+.g-terminal-dot { fill: var(--card); }
+.g-edge { fill: none; stroke: var(--muted); stroke-width: 1.4; transition: opacity .2s; }
+.g-edge.parallel { stroke-width: 2.6; }
+.g-edge.route { stroke: var(--accent); }
+.g-edge.loop { stroke-dasharray: 4 4; stroke: var(--paused); }
+.g-edge.fan { stroke: var(--tool); }
+.g-edge.taken { stroke-width: 2.2; }
+.g-edge.parallel.taken { stroke-width: 3; }
+.g-edge.idle { opacity: .4; }
+.g-edge.hl { stroke: var(--accent); stroke-width: 2.6; opacity: 1; }
+.g-arrow { fill: var(--muted); }
+.g-arrow.hl { fill: var(--accent); }
+.g-label { fill: var(--muted); font-size: 10px; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.g-label.taken { fill: var(--text); font-weight: 600; }
+
+.has-hl .g-node:not(.hl), .has-hl .g-edge:not(.hl) { opacity: .22; }
+.has-search .g-node:not(.match) { opacity: .25; }
+
+@keyframes aa-pulse { 50% { stroke-opacity: .35; } }
+@media (prefers-reduced-motion: reduce) {
+  .g-node.st-running .main { animation: none; }
+  .g-node .main, .g-edge { transition: none; }
+}
+
+.gv-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: var(--muted); margin-top: 6px; }
+.gv-legend .lg { display: inline-flex; align-items: center; gap: 4px; }
+.gv-legend .lg b { font-size: 12px; }
+.gv-legend .st-running b { color: var(--running); }
+.gv-legend .st-ok b { color: var(--ok); }
+.gv-legend .st-error b { color: var(--error); }
+.gv-legend .st-paused b { color: var(--paused); }
+.lg-shape { display: inline-block; width: 18px; height: 11px; border: 1.5px solid var(--muted); border-radius: 3px; }
+.lg-shape.call { border-radius: 6px; }
+.lg-shape.map { box-shadow: 2px -2px 0 -0.5px var(--accent-soft), 2px -2px 0 1px var(--muted); }
+.lg-shape.join { border-radius: 0; clip-path: polygon(20% 0, 80% 0, 100% 50%, 80% 100%, 20% 100%, 0 50%); background: var(--muted); }
+.lg-shape.gate { border-style: dashed; }
+.lg-edge { display: inline-block; width: 20px; border-top: 1.5px solid var(--muted); }
+.lg-edge.route { border-top-color: var(--accent); }
+.lg-edge.parallel { border-top-width: 3px; }
+.lg-edge.loop { border-top: 1.5px dashed var(--paused); }
+.lg-edge.taken { border-top-width: 2.5px; border-top-color: var(--text); }
+
+.node-status { font-size: 12px; font-weight: 700; border: 1px solid currentColor; border-radius: 10px; padding: 0 7px; }
+.node-status.st-pending { color: var(--muted); }
+.node-status.st-running { color: var(--running); }
+.node-status.st-ok { color: var(--ok); }
+.node-status.st-error { color: var(--error); }
+.node-status.st-paused { color: var(--paused); }
+.node-status.st-stopped { color: var(--muted); }
+</style>
+<style>
+/* Top views, and the Events, State and Compare tabs of a run. */
+.top-tabs { display: flex; gap: 2px; margin-left: 8px; }
+.top-tab { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 12px; color: var(--muted); }
+.top-tab:hover { border-color: var(--line); }
+.top-tab.active { color: var(--text); background: var(--accent-soft); border-color: var(--accent); }
+
+.ev-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.ev-filters select, .ev-filters input { padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--text); font: inherit; font-size: 12px; }
+.ev-filters input { min-width: 160px; flex: 1; max-width: 320px; }
+.ev-selects { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.ev-body { max-height: 60vh; overflow: auto; }
+.ev-body:focus-visible, .st-steps:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ev-json td { background: var(--code-bg); }
+.ev-json pre { margin: 0; max-height: 40vh; }
+
+.st-grid { display: grid; grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 760px) { .st-grid { grid-template-columns: minmax(0, 1fr); } }
+.st-steps { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto; }
+.st-steps li { padding: 5px 6px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; }
+.st-steps li:hover { background: var(--accent-soft); }
+.st-steps li.selected { border-color: var(--accent); background: var(--accent-soft); }
+.st-n { display: inline-block; min-width: 2em; color: var(--muted); font-size: 11px; }
+.chip.added { border-color: var(--ok); color: var(--ok); }
+.chip.changed { border-color: var(--accent); color: var(--accent); }
+.chip.same { color: var(--muted); }
+.st-table pre { margin: 0; max-height: 30vh; }
+.st-table tr.st-changed td:last-child pre, .st-table tr.st-added td:last-child pre { box-shadow: inset 3px 0 0 var(--accent); }
+
+.cmp-table tbody th { width: 9em; }
+.cmp-table tr.differs td { background: var(--accent-soft); }
+.cmp-steps td:first-child { width: 6em; }
+.cmp-steps tr.op-added td:first-child { box-shadow: inset 3px 0 0 var(--ok); color: var(--ok); }
+.cmp-steps tr.op-removed td:first-child { box-shadow: inset 3px 0 0 var(--error); color: var(--error); }
+.cmp-steps tr.op-changed td:first-child { box-shadow: inset 3px 0 0 var(--paused); color: var(--paused); }
+
+.detail .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.visits { margin: 4px 0; padding-left: 20px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header class="bar">
+  <h1>Agent Adapter <span class="muted">runs</span></h1>
+  <nav id="top-tabs" class="top-tabs" role="tablist" aria-label="views">
+    <button type="button" role="tab" id="view-chat" data-view="chat" class="top-tab" hidden>Chat</button>
+    <button type="button" role="tab" id="view-runs" data-view="runs" class="top-tab active" aria-selected="true">Runs</button>
+  </nav>
+  <span id="live" class="live" hidden>live</span>
+  <span id="exported" class="muted" hidden>exported file</span>
+  <span class="spacer"></span>
+  <button id="theme" class="ghost" type="button" title="Switch theme">theme: auto</button>
+</header>
+<section id="chat-view" class="view" hidden>
+<div id="chat-off" class="card chat-off" hidden>
+  <h2>Chat with your agent</h2>
+  <p id="chat-off-why">This viewer was started without an agent, so there is nothing to chat with.</p>
+  <p>Start it with one. The chat then sits next to the run's graph, timeline, events, state and cost:</p>
+  <pre><code>agent-adapter ui --agent app:chat
+agent-adapter ui --model app:model --tools app:registry</code></pre>
+  <p>Or from Python: <code>from agent_adapter.viewer import serve; serve(agent=chat)</code></p>
+</div>
+<div id="chat-shell" class="chat-shell">
+  <aside class="card chat-sessions">
+    <div class="card-head"><h2>Chats</h2><span class="spacer"></span><button type="button" id="chat-new" class="ghost small">New chat</button></div>
+    <div id="chat-session-list" class="run-list"></div>
+  </aside>
+  <main class="card chat-main" id="chat-main">
+    <div id="chat-head" class="chat-head"></div>
+    <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="conversation"></div>
+    <div id="chat-state" class="chat-state" hidden></div>
+    <form id="chat-composer" class="composer" autocomplete="off">
+      <p id="chat-editing" class="notice" hidden></p>
+      <div id="chat-attachments" class="chips"></div>
+      <textarea id="chat-input" rows="2" placeholder="Message the agent" aria-label="message" aria-describedby="chat-keys"></textarea>
+      <div class="composer-bar">
+        <button type="button" id="chat-attach" class="ghost small" title="Attach files (or drop them here)">Attach</button>
+        <input type="file" id="chat-file" multiple hidden>
+        <button type="button" id="chat-state-toggle" class="ghost small" aria-expanded="false" aria-controls="chat-state">State</button>
+        <span id="chat-keys" class="muted small-print">Enter sends · Shift+Enter new line · Esc stops</span>
+        <span id="chat-error" class="notice bad" role="alert"></span>
+        <span class="spacer"></span>
+        <button type="button" id="chat-stop" class="deny" hidden>Stop</button>
+        <button type="submit" id="chat-send" class="approve">Send</button>
+      </div>
+      <div id="chat-drop" class="drop-hint" hidden>Drop files to attach them</div>
+    </form>
+  </main>
+  <aside class="card chat-inspector" id="chat-inspector" aria-label="turn inspector"></aside>
+</div>
+</section>
+<section id="runs-view" class="view">
+<div class="shell">
+  <aside class="runs card">
+    <h2>Runs</h2>
+    <div id="run-list" class="run-list"><p class="muted">No runs yet.</p></div>
+  </aside>
+  <main class="main">
+    <section class="card" id="run-head"><p class="muted">Pick a run.</p></section>
+    <section class="card" id="graph-card" hidden>
+      <div class="card-head">
+        <h2>Flow</h2>
+        <select id="flow-pick" aria-label="flow" hidden></select>
+        <span class="muted">click a node for details; drag to pan, wheel to zoom</span>
+      </div>
+      <div id="graph" class="graph"></div>
+    </section>
+    <section class="card">
+      <nav class="tabs" role="tablist" aria-label="run details">
+        <button type="button" role="tab" data-tab="timeline" class="tab active" aria-selected="true">Timeline</button>
+        <button type="button" role="tab" data-tab="events" class="tab" aria-selected="false">Events</button>
+        <button type="button" role="tab" data-tab="state" class="tab" aria-selected="false">State</button>
+        <button type="button" role="tab" data-tab="compare" class="tab" aria-selected="false">Compare</button>
+        <button type="button" role="tab" data-tab="tools" class="tab" aria-selected="false">Tools</button>
+        <button type="button" role="tab" data-tab="approvals" class="tab" id="approvals-tab" aria-selected="false" hidden>Approvals</button>
+      </nav>
+      <div id="tab-timeline" class="tab-body">
+        <p id="timeline-note" class="notice" hidden></p>
+        <div id="timeline-body"></div>
+      </div>
+      <div id="tab-events" class="tab-body" hidden></div>
+      <div id="tab-state" class="tab-body" hidden></div>
+      <div id="tab-compare" class="tab-body" hidden></div>
+      <div id="tab-tools" class="tab-body" hidden></div>
+      <div id="tab-approvals" class="tab-body" hidden></div>
+    </section>
+  </main>
+  <aside class="detail card" id="detail">
+    <h2>Detail</h2>
+    <p class="muted">Click a node in the graph or a call in the timeline.</p>
+  </aside>
+</div>
+</section>
+<script type="application/json" id="aa-data">{"runs": [{"key": "run_00000000000000000000000000000008", "run_id": "run_00000000000000000000000000000008", "started": 1790000000.196, "ended": 1790000000.204, "duration_ms": 8.0, "status": "paused", "cost_usd": null, "framework": "example", "flows": [], "events": 3, "errors": 0, "processes": 1}, {"key": "run_00000000000000000000000000000004", "run_id": "run_00000000000000000000000000000004", "started": 1790000000.164, "ended": 1790000000.192, "duration_ms": 28.0, "status": "ok", "cost_usd": null, "framework": "example", "flows": [], "events": 8, "errors": 0, "processes": 1}, {"key": "run_00000000000000000000000000000001", "run_id": "run_00000000000000000000000000000001", "started": 1790000000.0, "ended": 1790000000.16, "duration_ms": 160.0, "status": "ok", "cost_usd": 7.8e-05, "framework": "example", "flows": ["help_search"], "events": 41, "errors": 0, "processes": 1}], "details": {"run_00000000000000000000000000000008": {"summary": {"key": "run_00000000000000000000000000000008", "run_id": "run_00000000000000000000000000000008", "started": 1790000000.196, "ended": 1790000000.204, "duration_ms": 8.0, "status": "paused", "cost_usd": null, "framework": "example", "flows": [], "events": 3, "errors": 0, "processes": 1}, "meta": [{"kind": "meta", "v": 1, "run_id": "run_00000000000000000000000000000008", "pid": 1, "started": 1790000000.196, "source": "example", "capture_content": false, "agent_adapter": "1", "python": "3"}], "graphs": {}, "tools": [{"name": "search_faq", "description": "Search the help-center FAQ.", "kind": "retrieval", "schema": {"additionalProperties": false, "properties": {"query": {"title": "Query", "type": "string"}}, "required": ["query"], "title": "SearchFaqArgs", "type": "object"}, "confirm": "never", "cache_ttl": 300, "cache_scope": "run", "effects": null, "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": true, "once_per_run": false, "tags": []}, {"name": "search_forum", "description": "Search the community forum.", "kind": "retrieval", "schema": {"additionalProperties": false, "properties": {"query": {"title": "Query", "type": "string"}}, "required": ["query"], "title": "SearchForumArgs", "type": "object"}, "confirm": "never", "cache_ttl": 300, "cache_scope": "run", "effects": null, "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": true, "once_per_run": false, "tags": []}, {"name": "search_guides", "description": "Search the travel guides.", "kind": "retrieval", "schema": {"additionalProperties": false, "properties": {"query": {"title": "Query", "type": "string"}}, "required": ["query"], "title": "SearchGuidesArgs", "type": "object"}, "confirm": "never", "cache_ttl": 300, "cache_scope": "run", "effects": null, "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": true, "once_per_run": false, "tags": []}, {"name": "escalate_ticket", "description": "Hand a ticket to a human agent.", "kind": "tool", "schema": {"additionalProperties": false, "properties": {"ticket_id": {"title": "Ticket Id", "type": "string"}, "note": {"title": "Note", "type": "string"}}, "required": ["ticket_id", "note"], "title": "EscalateTicketArgs", "type": "object"}, "confirm": "always", "cache_ttl": null, "cache_scope": "run", "effects": "additive", "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": false, "once_per_run": false, "tags": []}], "spans": [{"id": "tool:call_00000000000000000000000000000009", "family": "tool", "call_id": "call_00000000000000000000000000000009", "parent_id": "", "name": "escalate_ticket", "start": 1790000000.196, "end": 1790000000.204, "status": "pending", "events": [0, 2], "marks": [{"type": "approval.requested", "ts": 1790000000.2, "event": 1}], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "", "tokens": null, "lane": 0}], "spans_total": 1, "truncated": false, "events": [{"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000008", "call_id": "call_00000000000000000000000000000009", "parent_id": "", "ts": 1790000000.196, "data": {"tool": "escalate_ticket", "kind": "tool"}}, {"kind": "event", "type": "approval.requested", "run_id": "run_00000000000000000000000000000008", "call_id": "call_00000000000000000000000000000009", "parent_id": "", "ts": 1790000000.2, "data": {"tool": "escalate_ticket", "approval_id": "apr_0000000000000000000000000000000a"}}, {"kind": "event", "type": "tool.pending", "run_id": "run_00000000000000000000000000000008", "call_id": "call_00000000000000000000000000000009", "parent_id": "", "ts": 1790000000.204, "data": {"tool": "escalate_ticket", "approval_id": "apr_0000000000000000000000000000000a"}}], "events_from": 0, "events_total": 3}, "run_00000000000000000000000000000004": {"summary": {"key": "run_00000000000000000000000000000004", "run_id": "run_00000000000000000000000000000004", "started": 1790000000.164, "ended": 1790000000.192, "duration_ms": 28.0, "status": "ok", "cost_usd": null, "framework": "example", "flows": [], "events": 8, "errors": 0, "processes": 1}, "meta": [{"kind": "meta", "v": 1, "run_id": "run_00000000000000000000000000000004", "pid": 1, "started": 1790000000.164, "source": "example", "capture_content": false, "agent_adapter": "1", "python": "3"}], "graphs": {}, "tools": [{"name": "search_faq", "description": "Search the help-center FAQ.", "kind": "retrieval", "schema": {"additionalProperties": false, "properties": {"query": {"title": "Query", "type": "string"}}, "required": ["query"], "title": "SearchFaqArgs", "type": "object"}, "confirm": "never", "cache_ttl": 300, "cache_scope": "run", "effects": null, "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": true, "once_per_run": false, "tags": []}, {"name": "search_forum", "description": "Search the community forum.", "kind": "retrieval", "schema": {"additionalProperties": false, "properties": {"query": {"title": "Query", "type": "string"}}, "required": ["query"], "title": "SearchForumArgs", "type": "object"}, "confirm": "never", "cache_ttl": 300, "cache_scope": "run", "effects": null, "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": true, "once_per_run": false, "tags": []}, {"name": "search_guides", "description": "Search the travel guides.", "kind": "retrieval", "schema": {"additionalProperties": false, "properties": {"query": {"title": "Query", "type": "string"}}, "required": ["query"], "title": "SearchGuidesArgs", "type": "object"}, "confirm": "never", "cache_ttl": 300, "cache_scope": "run", "effects": null, "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": true, "once_per_run": false, "tags": []}, {"name": "escalate_ticket", "description": "Hand a ticket to a human agent.", "kind": "tool", "schema": {"additionalProperties": false, "properties": {"ticket_id": {"title": "Ticket Id", "type": "string"}, "note": {"title": "Note", "type": "string"}}, "required": ["ticket_id", "note"], "title": "EscalateTicketArgs", "type": "object"}, "confirm": "always", "cache_ttl": null, "cache_scope": "run", "effects": "additive", "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": false, "once_per_run": false, "tags": []}], "spans": [{"id": "tool:call_00000000000000000000000000000005", "family": "tool", "call_id": "call_00000000000000000000000000000005", "parent_id": "", "name": "search_faq", "start": 1790000000.168, "end": 1790000000.18, "status": "ok", "events": [1, 4], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "", "tokens": null, "lane": 0}, {"id": "tool:call_00000000000000000000000000000006", "family": "tool", "call_id": "call_00000000000000000000000000000006", "parent_id": "", "name": "search_forum", "start": 1790000000.172, "end": 1790000000.184, "status": "ok", "events": [2, 5], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "", "tokens": null, "lane": 1}, {"id": "tool:call_00000000000000000000000000000007", "family": "tool", "call_id": "call_00000000000000000000000000000007", "parent_id": "", "name": "search_guides", "start": 1790000000.176, "end": 1790000000.188, "status": "ok", "events": [3, 6], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "", "tokens": null, "lane": 2}], "spans_total": 3, "truncated": false, "events": [{"kind": "event", "type": "run.started", "run_id": "run_00000000000000000000000000000004", "call_id": "", "parent_id": "", "ts": 1790000000.164, "data": {}}, {"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000004", "call_id": "call_00000000000000000000000000000005", "parent_id": "", "ts": 1790000000.168, "data": {"tool": "search_faq", "kind": "retrieval"}}, {"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000004", "call_id": "call_00000000000000000000000000000006", "parent_id": "", "ts": 1790000000.172, "data": {"tool": "search_forum", "kind": "retrieval"}}, {"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000004", "call_id": "call_00000000000000000000000000000007", "parent_id": "", "ts": 1790000000.176, "data": {"tool": "search_guides", "kind": "retrieval"}}, {"kind": "event", "type": "tool.finished", "run_id": "run_00000000000000000000000000000004", "call_id": "call_00000000000000000000000000000005", "parent_id": "", "ts": 1790000000.18, "data": {"tool": "search_faq", "latency_ms": 12.0, "attempts": 1, "cached": false}}, {"kind": "event", "type": "tool.finished", "run_id": "run_00000000000000000000000000000004", "call_id": "call_00000000000000000000000000000006", "parent_id": "", "ts": 1790000000.184, "data": {"tool": "search_forum", "latency_ms": 12.0, "attempts": 1, "cached": false}}, {"kind": "event", "type": "tool.finished", "run_id": "run_00000000000000000000000000000004", "call_id": "call_00000000000000000000000000000007", "parent_id": "", "ts": 1790000000.188, "data": {"tool": "search_guides", "latency_ms": 12.0, "attempts": 1, "cached": false}}, {"kind": "event", "type": "run.finished", "run_id": "run_00000000000000000000000000000004", "call_id": "", "parent_id": "", "ts": 1790000000.192, "data": {"ok": true}}], "events_from": 0, "events_total": 8}, "run_00000000000000000000000000000001": {"summary": {"key": "run_00000000000000000000000000000001", "run_id": "run_00000000000000000000000000000001", "started": 1790000000.0, "ended": 1790000000.16, "duration_ms": 160.0, "status": "ok", "cost_usd": 7.8e-05, "framework": "example", "flows": ["help_search"], "events": 41, "errors": 0, "processes": 1}, "meta": [{"kind": "meta", "v": 1, "run_id": "run_00000000000000000000000000000001", "pid": 1, "started": 1790000000.0, "source": "example", "capture_content": false, "agent_adapter": "1", "python": "3"}], "graphs": {"help_search": {"flow": "help_search", "start": "plan", "nodes": [{"id": "plan", "kind": "fn", "start": true, "end": false, "fan_out": false, "fan_in": false, "pause": null, "tool": null, "over": null, "sources": [], "concurrency": null, "timeout": null, "retries": 0, "has_prompt": false, "layer": 0, "order": 0, "x": 0.0}, {"id": "search", "kind": "map", "start": false, "end": false, "fan_out": true, "fan_in": false, "pause": null, "tool": "item.tool", "over": "plan_steps", "sources": [], "concurrency": 3, "timeout": null, "retries": 0, "has_prompt": false, "layer": 1, "order": 0, "x": 0.0}, {"id": "merge", "kind": "join", "start": false, "end": false, "fan_out": false, "fan_in": true, "pause": null, "tool": null, "over": null, "sources": ["search"], "concurrency": null, "timeout": null, "retries": 0, "has_prompt": false, "layer": 2, "order": 0, "x": 0.0}, {"id": "answer", "kind": "fn", "start": false, "end": false, "fan_out": false, "fan_in": false, "pause": null, "tool": null, "over": null, "sources": [], "concurrency": null, "timeout": null, "retries": 0, "has_prompt": false, "layer": 3, "order": 0, "x": 0.0}, {"id": "finish", "kind": "fn", "start": false, "end": true, "fan_out": false, "fan_in": false, "pause": null, "tool": null, "over": null, "sources": [], "concurrency": null, "timeout": null, "retries": 0, "has_prompt": false, "layer": 4, "order": 0, "x": 0.0}], "edges": [{"source": "plan", "target": "search", "kind": "edge", "label": "", "parallel": false, "loop": false, "max_loops": null, "on_exhausted": false, "via": []}, {"source": "search", "target": "merge", "kind": "edge", "label": "", "parallel": false, "loop": false, "max_loops": null, "on_exhausted": false, "via": []}, {"source": "merge", "target": "answer", "kind": "edge", "label": "", "parallel": false, "loop": false, "max_loops": null, "on_exhausted": false, "via": []}, {"source": "answer", "target": "search", "kind": "route", "label": "again", "parallel": false, "loop": true, "max_loops": 1, "on_exhausted": false, "via": []}, {"source": "answer", "target": "finish", "kind": "route", "label": "done", "parallel": false, "loop": false, "max_loops": 1, "on_exhausted": true, "via": []}], "layers": 5, "width": 1.0}}, "tools": [{"name": "search_faq", "description": "Search the help-center FAQ.", "kind": "retrieval", "schema": {"additionalProperties": false, "properties": {"query": {"title": "Query", "type": "string"}}, "required": ["query"], "title": "SearchFaqArgs", "type": "object"}, "confirm": "never", "cache_ttl": 300, "cache_scope": "run", "effects": null, "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": true, "once_per_run": false, "tags": []}, {"name": "search_forum", "description": "Search the community forum.", "kind": "retrieval", "schema": {"additionalProperties": false, "properties": {"query": {"title": "Query", "type": "string"}}, "required": ["query"], "title": "SearchForumArgs", "type": "object"}, "confirm": "never", "cache_ttl": 300, "cache_scope": "run", "effects": null, "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": true, "once_per_run": false, "tags": []}, {"name": "search_guides", "description": "Search the travel guides.", "kind": "retrieval", "schema": {"additionalProperties": false, "properties": {"query": {"title": "Query", "type": "string"}}, "required": ["query"], "title": "SearchGuidesArgs", "type": "object"}, "confirm": "never", "cache_ttl": 300, "cache_scope": "run", "effects": null, "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": true, "once_per_run": false, "tags": []}, {"name": "escalate_ticket", "description": "Hand a ticket to a human agent.", "kind": "tool", "schema": {"additionalProperties": false, "properties": {"ticket_id": {"title": "Ticket Id", "type": "string"}, "note": {"title": "Note", "type": "string"}}, "required": ["ticket_id", "note"], "title": "EscalateTicketArgs", "type": "object"}, "confirm": "always", "cache_ttl": null, "cache_scope": "run", "effects": "additive", "idempotent": null, "timeout": null, "retries": 0, "parallel_safe": false, "once_per_run": false, "tags": []}], "spans": [{"id": "flow:help_search", "family": "flow", "call_id": "", "parent_id": "", "name": "help_search", "start": 1790000000.004, "end": 1790000000.156, "status": "ok", "events": [1, 39], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "", "tokens": null, "lane": 0}, {"id": "node:help_search:plan:1", "family": "node", "call_id": "help_search:plan:1", "parent_id": "", "name": "plan", "start": 1790000000.008, "end": 1790000000.012, "status": "ok", "events": [2, 3], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "plan", "tokens": null, "lane": 1}, {"id": "node:help_search:search:1", "family": "node", "call_id": "help_search:search:1", "parent_id": "", "name": "search", "start": 1790000000.016, "end": 1790000000.044, "status": "ok", "events": [4, 11], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "search", "tokens": null, "lane": 1}, {"id": "tool:help_search:search:1:0", "family": "tool", "call_id": "help_search:search:1:0", "parent_id": "help_search:search:1", "name": "search_faq", "start": 1790000000.02, "end": 1790000000.032, "status": "ok", "events": [5, 8], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "search", "tokens": null, "lane": 2}, {"id": "tool:help_search:search:1:1", "family": "tool", "call_id": "help_search:search:1:1", "parent_id": "help_search:search:1", "name": "search_forum", "start": 1790000000.024, "end": 1790000000.036, "status": "ok", "events": [6, 9], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "search", "tokens": null, "lane": 3}, {"id": "tool:help_search:search:1:2", "family": "tool", "call_id": "help_search:search:1:2", "parent_id": "help_search:search:1", "name": "search_guides", "start": 1790000000.028, "end": 1790000000.04, "status": "ok", "events": [7, 10], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "search", "tokens": null, "lane": 4}, {"id": "node:help_search:merge:1", "family": "node", "call_id": "help_search:merge:1", "parent_id": "", "name": "merge", "start": 1790000000.048, "end": 1790000000.052, "status": "ok", "events": [12, 13], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "merge", "tokens": null, "lane": 1}, {"id": "node:help_search:answer:1", "family": "node", "call_id": "help_search:answer:1", "parent_id": "", "name": "answer", "start": 1790000000.056, "end": 1790000000.072, "status": "ok", "events": [14, 18], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "answer", "tokens": null, "lane": 1}, {"id": "context:cmp_00000000000000000000000000000002", "family": "context", "call_id": "cmp_00000000000000000000000000000002", "parent_id": "help_search:answer:1", "name": "local/helper", "start": 1790000000.06, "end": 1790000000.06, "status": "ok", "events": [15], "marks": [], "retries": 0, "cached": false, "cost_usd": 0.0, "error_kind": "", "timeout": false, "node": "answer", "tokens": {"before": 807, "after": 207}, "lane": 2}, {"id": "llm:help_search:answer:1:llm:llm:0", "family": "llm", "call_id": "help_search:answer:1:llm:llm:0", "parent_id": "help_search:answer:1", "name": "local/helper", "start": 1790000000.064, "end": 1790000000.068, "status": "ok", "events": [16, 17], "marks": [], "retries": 0, "cached": false, "cost_usd": 7.8e-05, "error_kind": "", "timeout": false, "node": "answer", "tokens": null, "lane": 2}, {"id": "node:help_search:search:2", "family": "node", "call_id": "help_search:search:2", "parent_id": "", "name": "search", "start": 1790000000.076, "end": 1790000000.116, "status": "ok", "events": [19, 29], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "search", "tokens": null, "lane": 1}, {"id": "tool:help_search:search:2:0", "family": "tool", "call_id": "help_search:search:2:0", "parent_id": "help_search:search:2", "name": "search_faq", "start": 1790000000.08, "end": 1790000000.088, "status": "ok", "events": [20, 21, 22], "marks": [], "retries": 0, "cached": true, "cost_usd": null, "error_kind": "", "timeout": false, "node": "search", "tokens": null, "lane": 2}, {"id": "tool:help_search:search:2:1", "family": "tool", "call_id": "help_search:search:2:1", "parent_id": "help_search:search:2", "name": "search_forum", "start": 1790000000.092, "end": 1790000000.1, "status": "ok", "events": [23, 24, 25], "marks": [], "retries": 0, "cached": true, "cost_usd": null, "error_kind": "", "timeout": false, "node": "search", "tokens": null, "lane": 2}, {"id": "tool:help_search:search:2:2", "family": "tool", "call_id": "help_search:search:2:2", "parent_id": "help_search:search:2", "name": "search_guides", "start": 1790000000.104, "end": 1790000000.112, "status": "ok", "events": [26, 27, 28], "marks": [], "retries": 0, "cached": true, "cost_usd": null, "error_kind": "", "timeout": false, "node": "search", "tokens": null, "lane": 2}, {"id": "node:help_search:merge:2", "family": "node", "call_id": "help_search:merge:2", "parent_id": "", "name": "merge", "start": 1790000000.12, "end": 1790000000.124, "status": "ok", "events": [30, 31], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "merge", "tokens": null, "lane": 1}, {"id": "node:help_search:answer:2", "family": "node", "call_id": "help_search:answer:2", "parent_id": "", "name": "answer", "start": 1790000000.128, "end": 1790000000.144, "status": "ok", "events": [32, 36], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "answer", "tokens": null, "lane": 1}, {"id": "context:cmp_00000000000000000000000000000003", "family": "context", "call_id": "cmp_00000000000000000000000000000003", "parent_id": "help_search:answer:2", "name": "local/helper", "start": 1790000000.132, "end": 1790000000.132, "status": "ok", "events": [33], "marks": [], "retries": 0, "cached": false, "cost_usd": 0.0, "error_kind": "", "timeout": false, "node": "answer", "tokens": {"before": 807, "after": 207}, "lane": 2}, {"id": "llm:help_search:answer:2:llm:llm:0", "family": "llm", "call_id": "help_search:answer:2:llm:llm:0", "parent_id": "help_search:answer:2", "name": "local/helper", "start": 1790000000.136, "end": 1790000000.14, "status": "cached", "events": [34, 35], "marks": [], "retries": 0, "cached": true, "cost_usd": null, "error_kind": "", "timeout": false, "node": "answer", "tokens": null, "lane": 2}, {"id": "node:help_search:finish:1", "family": "node", "call_id": "help_search:finish:1", "parent_id": "", "name": "finish", "start": 1790000000.148, "end": 1790000000.152, "status": "ok", "events": [37, 38], "marks": [], "retries": 0, "cached": false, "cost_usd": null, "error_kind": "", "timeout": false, "node": "finish", "tokens": null, "lane": 1}], "spans_total": 19, "truncated": false, "events": [{"kind": "event", "type": "run.started", "run_id": "run_00000000000000000000000000000001", "call_id": "", "parent_id": "", "ts": 1790000000.0, "data": {}}, {"kind": "event", "type": "flow.started", "run_id": "run_00000000000000000000000000000001", "call_id": "", "parent_id": "", "ts": 1790000000.004, "data": {"flow": "help_search", "trace_state": true}}, {"kind": "event", "type": "node.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:plan:1", "parent_id": "", "ts": 1790000000.008, "data": {"flow": "help_search", "node": "plan", "visit": 1}}, {"kind": "event", "type": "node.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:plan:1", "parent_id": "", "ts": 1790000000.012, "data": {"flow": "help_search", "node": "plan", "visit": 1, "changed": ["plan_steps"], "updates": {"plan_steps": [{"tool": "search_faq", "args": {"query": "baggage allowance"}}, {"tool": "search_forum", "args": {"query": "baggage allowance"}}, {"tool": "search_guides", "args": {"query": "baggage allowance"}}]}}}, {"kind": "event", "type": "node.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:1", "parent_id": "", "ts": 1790000000.016, "data": {"flow": "help_search", "node": "search", "visit": 1}}, {"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:1:0", "parent_id": "help_search:search:1", "ts": 1790000000.02, "data": {"tool": "search_faq", "kind": "retrieval"}}, {"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:1:1", "parent_id": "help_search:search:1", "ts": 1790000000.024, "data": {"tool": "search_forum", "kind": "retrieval"}}, {"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:1:2", "parent_id": "help_search:search:1", "ts": 1790000000.028, "data": {"tool": "search_guides", "kind": "retrieval"}}, {"kind": "event", "type": "tool.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:1:0", "parent_id": "help_search:search:1", "ts": 1790000000.032, "data": {"tool": "search_faq", "latency_ms": 12.0, "attempts": 1, "cached": false}}, {"kind": "event", "type": "tool.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:1:1", "parent_id": "help_search:search:1", "ts": 1790000000.036, "data": {"tool": "search_forum", "latency_ms": 12.0, "attempts": 1, "cached": false}}, {"kind": "event", "type": "tool.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:1:2", "parent_id": "help_search:search:1", "ts": 1790000000.04, "data": {"tool": "search_guides", "latency_ms": 12.0, "attempts": 1, "cached": false}}, {"kind": "event", "type": "node.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:1", "parent_id": "", "ts": 1790000000.044, "data": {"flow": "help_search", "node": "search", "visit": 1, "changed": ["hits"], "updates": {"hits": [[{"source_id": "faq:baggage allowance", "title": "FAQ: baggage allowance"}], [{"source_id": "forum:baggage allowance", "title": "FORUM: baggage allowance"}], [{"source_id": "guide:baggage allowance", "title": "GUIDE: baggage allowance"}]]}}}, {"kind": "event", "type": "node.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:merge:1", "parent_id": "", "ts": 1790000000.048, "data": {"flow": "help_search", "node": "merge", "visit": 1}}, {"kind": "event", "type": "node.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:merge:1", "parent_id": "", "ts": 1790000000.052, "data": {"flow": "help_search", "node": "merge", "visit": 1, "changed": [], "updates": {}}}, {"kind": "event", "type": "node.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:answer:1", "parent_id": "", "ts": 1790000000.056, "data": {"flow": "help_search", "node": "answer", "visit": 1}}, {"kind": "event", "type": "context.compressed", "run_id": "run_00000000000000000000000000000001", "call_id": "cmp_00000000000000000000000000000002", "parent_id": "help_search:answer:1", "ts": 1790000000.06, "data": {"provider": "local", "model": "helper", "trigger": "threshold", "latency_ms": 0.0, "tokens_before": 807, "tokens_after": 207, "target_tokens": 250, "messages_before": 5, "messages_after": 2, "steps": ["remove_old_messages"], "summary_cost_usd": 0.0}}, {"kind": "event", "type": "llm.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:answer:1:llm:llm:0", "parent_id": "help_search:answer:1", "ts": 1790000000.064, "data": {"provider": "local", "model": "helper", "stage": "llm", "stream": false}}, {"kind": "event", "type": "llm.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:answer:1:llm:llm:0", "parent_id": "help_search:answer:1", "ts": 1790000000.068, "data": {"provider": "local", "model": "helper", "stage": "llm", "latency_ms": 4.0, "usage": {"input_tokens": 120, "cached_input_tokens": 0, "cache_write_input_tokens": 0, "cache_write_by_ttl": {}, "output_tokens": 12, "reasoning_tokens": 0, "units": 0.0}, "cost_usd": 7.8e-05, "finish_reason": "stop", "response_model": "helper", "response_id": ""}}, {"kind": "event", "type": "node.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:answer:1", "parent_id": "", "ts": 1790000000.072, "data": {"flow": "help_search", "node": "answer", "visit": 1, "changed": ["rounds", "needs_more", "answer"], "updates": {"rounds": 1, "needs_more": true, "answer": "answered from 2 messages"}}}, {"kind": "event", "type": "node.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2", "parent_id": "", "ts": 1790000000.076, "data": {"flow": "help_search", "node": "search", "visit": 2}}, {"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2:0", "parent_id": "help_search:search:2", "ts": 1790000000.08, "data": {"tool": "search_faq", "kind": "retrieval"}}, {"kind": "event", "type": "tool.cached", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2:0", "parent_id": "help_search:search:2", "ts": 1790000000.084, "data": {"tool": "search_faq"}}, {"kind": "event", "type": "tool.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2:0", "parent_id": "help_search:search:2", "ts": 1790000000.088, "data": {"tool": "search_faq", "latency_ms": 8.0, "attempts": 0, "cached": true}}, {"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2:1", "parent_id": "help_search:search:2", "ts": 1790000000.092, "data": {"tool": "search_forum", "kind": "retrieval"}}, {"kind": "event", "type": "tool.cached", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2:1", "parent_id": "help_search:search:2", "ts": 1790000000.096, "data": {"tool": "search_forum"}}, {"kind": "event", "type": "tool.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2:1", "parent_id": "help_search:search:2", "ts": 1790000000.1, "data": {"tool": "search_forum", "latency_ms": 8.0, "attempts": 0, "cached": true}}, {"kind": "event", "type": "tool.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2:2", "parent_id": "help_search:search:2", "ts": 1790000000.104, "data": {"tool": "search_guides", "kind": "retrieval"}}, {"kind": "event", "type": "tool.cached", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2:2", "parent_id": "help_search:search:2", "ts": 1790000000.108, "data": {"tool": "search_guides"}}, {"kind": "event", "type": "tool.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2:2", "parent_id": "help_search:search:2", "ts": 1790000000.112, "data": {"tool": "search_guides", "latency_ms": 8.0, "attempts": 0, "cached": true}}, {"kind": "event", "type": "node.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:search:2", "parent_id": "", "ts": 1790000000.116, "data": {"flow": "help_search", "node": "search", "visit": 2, "changed": ["hits"], "updates": {"hits": [[{"source_id": "faq:baggage allowance", "title": "FAQ: baggage allowance"}], [{"source_id": "forum:baggage allowance", "title": "FORUM: baggage allowance"}], [{"source_id": "guide:baggage allowance", "title": "GUIDE: baggage allowance"}]]}}}, {"kind": "event", "type": "node.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:merge:2", "parent_id": "", "ts": 1790000000.12, "data": {"flow": "help_search", "node": "merge", "visit": 2}}, {"kind": "event", "type": "node.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:merge:2", "parent_id": "", "ts": 1790000000.124, "data": {"flow": "help_search", "node": "merge", "visit": 2, "changed": [], "updates": {}}}, {"kind": "event", "type": "node.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:answer:2", "parent_id": "", "ts": 1790000000.128, "data": {"flow": "help_search", "node": "answer", "visit": 2}}, {"kind": "event", "type": "context.compressed", "run_id": "run_00000000000000000000000000000001", "call_id": "cmp_00000000000000000000000000000003", "parent_id": "help_search:answer:2", "ts": 1790000000.132, "data": {"provider": "local", "model": "helper", "trigger": "threshold", "latency_ms": 0.0, "tokens_before": 807, "tokens_after": 207, "target_tokens": 250, "messages_before": 5, "messages_after": 2, "steps": ["remove_old_messages"], "summary_cost_usd": 0.0}}, {"kind": "event", "type": "llm.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:answer:2:llm:llm:0", "parent_id": "help_search:answer:2", "ts": 1790000000.136, "data": {"provider": "local", "model": "helper", "stage": "llm", "stream": false}}, {"kind": "event", "type": "llm.cached", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:answer:2:llm:llm:0", "parent_id": "help_search:answer:2", "ts": 1790000000.14, "data": {"provider": "local", "model": "helper", "stage": "llm"}}, {"kind": "event", "type": "node.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:answer:2", "parent_id": "", "ts": 1790000000.144, "data": {"flow": "help_search", "node": "answer", "visit": 2, "changed": ["rounds", "needs_more", "answer"], "updates": {"rounds": 1, "needs_more": false, "answer": "answered from 2 messages"}}}, {"kind": "event", "type": "node.started", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:finish:1", "parent_id": "", "ts": 1790000000.148, "data": {"flow": "help_search", "node": "finish", "visit": 1}}, {"kind": "event", "type": "node.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "help_search:finish:1", "parent_id": "", "ts": 1790000000.152, "data": {"flow": "help_search", "node": "finish", "visit": 1, "changed": ["answer"], "updates": {"answer": "answered from 2 messages"}}}, {"kind": "event", "type": "flow.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "", "parent_id": "", "ts": 1790000000.156, "data": {"flow": "help_search", "status": "done", "steps": 8}}, {"kind": "event", "type": "run.finished", "run_id": "run_00000000000000000000000000000001", "call_id": "", "parent_id": "", "ts": 1790000000.16, "data": {"ok": true}}], "events_from": 0, "events_total": 41}}, "exported_at": 1790000000.0}</script>
+<script>
+// Data access (live API or embedded export), DOM builders and formatters.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+
+  function metaContent(name) {
+    const node = document.querySelector('meta[name="' + name + '"]');
+    return node ? node.getAttribute("content") || "" : "";
+  }
+
+  function readEmbedded() {
+    const node = document.getElementById("aa-data");
+    if (!node) return null;
+    try {
+      return JSON.parse(node.textContent || "null");
+    } catch (err) {
+      console.error("Agent Adapter viewer: the embedded data is not valid JSON", err);
+      return null;
+    }
+  }
+
+  const TOKEN_KEY = "aa-viewer-token";
+  let memoryToken = "";
+
+  // The access token comes in the address fragment (#token=...), which no server, log or
+  // Referer ever sees. Keep it for this tab (sessionStorage is per origin, port included),
+  // then remove it from the address bar and its history entry.
+  function takeToken() {
+    const hash = window.location.hash.replace(/^#/, "");
+    const parts = hash ? hash.split("&") : [];
+    const found = parts.find((part) => part.indexOf("token=") === 0);
+    if (found) {
+      memoryToken = decodeURIComponent(found.slice("token=".length));
+      try {
+        window.sessionStorage.setItem(TOKEN_KEY, memoryToken);
+      } catch (err) {
+        console.warn("Agent Adapter viewer: sessionStorage is blocked; the token lives in memory", err);
+      }
+      const rest = parts.filter((part) => part !== found).join("&");
+      try {
+        window.history.replaceState(null, "", window.location.pathname + (rest ? "#" + rest : ""));
+      } catch (err) {
+        console.warn("Agent Adapter viewer: cannot clean the address bar", err);
+      }
+      return;
+    }
+    try {
+      memoryToken = window.sessionStorage.getItem(TOKEN_KEY) || "";
+    } catch (err) {
+      memoryToken = "";
+    }
+  }
+
+  AA.embedded = readEmbedded();
+  AA.csrf = metaContent("aa-csrf");
+  AA.approvalsOn = !AA.embedded && metaContent("aa-approvals") === "on";
+  AA.chatMode = AA.embedded ? "" : metaContent("aa-chat"); // "builtin", "agent" or "" (no chat)
+  if (!AA.embedded) takeToken();
+  AA.hasToken = () => Boolean(memoryToken);
+  AA.token = () => memoryToken;
+
+  // A 401 means a wrong or old token (the viewer restarted): callers stop polling.
+  function failure(response, body) {
+    const err = new Error(body.error || "HTTP " + response.status);
+    err.status = response.status;
+    return err;
+  }
+
+  async function getJSON(path) {
+    const headers = { Accept: "application/json", "X-AA-Token": memoryToken };
+    const response = await fetch(path, { headers: headers, cache: "no-store" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw failure(response, body);
+    return body;
+  }
+
+  AA.api = {
+    async runs() {
+      if (AA.embedded) return AA.embedded.runs || [];
+      return (await getJSON("api/runs")).runs || [];
+    },
+    async run(key, since) {
+      const from = since || 0;
+      if (AA.embedded) {
+        const found = (AA.embedded.details || {})[key];
+        return found ? Object.assign({}, found, { events: found.events.slice(from), events_from: from }) : null;
+      }
+      return getJSON("api/runs/" + encodeURIComponent(key) + "?since=" + from);
+    },
+    async approvals() {
+      return (await getJSON("api/approvals")).approvals || [];
+    },
+    async decide(id, approved, reason) {
+      const response = await fetch("api/approvals/" + encodeURIComponent(id) + "/decide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-AA-CSRF": AA.csrf, "X-AA-Token": memoryToken },
+        body: JSON.stringify({ approved: approved, reason: reason || "" }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw failure(response, body);
+      return body.approval;
+    },
+  };
+
+  // Every text goes in through textContent: recorded data is never parsed as HTML.
+  AA.el = function (tag, attrs, children) {
+    const node = document.createElement(tag);
+    applyAttrs(node, attrs);
+    appendAll(node, children);
+    return node;
+  };
+
+  AA.svg = function (tag, attrs, children) {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    applyAttrs(node, attrs);
+    appendAll(node, children);
+    return node;
+  };
+
+  function applyAttrs(node, attrs) {
+    if (!attrs) return;
+    Object.keys(attrs).forEach((key) => {
+      const value = attrs[key];
+      if (value === undefined || value === null || value === false) return;
+      if (key === "text") node.textContent = String(value);
+      else if (key === "on") Object.keys(value).forEach((ev) => node.addEventListener(ev, value[ev]));
+      else node.setAttribute(key, value === true ? "" : String(value));
+    });
+  }
+
+  function appendAll(node, children) {
+    if (children === undefined || children === null) return;
+    (Array.isArray(children) ? children : [children]).forEach((child) => {
+      if (child === null || child === undefined || child === false) return;
+      node.appendChild(typeof child === "object" ? child : document.createTextNode(String(child)));
+    });
+  }
+
+  // A run detail's key, or "" (a detail can come before its summary is listed).
+  AA.runKey = (run) => (run && run.summary && run.summary.key) || "";
+
+  AA.clear = function (node) {
+    while (node.firstChild) node.removeChild(node.firstChild);
+    return node;
+  };
+
+  AA.fmt = {
+    time(ts) {
+      if (!ts) return "";
+      const date = new Date(ts * 1000);
+      return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    },
+    ms(ms) {
+      if (ms === null || ms === undefined || isNaN(ms)) return "";
+      if (ms < 1) return ms.toFixed(2) + " ms";
+      if (ms < 1000) return Math.round(ms) + " ms";
+      if (ms < 60000) return (ms / 1000).toFixed(2) + " s";
+      return (ms / 60000).toFixed(1) + " min";
+    },
+    usd(value) {
+      if (value === null || value === undefined) return "";
+      if (value === 0) return "$0";
+      return value < 0.01 ? "$" + value.toFixed(5) : "$" + value.toFixed(3);
+    },
+    json(value) {
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch (err) {
+        return String(value);
+      }
+    },
+  };
+
+  AA.storage = {
+    get(key) {
+      try {
+        return window.localStorage.getItem(key);
+      } catch (err) {
+        return null;
+      }
+    },
+    set(key, value) {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch (err) {
+        // Storage can be blocked (private window); the theme then resets on reload.
+      }
+    },
+  };
+})();
+</script>
+<script>
+// What the run did on a flow graph: node status, visits, calls, cost, state, edge counts, replay.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+
+  // Status of a node; the icon keeps the legend readable without colour.
+  const STATUSES = [
+    { key: "pending", icon: "○", label: "not run" },
+    { key: "running", icon: "▶", label: "running" },
+    { key: "ok", icon: "✓", label: "done" },
+    { key: "error", icon: "✕", label: "failed" },
+    { key: "paused", icon: "⏸", label: "paused" },
+    { key: "stopped", icon: "■", label: "stopped (cancelled)" },
+  ];
+  const NODE_STATUS = dict({ "node.started": "running", "node.finished": "ok", "node.failed": "error", "node.paused": "paused" });
+  const ICONS = dict();
+  STATUSES.forEach((s) => { ICONS[s.key] = s.icon; });
+  const ENDED = new Set(["ok", "failed", "unfinished"]); // run summary statuses of a run that is over
+
+  // Lookup tables keyed by names: no prototype, so `constructor` or `__proto__` are plain keys.
+  function dict(entries) {
+    return Object.assign(Object.create(null), entries || {});
+  }
+
+  function has(table, key) {
+    return Object.prototype.hasOwnProperty.call(table, key);
+  }
+
+  function edgeKey(source, target) {
+    return source + "→" + target;
+  }
+
+  function links(graph) {
+    const succ = dict(), pred = dict();
+    (graph.nodes || []).forEach((n) => { succ[n.id] = []; pred[n.id] = []; });
+    (graph.edges || []).forEach((e) => {
+      if (!has(succ, e.source) || !has(pred, e.target)) return;
+      if (succ[e.source].indexOf(e.target) < 0) succ[e.source].push(e.target);
+      if (pred[e.target].indexOf(e.source) < 0) pred[e.target].push(e.source);
+    });
+    return { succ: succ, pred: pred };
+  }
+
+  // Node events of one flow, in order: what a replay steps through.
+  function replaySteps(events, flow) {
+    const steps = [];
+    (events || []).forEach((ev, index) => {
+      const data = ev.data || {};
+      if (has(NODE_STATUS, ev.type) && data.flow === flow && data.node) steps.push(index);
+    });
+    return steps;
+  }
+
+  function blankInfo(node) {
+    return {
+      status: "pending", visits: 0, calls: 0, errors: 0, cost: null, changed: [], updates: null,
+      visitList: [], items: node.fan_out ? { done: 0, total: 0 } : null, errorKinds: [], lastVisit: 0,
+    };
+  }
+
+  // Everything known at event index `upto` (inclusive); live when `upto` is omitted.
+  function snapshot(graph, run, upto) {
+    const limit = upto === undefined || upto === null ? Infinity : upto;
+    const events = (run && run.events) || [];
+    const nodes = dict();
+    (graph.nodes || []).forEach((n) => { nodes[n.id] = blankInfo(n); });
+    const edges = dict();
+    const fresh = dict(); // node -> successors not yet credited since it last finished
+    const net = links(graph);
+    let lastTs = null;
+    for (let index = 0; index < events.length && index <= limit; index += 1) {
+      const ev = events[index];
+      const data = ev.data || {};
+      if (typeof ev.ts === "number") lastTs = ev.ts;
+      if ((ev.type === "flow.finished" && data.flow === graph.flow) || ev.type === "run.finished") stopRunning(nodes);
+      if (!has(NODE_STATUS, ev.type) || data.flow !== graph.flow || !has(nodes, data.node)) continue;
+      const status = NODE_STATUS[ev.type];
+      applyNodeEvent(nodes[data.node], ev, status);
+      if (ev.type === "node.started") {
+        net.pred[data.node].forEach((source) => {
+          if (has(fresh, source) && fresh[source].has(data.node)) {
+            const key = edgeKey(source, data.node);
+            edges[key] = (edges[key] || 0) + 1;
+            fresh[source].delete(data.node);
+          }
+        });
+      } else if (ev.type === "node.finished") {
+        fresh[data.node] = new Set(net.succ[data.node]);
+      }
+    }
+    if (limit === Infinity && run && run.summary && ENDED.has(run.summary.status)) stopRunning(nodes);
+    addSpans(graph, run, nodes, limit);
+    return { nodes: nodes, edges: edges, ts: lastTs, upto: limit };
+  }
+
+  // A node still "running" when its flow or run ended was cancelled (no node event says so).
+  function stopRunning(nodes) {
+    Object.keys(nodes).forEach((id) => { if (nodes[id].status === "running") nodes[id].status = "stopped"; });
+  }
+
+  function applyNodeEvent(info, ev, status) {
+    const data = ev.data || {};
+    info.status = status;
+    if (ev.type === "node.started") {
+      info.visits += 1;
+      info.lastVisit = typeof data.visit === "number" ? data.visit : info.visits;
+    } else if (ev.type === "node.finished") {
+      const changed = Array.isArray(data.changed) ? data.changed.map(String) : [];
+      changed.forEach((name) => { if (info.changed.indexOf(name) < 0) info.changed.push(name); });
+      const updates = data.updates && typeof data.updates === "object" ? data.updates : null;
+      if (updates) info.updates = updates;
+      info.visitList.push({ visit: data.visit, changed: changed, updates: updates, ts: ev.ts });
+    } else if (ev.type === "node.failed") {
+      info.errors += 1;
+      if (data.error_kind) info.errorKinds.push(String(data.error_kind));
+    }
+  }
+
+  function spanEnded(span, limit) {
+    if (span.status === "running") return false;
+    const last = span.events && span.events.length ? span.events[span.events.length - 1] : -1;
+    return last <= limit;
+  }
+
+  // Calls under each node, their cost and errors; a Map's items for its latest visit.
+  function addSpans(graph, run, nodes, limit) {
+    const byId = dict();
+    (graph.nodes || []).forEach((n) => { byId[n.id] = n; });
+    ((run && run.spans) || []).forEach((span) => {
+      if (span.family === "node" || span.family === "flow") return;
+      const info = has(nodes, span.node) ? nodes[span.node] : null;
+      if (!info || !span.events || span.events[0] > limit) return;
+      const ended = spanEnded(span, limit);
+      info.calls += 1;
+      if (ended && span.status === "error") {
+        info.errors += 1;
+        if (span.error_kind) info.errorKinds.push(span.error_kind);
+      }
+      if (ended && typeof span.cost_usd === "number") info.cost = (info.cost || 0) + span.cost_usd;
+      const visitCall = graph.flow + ":" + span.node + ":" + info.lastVisit;
+      if (info.items && byId[span.node].fan_out && span.parent_id === visitCall) {
+        info.items.total += 1;
+        if (ended) info.items.done += 1;
+      }
+    });
+  }
+
+  // Ancestors and descendants of `id` over forward edges (loops left out so a cycle stays readable).
+  function paths(graph, id) {
+    const forward = (graph.edges || []).filter((e) => !e.loop);
+    const nodes = new Set([id]);
+    const edges = new Set();
+    [["source", "target"], ["target", "source"]].forEach((dir) => {
+      const queue = [id];
+      const seen = new Set([id]);
+      while (queue.length) {
+        const at = queue.shift();
+        forward.forEach((e) => {
+          if (e[dir[0]] !== at) return;
+          edges.add(edgeKey(e.source, e.target));
+          const next = e[dir[1]];
+          nodes.add(next);
+          if (!seen.has(next)) { seen.add(next); queue.push(next); }
+        });
+      }
+    });
+    return { nodes: nodes, edges: edges };
+  }
+
+  function search(graph, query) {
+    const q = String(query || "").trim().toLowerCase();
+    if (!q) return [];
+    return (graph.nodes || []).filter((n) => [n.id, n.tool, n.kind, n.over].some((v) => v && String(v).toLowerCase().indexOf(q) >= 0))
+      .map((n) => n.id);
+  }
+
+  // The same text as Flow.to_mermaid(), built from the recorded graph.
+  const SHAPES = { fn: ["[", "]"], call: ["([", "])"], map: ["[[", "]]"], join: ["{{", "}}"] };
+
+  function quote(text) {
+    const escaped = text.replace(/&/g, "#amp;").replace(/"/g, "#quot;").split("<br/>")
+      .map((part) => part.replace(/</g, "#lt;").replace(/>/g, "#gt;")).join("<br/>");
+    return '"' + escaped + '"';
+  }
+
+  function nodeLines(n) {
+    const out = [String(n.id)];
+    if (n.fan_out) out.push("fan-out over " + n.over);
+    if (n.fan_in) out.push("fan-in: " + (n.sources || []).join(", "));
+    if (n.tool && (n.kind === "call" || n.kind === "map")) out.push("tool: " + n.tool);
+    if (n.pause) out.push("pause gate");
+    return out;
+  }
+
+  function arrow(e) {
+    let text = e.label || "";
+    if (e.max_loops !== null && e.max_loops !== undefined && e.loop) text = (text + " (max " + e.max_loops + ")").trim();
+    const shape = e.loop ? "-.->" : e.parallel ? "==>" : "-->";
+    return text ? shape + "|" + quote(text) + "|" : shape;
+  }
+
+  function mermaid(graph) {
+    const id = (name) => "n_" + name;
+    const lines = ["flowchart TD", "  aa_start((start)) --> " + id(graph.start)];
+    (graph.nodes || []).forEach((n) => {
+      const shape = SHAPES[n.kind] || SHAPES.fn;
+      lines.push("  " + id(n.id) + shape[0] + quote(nodeLines(n).join("<br/>")) + shape[1] + (n.pause ? ":::pause" : ""));
+    });
+    (graph.edges || []).forEach((e) => lines.push("  " + id(e.source) + " " + arrow(e) + " " + id(e.target)));
+    (graph.nodes || []).filter((n) => n.end).forEach((n) => lines.push("  " + id(n.id) + " --> aa_end((end))"));
+    lines.push("  classDef pause stroke-dasharray: 5 5");
+    return lines.join("\n") + "\n";
+  }
+
+  AA.graphLive = {
+    STATUSES: STATUSES, ICONS: ICONS, dict: dict, has: has, edgeKey: edgeKey, links: links, replaySteps: replaySteps,
+    snapshot: snapshot, paths: paths, search: search, mermaid: mermaid,
+  };
+})();
+</script>
+<script>
+// The graph camera: wheel or pinch zoom, mouse or one-finger drag to pan, fit, minimap, keyboard focus moves.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+  const MIN_K = 0.15, MAX_K = 4, STEP = 1.25;
+
+  function clampK(k) {
+    return Math.min(MAX_K, Math.max(MIN_K, k));
+  }
+
+  // A view maps world to screen: screen = world * k + (x, y).
+  function zoomAt(view, factor, px, py) {
+    const k = clampK(view.k * factor);
+    const ratio = k / view.k;
+    return { k: k, x: px - (px - view.x) * ratio, y: py - (py - view.y) * ratio };
+  }
+
+  function fit(bounds, viewport, pad) {
+    const margin = pad === undefined ? 16 : pad;
+    const w = Math.max(bounds.w, 1), h = Math.max(bounds.h, 1);
+    const k = clampK(Math.min((viewport.w - 2 * margin) / w, (viewport.h - 2 * margin) / h, 1.5));
+    return { k: k, x: (viewport.w - w * k) / 2 - bounds.x * k, y: (viewport.h - h * k) / 2 - bounds.y * k };
+  }
+
+  // Two fingers moved from (a0, b0) to (a1, b1): scale by their spread, keep the midpoint's world point under it.
+  function pinchView(view, a0, b0, a1, b1) {
+    const d0 = Math.hypot(b0.x - a0.x, b0.y - a0.y) || 1;
+    const k = clampK(view.k * Math.hypot(b1.x - a1.x, b1.y - a1.y) / d0);
+    const m0x = (a0.x + b0.x) / 2, m0y = (a0.y + b0.y) / 2;
+    const wx = (m0x - view.x) / view.k, wy = (m0y - view.y) / view.k;
+    return { k: k, x: (a1.x + b1.x) / 2 - wx * k, y: (a1.y + b1.y) / 2 - wy * k };
+  }
+
+  function centerOn(view, wx, wy, viewport) {
+    return { k: view.k, x: viewport.w / 2 - wx * view.k, y: viewport.h / 2 - wy * view.k };
+  }
+
+  // The part of the world the viewport shows, in world units.
+  function visible(view, viewport) {
+    return { x: -view.x / view.k, y: -view.y / view.k, w: viewport.w / view.k, h: viewport.h / view.k };
+  }
+
+  // Arrow keys: down/up follow edges, left/right go to the nearest node of the same layer.
+  function neighbour(id, key, scene) {
+    const here = scene.pos[id];
+    if (!here) return null;
+    let options;
+    if (key === "ArrowDown") options = scene.succ[id] || [];
+    else if (key === "ArrowUp") options = scene.pred[id] || [];
+    else {
+      const sign = key === "ArrowRight" ? 1 : -1;
+      options = Object.keys(scene.pos).filter((other) => {
+        const p = scene.pos[other];
+        return other !== id && p.layer === here.layer && (p.x - here.x) * sign > 0;
+      });
+    }
+    let best = null, bestDistance = Infinity;
+    options.forEach((other) => {
+      const p = scene.pos[other];
+      if (!p) return;
+      const distance = Math.abs(p.x - here.x) + Math.abs(p.y - here.y) / 1000;
+      if (distance < bestDistance) { best = other; bestDistance = distance; }
+    });
+    return best;
+  }
+
+  // Keep at least `margin` px of the graph's bounds on screen, so it can't be lost off an edge.
+  function clampView(view, bounds, viewport, margin) {
+    const m = margin === undefined ? 40 : margin;
+    let x = view.x, y = view.y;
+    const left = bounds.x * view.k + x, right = (bounds.x + bounds.w) * view.k + x;
+    const top = bounds.y * view.k + y, bottom = (bounds.y + bounds.h) * view.k + y;
+    if (right < m) x += m - right;
+    else if (left > viewport.w - m) x -= left - (viewport.w - m);
+    if (bottom < m) y += m - bottom;
+    else if (top > viewport.h - m) y -= top - (viewport.h - m);
+    return { k: view.k, x: x, y: y };
+  }
+
+  function wheelFactor(ev) {
+    const unit = ev.deltaMode === 1 ? 16 : ev.deltaMode === 2 ? 400 : 1;
+    return Math.exp(-ev.deltaY * unit * 0.0015);
+  }
+
+  // Wires the camera to `stage` (the element that gets the events) and `world` (the <g> moved).
+  function attach(stage, world, scene, handlers) {
+    let view = { k: 1, x: 0, y: 0 };
+    let drag = null;
+    let pinch = null; // two touch pointers down: { a, b, view } at the start
+    const touches = new Map(); // touch pointer id -> stage-local point
+    let moved = false; // the reader moved the view since the last fit: a resize keeps it
+    const viewport = () => ({ w: stage.clientWidth || 600, h: stage.clientHeight || 360 });
+
+    function set(next, byReader) {
+      if (byReader !== false) moved = true;
+      view = scene.bounds ? clampView(next, scene.bounds, viewport()) : next;
+      world.setAttribute("transform", "translate(" + view.x.toFixed(2) + "," + view.y.toFixed(2) + ") scale(" + view.k.toFixed(4) + ")");
+      if (handlers.onView) handlers.onView(view, visible(view, viewport()));
+    }
+
+    function localPoint(ev) {
+      const box = stage.getBoundingClientRect();
+      return { x: ev.clientX - box.left, y: ev.clientY - box.top };
+    }
+
+    stage.addEventListener("wheel", (ev) => {
+      ev.preventDefault();
+      const p = localPoint(ev);
+      set(zoomAt(view, wheelFactor(ev), p.x, p.y));
+    }, { passive: false });
+
+    // A tap on a node stays a click (no capture); a second finger anywhere starts a pinch.
+    stage.addEventListener("pointerdown", (ev) => {
+      if (ev.button !== 0 || (ev.target.closest && ev.target.closest(".gv-mini"))) return;
+      if (ev.pointerType === "touch") touches.set(ev.pointerId, localPoint(ev));
+      if (touches.size === 2) {
+        const points = Array.from(touches.values());
+        pinch = { a: points[0], b: points[1], view: view };
+        drag = null;
+        touches.forEach((point, id) => stage.setPointerCapture(id));
+        stage.classList.add("panning");
+        return;
+      }
+      if (pinch || touches.size > 2 || (ev.target.closest && ev.target.closest(".g-node"))) return;
+      drag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, view: view };
+      stage.setPointerCapture(ev.pointerId);
+      stage.classList.add("panning");
+    });
+    stage.addEventListener("pointermove", (ev) => {
+      if (touches.has(ev.pointerId)) touches.set(ev.pointerId, localPoint(ev));
+      if (pinch) {
+        if (!touches.has(ev.pointerId) || touches.size < 2) return;
+        const points = Array.from(touches.values());
+        set(pinchView(pinch.view, pinch.a, pinch.b, points[0], points[1]));
+        return;
+      }
+      if (!drag || drag.id !== ev.pointerId) return;
+      const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+      set({ k: drag.view.k, x: drag.view.x + dx, y: drag.view.y + dy });
+    });
+    const endDrag = (ev) => {
+      touches.delete(ev.pointerId);
+      if (pinch) {
+        if (touches.size < 2) { pinch = null; stage.classList.remove("panning"); }
+        return;
+      }
+      if (!drag || drag.id !== ev.pointerId) return;
+      drag = null;
+      stage.classList.remove("panning");
+    };
+    stage.addEventListener("pointerup", endDrag);
+    stage.addEventListener("pointercancel", endDrag);
+    stage.addEventListener("lostpointercapture", endDrag);
+
+    // A resized stage (or one shown after being hidden) refits, unless the reader moved the view.
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(() => {
+      if (!stage.clientWidth || !stage.clientHeight || !scene.bounds) return;
+      if (moved) set(view, false);
+      else camera.fit();
+    }) : null;
+    if (observer) observer.observe(stage);
+
+    stage.addEventListener("keydown", (ev) => {
+      if (ev.target.tagName === "INPUT") return;
+      const vp = viewport();
+      if (ev.key === "+" || ev.key === "=") set(zoomAt(view, STEP, vp.w / 2, vp.h / 2));
+      else if (ev.key === "-" || ev.key === "_") set(zoomAt(view, 1 / STEP, vp.w / 2, vp.h / 2));
+      else if (ev.key === "0") camera.fit();
+      else if (ev.key.indexOf("Arrow") === 0) {
+        const from = handlers.focused() || scene.start;
+        const next = from === handlers.focused() ? neighbour(from, ev.key, scene) : from;
+        if (next) handlers.focus(next);
+      } else if (ev.key === "Enter" && handlers.focused()) handlers.open(handlers.focused());
+      else if (ev.key === "Escape") handlers.escape();
+      else return;
+      ev.preventDefault();
+    });
+
+    const camera = {
+      get: () => view,
+      set: set,
+      fit() { set(fit(scene.bounds, viewport()), false); moved = false; },
+      zoomBy(factor) { const vp = viewport(); set(zoomAt(view, factor, vp.w / 2, vp.h / 2)); },
+      // Keep a node on screen: move only when it is outside the visible part.
+      reveal(id) {
+        const p = scene.pos[id];
+        if (!p) return;
+        const seen = visible(view, viewport());
+        const inside = p.cx > seen.x + 20 && p.cx < seen.x + seen.w - 20 && p.cy > seen.y + 20 && p.cy < seen.y + seen.h - 20;
+        if (!inside) set(centerOn(view, p.cx, p.cy, viewport()));
+      },
+      centerWorld(wx, wy) { set(centerOn(view, wx, wy, viewport())); },
+      viewport: viewport,
+      destroy() { if (observer) observer.disconnect(); },
+    };
+    return camera;
+  }
+
+  // The minimap: the whole graph small, a box for what the viewport shows; click or drag to move.
+  function minimap(mini, scene, camera) {
+    let dragging = false;
+    function toWorld(ev) {
+      const rect = mini.getBoundingClientRect();
+      const b = scene.bounds;
+      const scale = Math.max(b.w / Math.max(rect.width, 1), b.h / Math.max(rect.height, 1));
+      const offX = (rect.width - b.w / scale) / 2, offY = (rect.height - b.h / scale) / 2;
+      return { x: b.x + (ev.clientX - rect.left - offX) * scale, y: b.y + (ev.clientY - rect.top - offY) * scale };
+    }
+    mini.addEventListener("pointerdown", (ev) => {
+      dragging = true;
+      mini.setPointerCapture(ev.pointerId);
+      const p = toWorld(ev);
+      camera.centerWorld(p.x, p.y);
+    });
+    mini.addEventListener("pointermove", (ev) => {
+      if (!dragging) return;
+      const p = toWorld(ev);
+      camera.centerWorld(p.x, p.y);
+    });
+    const stop = () => { dragging = false; };
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach((name) => mini.addEventListener(name, stop));
+    return function show(seen) {
+      const box = mini.querySelector(".mini-view");
+      if (!box) return;
+      box.setAttribute("x", seen.x.toFixed(1));
+      box.setAttribute("y", seen.y.toFixed(1));
+      box.setAttribute("width", Math.max(seen.w, 1).toFixed(1));
+      box.setAttribute("height", Math.max(seen.h, 1).toFixed(1));
+    };
+  }
+
+  AA.graphNav = {
+    MIN_K: MIN_K, MAX_K: MAX_K, clampK: clampK, zoomAt: zoomAt, pinchView: pinchView, fit: fit, centerOn: centerOn,
+    visible: visible, clampView: clampView, neighbour: neighbour, wheelFactor: wheelFactor, attach: attach, minimap: minimap,
+  };
+})();
+</script>
+<script>
+// The flow graph scene: SVG nodes and curved edges over the server's layout, painted with live state.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+  const W = 156, H = 46, SLOT = W + 36, ROW = H + 64, PAD = 40, LOOP_LANE = 26, CORNER = 8;
+  const JOIN_INSET = 14; // how far a join hexagon's top and bottom edges stop short of its sides
+
+  // Pixel positions; `x` is in node slots (layout.py), `order` is the fallback for older files.
+  function build(graph) {
+    const pos = AA.graphLive.dict();
+    let right = 0;
+    (graph.nodes || []).forEach((n) => {
+      const slot = typeof n.x === "number" ? n.x : n.order || 0;
+      const x = PAD + slot * SLOT, y = PAD + (n.layer || 0) * ROW;
+      pos[n.id] = { x: x, y: y, cx: x + W / 2, cy: y + H / 2, layer: n.layer || 0, node: n };
+      right = Math.max(right, x + W);
+    });
+    const net = AA.graphLive.links({ nodes: graph.nodes, edges: (graph.edges || []).filter((e) => !e.loop) });
+    const loops = (graph.edges || []).filter((e) => e.loop && pos[e.source] && pos[e.target]).length;
+    const layers = graph.layers || 1;
+    const bounds = { x: 0, y: 0, w: right + 16 + LOOP_LANE * (loops + 1) + 90, h: PAD * 2 + layers * ROW - (ROW - H) + 30 };
+    return { pos: pos, succ: net.succ, pred: net.pred, start: graph.start, right: right + 16, bounds: bounds };
+  }
+
+  function curve(points) {
+    let d = "M" + points[0].x + "," + points[0].y;
+    for (let i = 1; i < points.length; i += 1) {
+      const a = points[i - 1], b = points[i], mid = (a.y + b.y) / 2;
+      d += " C" + a.x + "," + mid + " " + b.x + "," + mid + " " + b.x + "," + b.y;
+    }
+    return d;
+  }
+
+  function edgePoints(e, a, b, dx) {
+    const points = [{ x: a.cx + dx, y: a.y + H }];
+    (e.via || []).forEach((vx, i) => {
+      points.push({ x: PAD + vx * SLOT + W / 2, y: PAD + (a.layer + 1 + i) * ROW + H / 2 });
+    });
+    points.push({ x: b.cx, y: b.y - 2 });
+    return points;
+  }
+
+  function loopPath(a, b, lane) {
+    const y1 = a.cy, y2 = b.cy, sign = y2 < y1 ? -1 : 1, r = CORNER;
+    return "M" + (a.x + W) + "," + y1 + " H" + (lane - r) + " Q" + lane + "," + y1 + " " + lane + "," + (y1 + sign * r) +
+      " V" + (y2 - sign * r) + " Q" + lane + "," + y2 + " " + (lane - r) + "," + y2 + " H" + (b.x + W + 4);
+  }
+
+  function baseLabel(e) {
+    let text = e.label || "";
+    if (e.on_exhausted) text = (text + " [on exhausted]").trim();
+    return text || (e.parallel ? "parallel" : "");
+  }
+
+  function subtitle(n) {
+    if (n.fan_out) return "fan-out over " + (n.over || "items");
+    if (n.fan_in) return "fan-in: " + (n.sources || []).join(", ");
+    if (n.tool) return "tool: " + n.tool;
+    return n.kind === "fn" ? "function" : n.kind;
+  }
+
+  function shape(n, p) {
+    const parts = [];
+    if (n.kind === "join") {
+      const c = JOIN_INSET, x = p.x, y = p.y;
+      const pts = [[x + c, y], [x + W - c, y], [x + W, y + H / 2], [x + W - c, y + H], [x + c, y + H], [x, y + H / 2]];
+      parts.push(AA.svg("polygon", { class: "main", points: pts.map((q) => q.join(",")).join(" ") }));
+      return parts;
+    }
+    if (n.fan_out) { // stacked cards: one call per item
+      parts.push(AA.svg("rect", { class: "stack", x: p.x + 8, y: p.y - 8, width: W, height: H, rx: 6 }));
+      parts.push(AA.svg("rect", { class: "stack", x: p.x + 4, y: p.y - 4, width: W, height: H, rx: 6 }));
+    }
+    parts.push(AA.svg("rect", { class: "main", x: p.x, y: p.y, width: W, height: H, rx: n.kind === "call" ? H / 2 : 6 }));
+    return parts;
+  }
+
+  function arrowDefs() {
+    const marker = (id, cls) => AA.svg("marker", { id: id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" },
+      AA.svg("path", { class: cls, d: "M0,0 L10,5 L0,10 z" }));
+    return AA.svg("defs", null, [marker("aa-arrow", "g-arrow"), marker("aa-arrow-hl", "g-arrow hl")]);
+  }
+
+  function drawEdges(layer, labels, graph, scene, refs) {
+    let loops = 0;
+    (graph.edges || []).forEach((e) => {
+      const a = scene.pos[e.source], b = scene.pos[e.target];
+      if (!a || !b) return;
+      const key = AA.graphLive.edgeKey(e.source, e.target);
+      const classes = ["g-edge", e.kind === "route" ? "route" : "", e.parallel ? "parallel" : "", e.loop ? "loop" : ""].join(" ");
+      const paths = [];
+      let at;
+      if (e.loop) {
+        const lane = scene.right + LOOP_LANE * (loops + 1);
+        paths.push(AA.svg("path", { class: classes, d: loopPath(a, b, lane), "marker-end": "url(#aa-arrow)" }));
+        at = { x: lane + 5, y: (a.cy + b.cy) / 2 };
+        loops += 1;
+      } else {
+        const strands = a.node.fan_out ? [-14, 0, 14] : [0];
+        strands.forEach((dx) => {
+          const points = edgePoints(e, a, b, dx);
+          paths.push(AA.svg("path", { class: classes + (strands.length > 1 ? " fan" : ""), d: curve(points), "marker-end": dx === 0 ? "url(#aa-arrow)" : null }));
+        });
+        const points = edgePoints(e, a, b, 0);
+        const p = points.length > 2 ? points[1] : { x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 };
+        at = { x: p.x + 8, y: p.y + 4 };
+      }
+      paths.forEach((path) => layer.appendChild(path));
+      const label = AA.svg("text", { class: "g-label", x: at.x, y: at.y });
+      labels.appendChild(label);
+      (refs.edges[key] = refs.edges[key] || []).push({ edge: e, paths: paths, label: label });
+    });
+  }
+
+  function drawTerminals(layer, graph, scene) {
+    const start = scene.pos[graph.start];
+    if (start) {
+      const cy = start.y - 20;
+      layer.appendChild(AA.svg("circle", { class: "g-terminal", cx: start.cx, cy: cy, r: 8 }));
+      layer.appendChild(AA.svg("path", { class: "g-edge", d: "M" + start.cx + "," + (cy + 8) + " V" + (start.y - 2), "marker-end": "url(#aa-arrow)" }));
+    }
+    (graph.nodes || []).filter((n) => n.end && scene.pos[n.id]).forEach((n) => {
+      const p = scene.pos[n.id], cy = p.y + H + 22;
+      layer.appendChild(AA.svg("path", { class: "g-edge", d: "M" + p.cx + "," + (p.y + H) + " V" + (cy - 9), "marker-end": "url(#aa-arrow)" }));
+      layer.appendChild(AA.svg("circle", { class: "g-terminal", cx: p.cx, cy: cy, r: 8 }));
+      layer.appendChild(AA.svg("circle", { class: "g-terminal-dot", cx: p.cx, cy: cy, r: 4 }));
+    });
+  }
+
+  function drawNode(layer, n, p, handlers, refs) {
+    const title = AA.svg("title");
+    const group = AA.svg("g", {
+      class: "g-node", tabindex: -1, role: "button", "data-id": n.id,
+      on: {
+        click: () => handlers.open(n.id),
+        focus: () => handlers.focused(n.id),
+        pointerenter: () => handlers.hover(n.id),
+        pointerleave: () => handlers.hover(null),
+      },
+    }, [title].concat(shape(n, p)));
+    const icon = AA.svg("text", { class: "g-icon", x: p.x + 10, y: p.y + 19 });
+    const name = AA.svg("text", { class: "g-name", x: p.x + 26, y: p.y + 19, text: clip(String(n.id), 17) });
+    const sub = AA.svg("text", { class: "sub", x: p.x + 10, y: p.y + 36, text: clip(subtitle(n), 24) });
+    const right = p.x + W - (n.kind === "join" ? JOIN_INSET + 4 : 8); // inside a hexagon's slanted side
+    const badge = AA.svg("text", { class: "g-badge", x: right, y: p.y + 15, "text-anchor": "end" });
+    const progress = AA.svg("text", { class: "g-progress", x: right, y: p.y + 37, "text-anchor": "end" });
+    [icon, name, sub, badge, progress].forEach((t) => group.appendChild(t));
+    if (n.pause) group.appendChild(AA.svg("text", { class: "g-gate", x: p.x + W - 8, y: p.y - 4, "text-anchor": "end", text: "⏸ gate" }));
+    layer.appendChild(group);
+    refs.nodes[n.id] = { group: group, title: title, icon: icon, badge: badge, progress: progress, node: n };
+  }
+
+  function clip(text, size) {
+    return text.length > size ? text.slice(0, size - 1) + "…" : text;
+  }
+
+  // Draws the whole graph once into `world`; `paint` then updates it in place.
+  function draw(world, graph, scene, handlers) {
+    AA.clear(world);
+    const refs = { nodes: AA.graphLive.dict(), edges: AA.graphLive.dict() };
+    const edges = AA.svg("g", { class: "g-edges" });
+    const labels = AA.svg("g", { class: "g-labels" });
+    const nodes = AA.svg("g", { class: "g-nodes" });
+    world.appendChild(arrowDefs());
+    [edges, labels, nodes].forEach((layer) => world.appendChild(layer));
+    drawEdges(edges, labels, graph, scene, refs);
+    drawTerminals(edges, graph, scene);
+    (graph.nodes || []).forEach((n) => drawNode(nodes, n, scene.pos[n.id], handlers, refs));
+    return refs;
+  }
+
+  function setClass(node, name, on) {
+    node.classList.toggle(name, Boolean(on));
+  }
+
+  function nodeText(n, info) {
+    const status = AA.graphLive.STATUSES.find((s) => s.key === info.status) || AA.graphLive.STATUSES[0];
+    const parts = [n.id + " (" + n.kind + ")", status.label];
+    if (info.visits) parts.push(info.visits + (info.visits === 1 ? " visit" : " visits"));
+    if (info.calls) parts.push(info.calls + (info.calls === 1 ? " call" : " calls"));
+    if (info.errors) parts.push(info.errors + (info.errors === 1 ? " error" : " errors"));
+    if (n.pause) parts.push("pause gate: " + n.pause);
+    return parts.join(", ");
+  }
+
+  // Live state onto the drawn graph. opts: {selected, focused, hover: {nodes, edges}|null, matches: Set|null}
+  function paint(refs, world, snap, opts) {
+    const ran = Object.keys(snap.nodes).some((id) => snap.nodes[id].visits > 0);
+    setClass(world, "has-hl", opts.hover);
+    setClass(world, "has-search", opts.matches);
+    Object.keys(refs.nodes).forEach((id) => {
+      const ref = refs.nodes[id];
+      const info = snap.nodes[id];
+      const group = ref.group;
+      AA.graphLive.STATUSES.forEach((s) => setClass(group, "st-" + s.key, info.status === s.key));
+      setClass(group, "pause-gate", ref.node.pause);
+      setClass(group, "selected", opts.selected === id);
+      setClass(group, "hl", opts.hover && opts.hover.nodes.has(id));
+      setClass(group, "match", opts.matches && opts.matches.has(id));
+      ref.icon.textContent = AA.graphLive.ICONS[info.status] || "";
+      ref.badge.textContent = info.visits > 1 ? "×" + info.visits : "";
+      ref.progress.textContent = info.items && info.items.total ? info.items.done + "/" + info.items.total : "";
+      const text = nodeText(ref.node, info);
+      ref.title.textContent = text;
+      group.setAttribute("aria-label", text + ". Enter opens details.");
+    });
+    Object.keys(refs.edges).forEach((key) => {
+      const count = snap.edges[key] || 0;
+      refs.edges[key].forEach((item) => {
+        const e = item.edge;
+        let text = baseLabel(e);
+        if (e.loop) {
+          const max = e.max_loops === null || e.max_loops === undefined ? "" : "/" + e.max_loops;
+          text = (text + " " + count + max + (count === 1 && !max ? " loop" : " loops")).trim();
+        } else if (count) text = (text + " ×" + count).trim();
+        item.label.textContent = text;
+        setClass(item.label, "taken", count > 0);
+        const lit = opts.hover && opts.hover.edges.has(key);
+        item.paths.forEach((path) => {
+          setClass(path, "taken", count > 0);
+          setClass(path, "idle", ran && count === 0);
+          setClass(path, "hl", lit);
+          if (path.getAttribute("marker-end")) path.setAttribute("marker-end", lit ? "url(#aa-arrow-hl)" : "url(#aa-arrow)");
+        });
+      });
+    });
+  }
+
+  // The minimap's content: one small box per node, coloured by status.
+  function drawMini(mini, graph, scene) {
+    AA.clear(mini);
+    const b = scene.bounds;
+    mini.setAttribute("viewBox", b.x + " " + b.y + " " + b.w + " " + b.h);
+    const boxes = AA.graphLive.dict();
+    (graph.nodes || []).forEach((n) => {
+      const p = scene.pos[n.id];
+      boxes[n.id] = AA.svg("rect", { class: "mini-node", x: p.x, y: p.y, width: W, height: H, rx: 6 });
+      mini.appendChild(boxes[n.id]);
+    });
+    const view = AA.svg("rect", { class: "mini-view", x: 0, y: 0, width: 1, height: 1 });
+    mini.appendChild(view);
+    return { boxes: boxes, view: view };
+  }
+
+  function paintMini(mini, snap) {
+    Object.keys(mini.boxes).forEach((id) => {
+      const status = (snap.nodes[id] || {}).status;
+      mini.boxes[id].setAttribute("class", "mini-node st-" + status);
+    });
+  }
+
+  // A key that changes only when the drawing must change (not on live state).
+  function signature(graph) {
+    const nodes = (graph.nodes || []).map((n) => [n.id, n.kind, n.layer, n.x, n.order, n.end, n.pause]);
+    const edges = (graph.edges || []).map((e) => [e.source, e.target, e.kind, e.label, e.loop, e.via]);
+    return JSON.stringify([graph.flow, graph.start, nodes, edges]);
+  }
+
+  AA.graphScene = { W: W, H: H, build: build, draw: draw, paint: paint, drawMini: drawMini, paintMini: paintMini, signature: signature, curve: curve };
+})();
+</script>
+<script>
+// The graph view: toolbar (zoom, search, replay, export), stage, minimap and legend, kept in sync.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+  const PLAY_MS = 650;
+  const STYLE_PROPS = ["fill", "fill-opacity", "stroke", "stroke-width", "stroke-opacity", "stroke-dasharray", "opacity", "paint-order", "font-size", "font-weight", "font-family"];
+
+  function typing(target) {
+    const tag = target && target.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (target && target.isContentEditable);
+  }
+
+  function stepText(run, index) {
+    const ev = run && run.events ? run.events[index] : null;
+    if (!ev) return "";
+    const data = ev.data || {};
+    return data.node + " " + ev.type.split(".")[1] + (data.visit ? " (visit " + data.visit + ")" : "");
+  }
+
+  function legend() {
+    const statuses = AA.graphLive.STATUSES.map((s) => AA.el("span", { class: "lg st-" + s.key }, [AA.el("b", { text: s.icon }), s.label]));
+    const shapes = [["fn", "function"], ["call", "tool call"], ["map", "fan-out (Map)"], ["join", "fan-in (Join)"], ["gate", "pause gate"]]
+      .map((pair) => AA.el("span", { class: "lg" }, [AA.el("i", { class: "lg-shape " + pair[0] }), pair[1]]));
+    const edges = [["route", "route"], ["parallel", "parallel"], ["loop", "loop: taken/max loops"], ["taken", "×N times taken"]]
+      .map((pair) => AA.el("span", { class: "lg" }, [AA.el("i", { class: "lg-edge " + pair[0] }), pair[1]]));
+    return AA.el("div", { class: "gv-legend", "aria-label": "graph legend" }, statuses.concat(shapes, edges));
+  }
+
+  // A standalone SVG of the whole graph with the current theme's colours written in.
+  function exportSvg(svg, world, scene, name) {
+    const copy = world.cloneNode(true);
+    copy.removeAttribute("transform");
+    const live = [world].concat(Array.from(world.querySelectorAll("*")));
+    const cloned = [copy].concat(Array.from(copy.querySelectorAll("*")));
+    live.forEach((node, i) => {
+      const style = window.getComputedStyle(node);
+      STYLE_PROPS.forEach((prop) => {
+        const value = style.getPropertyValue(prop);
+        if (value) cloned[i].setAttribute(prop, value);
+      });
+      cloned[i].removeAttribute("class");
+      cloned[i].removeAttribute("tabindex");
+    });
+    const b = scene.bounds;
+    const background = window.getComputedStyle(svg).getPropertyValue("--card") || "#ffffff";
+    const out = AA.svg("svg", { width: b.w, height: b.h, viewBox: "0 0 " + b.w + " " + b.h },
+      [AA.svg("rect", { x: 0, y: 0, width: b.w, height: b.h, fill: background.trim() || "#ffffff" }), copy]);
+    const text = new XMLSerializer().serializeToString(out);
+    const url = URL.createObjectURL(new Blob([text], { type: "image/svg+xml" }));
+    const link = AA.el("a", { href: url, download: "flow-" + String(name || "graph").replace(/[^A-Za-z0-9_.-]+/g, "_") + ".svg" });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // container gets the view; options: {onOpen(id), onEscape(), onStep()} (onStep: replay moved).
+  AA.createGraph = function (container, options) {
+    const st = { graph: null, run: null, sig: "", refs: null, mini: null, selected: null, focused: null, hover: null, matches: null, step: null, steps: [], timer: null, snap: null, snapKey: "", sized: false };
+    const scene = {};
+    const button = (text, title, onClick) => AA.el("button", { type: "button", class: "ghost small", title: title, "aria-label": title, text: text, on: { click: onClick } });
+    const search = AA.el("input", { type: "search", class: "gv-search", placeholder: "/ search nodes", "aria-label": "search nodes" });
+    const play = button("▶", "play the run's node order", () => togglePlay());
+    const slider = AA.el("input", { type: "range", min: 0, max: 0, value: 0, step: 1, class: "gv-slider", "aria-label": "replay step" });
+    const where = AA.el("span", { class: "gv-step muted" });
+    const notice = AA.el("span", { class: "gv-notice muted", role: "status" });
+    const copyBox = AA.el("textarea", { class: "gv-copy", readonly: true, rows: 6, "aria-label": "Mermaid text", hidden: true });
+    const bar = AA.el("div", { class: "gv-bar" }, [
+      button("−", "zoom out (-)", () => camera.zoomBy(1 / 1.25)),
+      button("+", "zoom in (+)", () => camera.zoomBy(1.25)),
+      button("fit", "fit the graph (0)", () => camera.fit()),
+      search,
+      AA.el("span", { class: "gv-replay" }, [play, slider, where]),
+      AA.el("span", { class: "spacer" }),
+      button("SVG", "download the graph as SVG", () => exportSvg(svg, world, scene, st.graph && st.graph.flow)),
+      button("Mermaid", "copy the graph as Mermaid", () => copyMermaid()),
+      notice,
+    ]);
+    const world = AA.svg("g", { class: "gv-world" });
+    const svg = AA.svg("svg", { class: "gv-svg", role: "group", "aria-label": "flow graph" }, world);
+    const mini = AA.svg("svg", { class: "gv-mini", "aria-hidden": "true", preserveAspectRatio: "xMidYMid meet" });
+    const stage = AA.el("div", { class: "gv-stage", tabindex: 0, role: "group", "aria-roledescription": "graph", "aria-label": "Flow graph. Arrow keys move between nodes, Enter opens one, + and - zoom, 0 fits, / searches." }, [svg, mini]);
+    AA.clear(container);
+    [bar, copyBox, stage, legend()].forEach((part) => container.appendChild(part));
+
+    let showView = null; // the minimap's viewport box, once a graph is drawn
+    const handlers = {
+      open: (id) => { st.selected = id; paint(); if (options.onOpen) options.onOpen(id); },
+      focused: (id) => { if (id !== undefined) st.focused = id; return st.focused; },
+      focus: (id) => focusNode(id),
+      hover: (id) => { st.hover = id && st.graph ? AA.graphLive.paths(st.graph, id) : null; paint(); },
+      escape: () => { st.selected = null; st.hover = null; paint(); if (options.onEscape) options.onEscape(); },
+    };
+    const camera = AA.graphNav.attach(stage, world, scene, {
+      focused: () => st.focused, focus: handlers.focus, open: handlers.open, escape: handlers.escape,
+      onView: (view, seen) => {
+        if (showView) showView(seen);
+        const b = scene.bounds;
+        // The minimap only helps when part of the graph is off screen.
+        if (b) mini.classList.toggle("whole", seen.x <= b.x && seen.y <= b.y && seen.x + seen.w >= b.x + b.w && seen.y + seen.h >= b.y + b.h);
+      },
+    });
+    showView = AA.graphNav.minimap(mini, scene, camera);
+
+    function focusNode(id) {
+      const ref = st.refs && st.refs.nodes[id];
+      if (!ref) return;
+      Object.keys(st.refs.nodes).forEach((other) => st.refs.nodes[other].group.setAttribute("tabindex", other === id ? 0 : -1));
+      st.focused = id;
+      ref.group.focus({ preventScroll: true });
+      camera.reveal(id);
+    }
+
+    // Worked out again only when the run, the graph or the replay step changed (not on hover).
+    function snapshot() {
+      const live = st.step === null || st.step >= st.steps.length;
+      const upto = live ? undefined : st.step === 0 ? -1 : st.steps[st.step - 1];
+      const run = st.run || {};
+      const key = [AA.runKey(run), (run.events || []).length, (run.spans || []).length, (run.summary || {}).status, upto, st.sig].join("|");
+      if (key !== st.snapKey || !st.snap) {
+        st.snapKey = key;
+        st.snap = AA.graphLive.snapshot(st.graph, st.run, upto);
+      }
+      return st.snap;
+    }
+
+    function paint() {
+      if (!st.refs) return;
+      snapshot();
+      AA.graphScene.paint(st.refs, world, st.snap, { selected: st.selected, hover: st.hover, matches: st.matches });
+      AA.graphScene.paintMini(st.mini, st.snap);
+      const at = st.step === null ? st.steps.length : st.step;
+      slider.max = String(st.steps.length);
+      slider.value = String(at);
+      slider.disabled = !st.steps.length;
+      play.disabled = !st.steps.length;
+      where.textContent = !st.steps.length ? "no steps yet" : at >= st.steps.length ? "live · " + st.steps.length + " steps"
+        : "step " + at + "/" + st.steps.length + (at ? " · " + stepText(st.run, st.steps[at - 1]) : " · start");
+    }
+
+    function setStep(value) {
+      st.step = value >= st.steps.length ? null : Math.max(0, value);
+      paint();
+      if (options.onStep) options.onStep();
+    }
+
+    function togglePlay() {
+      if (st.timer) { stopPlay(); return; }
+      if (st.step === null) st.step = 0;
+      play.textContent = "⏸";
+      play.setAttribute("aria-label", "pause the replay");
+      st.timer = setInterval(() => {
+        const next = (st.step === null ? st.steps.length : st.step) + 1;
+        setStep(next);
+        if (next >= st.steps.length) stopPlay();
+      }, PLAY_MS);
+      paint();
+    }
+
+    function stopPlay() {
+      clearInterval(st.timer);
+      st.timer = null;
+      play.textContent = "▶";
+      play.setAttribute("aria-label", "play the run's node order");
+    }
+
+    async function copyMermaid() {
+      if (!st.graph) return;
+      const text = AA.graphLive.mermaid(st.graph);
+      try {
+        await navigator.clipboard.writeText(text);
+        notice.textContent = "Mermaid copied";
+        copyBox.hidden = true;
+      } catch (err) {
+        console.warn("Agent Adapter viewer: clipboard refused; showing the Mermaid text to copy by hand", err);
+        copyBox.value = text;
+        copyBox.hidden = false;
+        copyBox.select();
+        notice.textContent = "press Ctrl+C to copy";
+      }
+      setTimeout(() => { notice.textContent = ""; }, 3000);
+    }
+
+    slider.addEventListener("input", () => { stopPlay(); setStep(Number(slider.value)); });
+    search.addEventListener("input", () => {
+      const found = st.graph ? AA.graphLive.search(st.graph, search.value) : [];
+      st.matches = search.value.trim() ? new Set(found) : null;
+      where.title = st.matches ? found.length + " match(es)" : "";
+      paint();
+    });
+    search.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" && st.matches && st.matches.size) {
+        ev.preventDefault();
+        const first = st.graph.nodes.find((n) => st.matches.has(n.id));
+        focusNode(first.id);
+        handlers.open(first.id);
+      } else if (ev.key === "Escape") {
+        search.value = "";
+        st.matches = null;
+        paint();
+        stage.focus();
+      }
+    });
+    const onSlash = (ev) => {
+      if (ev.key !== "/" || typing(ev.target) || container.offsetParent === null) return;
+      ev.preventDefault();
+      search.focus();
+    };
+    document.addEventListener("keydown", onSlash);
+
+    return {
+      // Draw again only when the graph changed; live state is painted in place.
+      update(graph, run) {
+        if (AA.runKey(run) !== AA.runKey(st.run)) { // another run: back to live, nothing picked
+          stopPlay();
+          st.step = null;
+          st.selected = null;
+          st.hover = null;
+        }
+        st.run = run;
+        const sig = AA.graphScene.signature(graph);
+        const fresh = sig !== st.sig;
+        st.graph = graph;
+        st.steps = AA.graphLive.replaySteps(run && run.events, graph.flow);
+        if (fresh) {
+          const active = document.activeElement;
+          const hadFocus = Boolean(active) && active !== stage && stage.contains(active); // a node had it
+          st.sig = sig;
+          Object.keys(scene).forEach((key) => delete scene[key]);
+          Object.assign(scene, AA.graphScene.build(graph));
+          st.refs = AA.graphScene.draw(world, graph, scene, handlers);
+          st.mini = AA.graphScene.drawMini(mini, graph, scene);
+          st.focused = st.graph.nodes.some((n) => n.id === st.focused) ? st.focused : null;
+          if (!st.sized) { // a first height that suits the graph; the user may resize it after
+            st.sized = true;
+            stage.style.height = Math.round(Math.min(Math.max(scene.bounds.h + 24, 260), 640)) + "px";
+          }
+          camera.fit();
+          if (hadFocus && st.focused) focusNode(st.focused); // the redraw replaced the focused node
+          else if (hadFocus) stage.focus({ preventScroll: true });
+        }
+        paint();
+      },
+      select(id) { st.selected = id; paint(); },
+      snapshot: () => st.snap,
+      fit: () => camera.fit(),
+      destroy() { stopPlay(); camera.destroy(); document.removeEventListener("keydown", onSlash); AA.clear(container); },
+    };
+  };
+})();
+</script>
+<script>
+// The timeline: one lane per concurrent call, lanes computed by the server from start/end times.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+  const FAMILIES = ["flow", "node", "tool", "llm", "context", "embedding"];
+
+  function matches(span, filter) {
+    if (!filter) return true;
+    return span.node === filter;
+  }
+
+  function chips(span) {
+    const out = [];
+    if (span.retries) out.push(["retry ×" + span.retries, "warn"]);
+    if (span.timeout) out.push(["timeout", "bad"]);
+    if (span.cached) out.push(["cache hit", ""]);
+    if (span.tokens) out.push([span.tokens.before + " → " + span.tokens.after + " tokens", ""]);
+    if (span.cost_usd) out.push([AA.fmt.usd(span.cost_usd), ""]);
+    if (span.error_kind) out.push([span.error_kind, "bad"]);
+    if (span.status === "pending" || span.status === "paused") out.push(["waiting for approval", "warn"]);
+    return out;
+  }
+  AA.spanChips = chips;
+
+  function label(span) {
+    const parts = [span.family === "context" ? "compress " + span.name : span.name || span.family];
+    chips(span).forEach((c) => parts.push(c[0]));
+    return parts.join(" · ");
+  }
+
+  function axis(t0, t1) {
+    const node = AA.el("div", { class: "axis" });
+    const total = Math.max(t1 - t0, 0.000001);
+    for (let i = 0; i <= 4; i += 1) {
+      const tick = AA.el("span", { text: AA.fmt.ms(((total * i) / 4) * 1000) });
+      tick.style.left = i * 25 + "%";
+      node.appendChild(tick);
+    }
+    return node;
+  }
+
+  function laneLabel(spans) {
+    const families = Array.from(new Set(spans.map((s) => s.family)));
+    return families.join(", ");
+  }
+
+  function legend() {
+    return AA.el("div", { class: "legend" }, FAMILIES.map((f) => AA.el("span", null, [AA.el("i", { class: f }), f])));
+  }
+
+  // options: {filter: node name or null, selected: span id, onSelect(span)}
+  AA.renderTimeline = function (container, run, options) {
+    AA.clear(container);
+    const spans = (run && run.spans) || [];
+    if (!spans.length) {
+      container.appendChild(AA.el("p", { class: "muted", text: "No calls recorded in this run." }));
+      return;
+    }
+    const shown = spans.filter((s) => matches(s, options.filter));
+    const t0 = spans.reduce((low, s) => Math.min(low, s.start), Infinity); // no spread: huge runs
+    const t1 = spans.reduce((high, s) => Math.max(high, s.end), -Infinity);
+    const total = Math.max(t1 - t0, 0.000001);
+    const lanes = {};
+    shown.forEach((s) => { (lanes[s.lane] = lanes[s.lane] || []).push(s); });
+    const order = Object.keys(lanes).map(Number).sort((a, b) => a - b);
+    if (run.spans_total > spans.length) {
+      container.appendChild(AA.el("p", { class: "notice", text: "Showing " + spans.length + " of " + run.spans_total + " calls: every flow and node, then the latest calls." }));
+    }
+    container.appendChild(axis(t0, t1));
+    const body = AA.el("div", { class: "lanes" });
+    order.forEach((lane) => {
+      const track = AA.el("div", { class: "lane-track" });
+      lanes[lane].forEach((span) => {
+        const classes = ["span", span.family, span.status, span.cached ? "cached" : "", options.selected === span.id ? "selected" : ""];
+        const bar = AA.el("button", {
+          type: "button",
+          class: classes.join(" "),
+          title: label(span) + " · " + AA.fmt.ms((span.end - span.start) * 1000),
+          text: label(span),
+          on: { click: () => options.onSelect(span) },
+        });
+        const left = ((span.start - t0) / total) * 100;
+        const width = Math.max(((span.end - span.start) / total) * 100, 0.4);
+        bar.style.left = left + "%";
+        bar.style.width = Math.min(width, 100 - left) + "%";
+        track.appendChild(bar);
+      });
+      body.appendChild(AA.el("div", { class: "lane" }, [
+        AA.el("div", { class: "lane-label", text: "lane " + (lane + 1) + " · " + laneLabel(lanes[lane]) }),
+        track,
+      ]));
+    });
+    if (!order.length) body.appendChild(AA.el("p", { class: "muted", text: "No calls ran under this node." }));
+    container.appendChild(body);
+    container.appendChild(legend());
+  };
+})();
+</script>
+<script>
+// The Events tab: every recorded event, filtered by node, tool, kind and text, with its raw JSON.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+  const MAX_ROWS = 2000;
+
+  function nameOf(ev) {
+    const d = ev.data || {};
+    return String(d.tool || d.node || d.flow || (d.model ? (d.provider || "") + "/" + d.model : ""));
+  }
+
+  // call id -> flow node, from the spans (which carry the node through their parent chain).
+  function nodeIndex(spans) {
+    const byCall = Object.create(null);
+    (spans || []).forEach((s) => { if (s.call_id && s.node) byCall[s.call_id] = s.node; });
+    return byCall;
+  }
+
+  function nodeOf(ev, byCall) {
+    const d = ev.data || {};
+    if (ev.type.indexOf("node.") === 0 && d.node) return String(d.node);
+    return byCall[ev.call_id] || byCall[ev.parent_id] || "";
+  }
+
+  function options(events, byCall) {
+    const nodes = new Set(), tools = new Set(), kinds = new Set();
+    (events || []).forEach((ev) => {
+      const node = nodeOf(ev, byCall);
+      if (node) nodes.add(node);
+      if (ev.data && ev.data.tool) tools.add(String(ev.data.tool));
+      kinds.add(ev.type.split(".")[0]);
+    });
+    const sorted = (set) => Array.from(set).sort();
+    return { nodes: sorted(nodes), tools: sorted(tools), kinds: sorted(kinds) };
+  }
+
+  // Indexes of the events that pass `filter` ({node, tool, kind, text}; empty means any).
+  function apply(events, filter, byCall) {
+    const text = String(filter.text || "").trim().toLowerCase();
+    const out = [];
+    (events || []).forEach((ev, index) => {
+      if (filter.node && nodeOf(ev, byCall) !== filter.node) return;
+      if (filter.tool && !(ev.data && String(ev.data.tool) === filter.tool)) return;
+      if (filter.kind && ev.type.split(".")[0] !== filter.kind) return;
+      if (text && JSON.stringify(ev).toLowerCase().indexOf(text) < 0) return;
+      out.push(index);
+    });
+    return out;
+  }
+
+  function notes(ev) {
+    const d = ev.data || {};
+    const parts = [d.error_kind, d.cached ? "cached" : "", d.approval_id ? "approval " + d.approval_id : ""];
+    if (Array.isArray(d.changed) && d.changed.length) parts.push("changed: " + d.changed.join(", "));
+    return parts.filter(Boolean).join(" · ");
+  }
+
+  // Fills a filter <select> in place; one being used keeps its options until it loses focus.
+  function fillSelect(node, label, values, current) {
+    if (document.activeElement === node) return;
+    const wanted = values.indexOf(current) >= 0 || !current ? values : values.concat([current]);
+    const have = Array.from(node.options).slice(1).map((o) => o.value);
+    if (JSON.stringify(have) !== JSON.stringify(wanted)) {
+      AA.clear(node);
+      node.appendChild(AA.el("option", { value: "", text: "any " + label }));
+      wanted.forEach((v) => node.appendChild(AA.el("option", { value: v, text: v })));
+    }
+    node.value = current || "";
+  }
+
+  // A controller: the filter bar stays put (focus kept) while the rows follow the run.
+  AA.createEvents = function (container) {
+    const st = { run: null, filter: { node: "", tool: "", kind: "", text: "" }, selected: null, shown: [] };
+    const text = AA.el("input", { type: "search", placeholder: "filter text", "aria-label": "filter events by text" });
+    const pickers = {};
+    const selects = AA.el("span", { class: "ev-selects" }, ["node", "tool", "kind"].map((name) => {
+      const node = (pickers[name] = AA.el("select", { "aria-label": "filter events by " + name }));
+      node.appendChild(AA.el("option", { value: "", text: "any " + name }));
+      node.addEventListener("change", () => { st.filter[name] = node.value; renderRows(); });
+      return node;
+    }));
+    const count = AA.el("span", { class: "muted" });
+    const body = AA.el("div", { class: "ev-body", tabindex: 0, "aria-label": "events; arrow keys move, Enter shows the JSON" });
+    AA.clear(container);
+    container.appendChild(AA.el("div", { class: "ev-filters" }, [selects, text, count]));
+    container.appendChild(body);
+    text.addEventListener("input", () => { st.filter.text = text.value; renderRows(); });
+    body.addEventListener("keydown", (ev) => {
+      if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
+      ev.preventDefault();
+      const at = st.shown.indexOf(st.selected);
+      const next = ev.key === "ArrowDown" ? Math.min(st.shown.length - 1, at + 1) : Math.max(0, at - 1);
+      if (st.shown.length) choose(st.shown[next < 0 ? 0 : next]);
+    });
+
+    function choose(index) {
+      st.selected = index;
+      renderRows();
+      const row = body.querySelector("tr.selected");
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
+    }
+
+    function renderSelects(byCall) {
+      const found = options(st.run ? st.run.events : [], byCall);
+      fillSelect(pickers.node, "node", found.nodes, st.filter.node);
+      fillSelect(pickers.tool, "tool", found.tools, st.filter.tool);
+      fillSelect(pickers.kind, "kind", found.kinds, st.filter.kind);
+    }
+
+    function renderRows() {
+      const events = (st.run && st.run.events) || [];
+      const byCall = nodeIndex(st.run && st.run.spans);
+      renderSelects(byCall);
+      st.shown = apply(events, st.filter, byCall);
+      count.textContent = st.shown.length + " of " + events.length + " events" + (st.shown.length > MAX_ROWS ? " (first " + MAX_ROWS + " shown)" : "");
+      AA.clear(body);
+      if (!events.length) {
+        body.appendChild(AA.el("p", { class: "muted", text: "No events recorded in this run." }));
+        return;
+      }
+      const t0 = events[0].ts;
+      const tbody = AA.el("tbody");
+      st.shown.slice(0, MAX_ROWS).forEach((index) => {
+        const ev = events[index];
+        const selected = index === st.selected;
+        tbody.appendChild(AA.el("tr", { class: "ev" + (selected ? " selected" : ""), "aria-current": selected ? "true" : null, on: { click: () => choose(selected ? null : index) } }, [
+          AA.el("td", { text: "#" + index }),
+          AA.el("td", { text: AA.fmt.ms((ev.ts - t0) * 1000) }),
+          AA.el("td", null, AA.el("code", { text: ev.type })),
+          AA.el("td", { text: nameOf(ev) }),
+          AA.el("td", { text: nodeOf(ev, byCall) }),
+          AA.el("td", { text: notes(ev) }),
+        ]));
+        if (selected) tbody.appendChild(AA.el("tr", { class: "ev-json" }, AA.el("td", { colspan: 6 }, AA.el("pre", { text: AA.fmt.json(ev) }))));
+      });
+      body.appendChild(AA.el("table", null, [
+        AA.el("thead", null, AA.el("tr", null, ["#", "+time", "event", "name", "node", "notes"].map((h) => AA.el("th", { text: h })))),
+        tbody,
+      ]));
+    }
+
+    return {
+      update(run) {
+        if (AA.runKey(st.run) !== AA.runKey(run)) st.selected = null;
+        st.run = run;
+        renderRows();
+      },
+      // Show one node's events (from the graph's node panel).
+      showNode(node) {
+        st.filter = { node: node || "", tool: "", kind: "", text: "" };
+        text.value = "";
+        renderRows();
+      },
+      focus: () => body.focus(),
+    };
+  };
+
+  AA.eventFilter = { nameOf: nameOf, nodeIndex: nodeIndex, nodeOf: nodeOf, options: options, apply: apply };
+})();
+</script>
+<script>
+// The State tab: each node step's changed fields and, for traced runs, before/after values.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+  const MISSING = { missing: true }; // a field no earlier step set
+
+  function same(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+
+  function updatesOf(d) {
+    return d.updates && typeof d.updates === "object" && !Array.isArray(d.updates) ? d.updates : null;
+  }
+
+  // One entry per node.finished: what it changed, and the values before and after when traced.
+  // "Before" is the last value set in the same flow: flows of one run keep separate state.
+  function steps(events) {
+    const known = new Map(); // flow -> Map(field -> last value set)
+    const out = [];
+    (events || []).forEach((ev, index) => {
+      if (ev.type !== "node.finished") return;
+      const d = ev.data || {};
+      const flow = String(d.flow || "");
+      if (!known.has(flow)) known.set(flow, new Map());
+      const seen = known.get(flow);
+      const changed = Array.isArray(d.changed) ? d.changed.map(String) : [];
+      const updates = updatesOf(d);
+      const fields = changed.map((name) => {
+        const before = seen.has(name) ? seen.get(name) : MISSING;
+        const hasAfter = updates !== null && Object.prototype.hasOwnProperty.call(updates, name);
+        const after = hasAfter ? updates[name] : MISSING;
+        return { name: name, before: before, after: after, kind: diffKind(before, after) };
+      });
+      if (updates) Object.keys(updates).forEach((name) => seen.set(name, updates[name]));
+      out.push({ index: index, ts: ev.ts, flow: flow, node: String(d.node || ""), visit: d.visit, fields: fields, traced: updates !== null });
+    });
+    return out;
+  }
+
+  // The values a flow's steps had set by event `index` (worked out only for the step shown).
+  function knownAfter(events, flow, index) {
+    const seen = new Map();
+    for (let i = 0; i <= index && i < (events || []).length; i += 1) {
+      const ev = events[i];
+      const d = ev.data || {};
+      const updates = ev.type === "node.finished" && String(d.flow || "") === flow ? updatesOf(d) : null;
+      if (updates) Object.keys(updates).forEach((name) => seen.set(name, updates[name]));
+    }
+    return Object.fromEntries(seen);
+  }
+
+  function diffKind(before, after) {
+    if (after === MISSING) return "named";
+    if (before === MISSING) return "added";
+    return same(before, after) ? "same" : "changed";
+  }
+
+  function show(value) {
+    if (value === MISSING) return "—";
+    return typeof value === "string" ? value : AA.fmt.json(value);
+  }
+
+  AA.createStatePanel = function (container) {
+    const st = { run: null, selected: null, list: [] };
+    const list = AA.el("ol", { class: "st-steps", tabindex: 0, "aria-label": "node steps; arrow keys move" });
+    const detail = AA.el("div", { class: "st-detail" });
+    const note = AA.el("p", { class: "muted" });
+    AA.clear(container);
+    container.appendChild(note);
+    container.appendChild(AA.el("div", { class: "st-grid" }, [list, detail]));
+    list.addEventListener("keydown", (ev) => {
+      if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
+      ev.preventDefault();
+      const at = Math.max(0, st.list.findIndex((s) => s.index === st.selected));
+      const next = ev.key === "ArrowDown" ? Math.min(st.list.length - 1, at + 1) : Math.max(0, at - 1);
+      if (st.list.length) pick(st.list[next].index);
+    });
+
+    function pick(index) {
+      st.selected = index;
+      render();
+    }
+
+    function renderList() {
+      AA.clear(list);
+      st.list.forEach((step, i) => {
+        const chips = step.fields.map((f) => AA.el("span", { class: "chip " + f.kind, text: f.name }));
+        const item = AA.el("li", { class: step.index === st.selected ? "selected" : "", on: { click: () => pick(step.index) } }, [
+          AA.el("span", { class: "st-n", text: String(i + 1) }),
+          AA.el("strong", { text: step.node }),
+          AA.el("span", { class: "muted", text: (step.visit ? " #" + step.visit : "") + (step.flow ? " · " + step.flow : "") }),
+          AA.el("div", { class: "chips" }, chips.length ? chips : AA.el("span", { class: "muted", text: "no change" })),
+        ]);
+        list.appendChild(item);
+      });
+    }
+
+    function renderDetail() {
+      AA.clear(detail);
+      const step = st.list.find((s) => s.index === st.selected);
+      if (!step) {
+        detail.appendChild(AA.el("p", { class: "muted", text: "Pick a step." }));
+        return;
+      }
+      detail.appendChild(AA.el("h3", { text: step.node + (step.visit ? " · visit " + step.visit : "") }));
+      if (!step.fields.length) detail.appendChild(AA.el("p", { class: "muted", text: "This step changed no state field." }));
+      else {
+        detail.appendChild(AA.el("table", { class: "st-table" }, [
+          AA.el("thead", null, AA.el("tr", null, ["field", "before (last set)", "set by this step"].map((h) => AA.el("th", { text: h })))),
+          AA.el("tbody", null, step.fields.map((f) => AA.el("tr", { class: "st-" + f.kind }, [
+            AA.el("td", null, AA.el("code", { text: f.name })),
+            AA.el("td", null, AA.el("pre", { text: show(f.before) })),
+            AA.el("td", null, AA.el("pre", { text: f.kind === "named" ? "(value not recorded)" : show(f.after) })),
+          ]))),
+        ]));
+      }
+      const known = knownAfter(st.run ? st.run.events : [], step.flow, step.index);
+      const fields = Object.keys(known);
+      if (fields.length) {
+        detail.appendChild(AA.el("details", null, [
+          AA.el("summary", { text: "values known after this step (" + fields.length + ")" }),
+          AA.el("pre", { text: AA.fmt.json(known) }),
+        ]));
+      }
+    }
+
+    function render() {
+      const traced = st.list.some((s) => s.traced);
+      note.textContent = !st.list.length ? "No node steps in this run (state shows for flows run by FlowRunner)."
+        : traced ? "Values are what each node returned; a merged field (sum, append, keyed) shows the node's own update."
+        : "Only field names are recorded. Run the flow with FlowRunner(trace_state=True) to record the values.";
+      renderList();
+      renderDetail();
+    }
+
+    return {
+      update(run) {
+        const fresh = AA.runKey(st.run) !== AA.runKey(run);
+        const followed = !st.list.length || st.selected === st.list[st.list.length - 1].index; // on the latest step
+        st.run = run;
+        st.list = steps(run ? run.events : []);
+        if (fresh || followed || !st.list.some((s) => s.index === st.selected)) st.selected = st.list.length ? st.list[st.list.length - 1].index : null;
+        render();
+      },
+      showNode(node) {
+        const last = st.list.filter((s) => s.node === node).pop();
+        if (last) pick(last.index);
+      },
+    };
+  };
+
+  AA.stateSteps = { steps: steps, knownAfter: knownAfter, diffKind: diffKind, MISSING: MISSING };
+})();
+</script>
+<script>
+// Compare two runs: status, duration, cost, tokens, tool calls, answer, and which steps differ.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+
+  function number(value) {
+    return typeof value === "number" && isFinite(value) ? value : 0;
+  }
+
+  // The comparable facts of one run (`answer` only when the caller knows it, e.g. a chat turn).
+  function facts(run, answer) {
+    const events = (run && run.events) || [];
+    const summary = (run && run.summary) || {};
+    const tools = new Map();
+    let input = 0, output = 0, llm = 0, toolCalls = 0;
+    const steps = [];
+    const open = new Map();
+    events.forEach((ev) => {
+      const d = ev.data || {};
+      // A nested instrumented call reports its own events; the outer one's say `nested`.
+      const outer = d.nested === true;
+      if (ev.type === "tool.started") {
+        toolCalls += 1;
+        tools.set(String(d.tool), (tools.get(String(d.tool)) || 0) + 1);
+      } else if (((ev.type === "llm.finished" || ev.type === "llm.failed") && !outer) || ev.type === "llm.cached") llm += 1;
+      if (ev.type === "llm.finished" && !outer && d.usage && typeof d.usage === "object") {
+        input += number(d.usage.input_tokens) + number(d.usage.cached_input_tokens) + number(d.usage.cache_write_input_tokens);
+        output += number(d.usage.output_tokens);
+      } else if (ev.type === "node.started") {
+        open.set(ev.call_id || d.node, steps.length);
+        steps.push({ node: (d.flow ? d.flow + "." : "") + d.node, status: "running", changed: [] });
+      } else if (ev.type === "node.finished" || ev.type === "node.failed" || ev.type === "node.paused") {
+        const at = open.get(ev.call_id || d.node);
+        if (at === undefined) return;
+        steps[at].status = ev.type === "node.finished" ? "ok" : ev.type === "node.failed" ? "error" : "paused";
+        steps[at].changed = Array.isArray(d.changed) ? d.changed.slice().sort() : [];
+      }
+    });
+    return {
+      status: summary.status || "", duration_ms: summary.duration_ms, cost_usd: summary.cost_usd,
+      input_tokens: input, output_tokens: output, llm_calls: llm, tool_calls: toolCalls, tools: Object.fromEntries(tools),
+      errors: summary.errors || 0, steps: steps, answer: answer === undefined ? null : answer,
+    };
+  }
+
+  const MAX_CELLS = 4000000; // exact alignment up to this many step pairs (about 16 MB)
+
+  function pair(x, y) {
+    const same = x.status === y.status && x.changed.join() === y.changed.join();
+    return { op: same ? "same" : "changed", a: x, b: y };
+  }
+
+  // Steps aligned by node name: the common start and end directly, the middle by longest common
+  // subsequence; a huge middle is paired by position and the result marked `approximate`.
+  function diffSteps(a, b) {
+    let start = 0;
+    while (start < a.length && start < b.length && a[start].node === b[start].node) start += 1;
+    let endA = a.length, endB = b.length;
+    while (endA > start && endB > start && a[endA - 1].node === b[endB - 1].node) { endA -= 1; endB -= 1; }
+    const out = [];
+    for (let i = 0; i < start; i += 1) out.push(pair(a[i], b[i]));
+    const midA = a.slice(start, endA), midB = b.slice(start, endB);
+    const middle = midA.length * midB.length <= MAX_CELLS ? lcs(midA, midB) : byPosition(midA, midB);
+    middle.forEach((op) => out.push(op));
+    for (let i = 0; i < a.length - endA; i += 1) out.push(pair(a[endA + i], b[endB + i]));
+    if (middle.approximate) out.approximate = true;
+    return out;
+  }
+
+  function lcs(a, b) {
+    const n = a.length, m = b.length, width = m + 1;
+    const table = new Uint32Array((n + 1) * width);
+    for (let i = n - 1; i >= 0; i -= 1) {
+      for (let j = m - 1; j >= 0; j -= 1) {
+        table[i * width + j] = a[i].node === b[j].node ? table[(i + 1) * width + j + 1] + 1
+          : Math.max(table[(i + 1) * width + j], table[i * width + j + 1]);
+      }
+    }
+    const out = [];
+    let i = 0, j = 0;
+    while (i < n || j < m) {
+      if (i < n && j < m && a[i].node === b[j].node) {
+        out.push(pair(a[i], b[j]));
+        i += 1;
+        j += 1;
+      } else if (j < m && (i >= n || table[i * width + j + 1] >= table[(i + 1) * width + j])) {
+        out.push({ op: "added", a: null, b: b[j] });
+        j += 1;
+      } else {
+        out.push({ op: "removed", a: a[i], b: null });
+        i += 1;
+      }
+    }
+    return out;
+  }
+
+  function byPosition(a, b) {
+    const out = [];
+    for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+      if (i < a.length && i < b.length) out.push(a[i].node === b[i].node ? pair(a[i], b[i]) : { op: "changed", a: a[i], b: b[i] });
+      else if (i < a.length) out.push({ op: "removed", a: a[i], b: null });
+      else out.push({ op: "added", a: null, b: b[i] });
+    }
+    out.approximate = true;
+    return out;
+  }
+
+  function toolText(tools) {
+    const names = Object.keys(tools).sort();
+    return names.length ? names.map((name) => name + " ×" + tools[name]).join(", ") : "none";
+  }
+
+  function compare(a, b) {
+    const rows = [
+      ["status", a.status, b.status],
+      ["duration", AA.fmt.ms(a.duration_ms), AA.fmt.ms(b.duration_ms)],
+      ["cost", AA.fmt.usd(a.cost_usd) || "—", AA.fmt.usd(b.cost_usd) || "—"],
+      ["tokens in / out", a.input_tokens + " / " + a.output_tokens, b.input_tokens + " / " + b.output_tokens],
+      ["model calls", String(a.llm_calls), String(b.llm_calls)],
+      ["tool calls", a.tool_calls + " (" + toolText(a.tools) + ")", b.tool_calls + " (" + toolText(b.tools) + ")"],
+      ["errors", String(a.errors), String(b.errors)],
+      ["steps", String(a.steps.length), String(b.steps.length)],
+    ];
+    if (a.answer !== null || b.answer !== null) rows.unshift(["answer", a.answer || "", b.answer || ""]);
+    const steps = diffSteps(a.steps, b.steps);
+    return { rows: rows.map((r) => ({ label: r[0], a: r[1], b: r[2], same: r[1] === r[2] })), steps: steps, approximate: steps.approximate === true };
+  }
+
+  function stepCell(step) {
+    if (!step) return AA.el("td", { class: "muted", text: "—" });
+    return AA.el("td", null, [AA.el("code", { text: step.node }), " ", AA.el("span", { class: "status " + step.status, text: step.status }),
+      step.changed.length ? AA.el("span", { class: "muted", text: " " + step.changed.join(", ") }) : null]);
+  }
+
+  // Renders a comparison; `labels` names the two sides.
+  AA.renderComparison = function (container, result, labels) {
+    AA.clear(container);
+    container.appendChild(AA.el("table", { class: "cmp-table" }, [
+      AA.el("thead", null, AA.el("tr", null, ["", labels[0], labels[1]].map((h) => AA.el("th", { text: h })))),
+      AA.el("tbody", null, result.rows.map((r) => AA.el("tr", { class: r.same ? "" : "differs" }, [
+        AA.el("th", { text: r.label }), AA.el("td", { text: r.a }), AA.el("td", { text: r.b }),
+      ]))),
+    ]));
+    const differ = result.steps.filter((s) => s.op !== "same").length;
+    container.appendChild(AA.el("h3", { text: differ ? differ + " step(s) differ" : "The steps match" }));
+    if (result.approximate) container.appendChild(AA.el("p", { class: "muted", text: "Too many differing steps to align exactly: the middle is compared by position." }));
+    container.appendChild(AA.el("table", { class: "cmp-steps" }, [
+      AA.el("thead", null, AA.el("tr", null, ["", labels[0], labels[1]].map((h) => AA.el("th", { text: h })))),
+      AA.el("tbody", null, result.steps.map((s) => AA.el("tr", { class: "op-" + s.op }, [AA.el("td", { text: s.op }), stepCell(s.a), stepCell(s.b)]))),
+    ]));
+  };
+
+  // The Runs view's Compare tab: this run against one picked from the list.
+  AA.createCompare = function (container, load) {
+    const st = { run: null, other: null, otherKey: "", runs: [], seq: 0, error: "", memo: null, memoKey: "", refreshing: false };
+    const picker = AA.el("select", { "aria-label": "run to compare with", on: { change: () => pickOther(picker.value) } });
+    const out = AA.el("div", { class: "cmp-out" });
+    AA.clear(container);
+    container.appendChild(AA.el("div", { class: "ev-filters" }, [AA.el("span", { text: "compare this run with" }), picker]));
+    container.appendChild(out);
+
+    // `keep` reloads the run already shown (it changed) without blanking it meanwhile.
+    async function pickOther(key, keep) {
+      if (!keep) {
+        st.otherKey = key;
+        st.other = null;
+        st.error = "";
+      }
+      const seq = (st.seq += 1);
+      if (!keep) render();
+      if (!key) return;
+      st.refreshing = true;
+      try {
+        const other = await load(key);
+        if (seq !== st.seq) return; // another pick won
+        st.other = other;
+        st.error = "";
+      } catch (err) {
+        console.error("Agent Adapter viewer: loading run " + key + " to compare failed", err);
+        if (seq === st.seq) st.error = "Could not load that run: " + err.message;
+      } finally {
+        if (seq === st.seq) st.refreshing = false;
+      }
+      render();
+    }
+
+    // The comparison is worked out again only when either run changed.
+    // Everything `facts` reads that can change: a status can turn "unfinished" with time alone.
+    function inputsKey() {
+      return [st.run, st.other].map((r) => {
+        const s = r.summary || {};
+        return [AA.runKey(r), r.events.length, s.status, s.duration_ms, s.cost_usd, s.errors].join("|");
+      }).join("||");
+    }
+
+    function result() {
+      const key = inputsKey();
+      if (key !== st.memoKey) {
+        st.memoKey = key;
+        st.memo = compare(facts(st.run), facts(st.other));
+      }
+      return st.memo;
+    }
+
+    function refreshOther() {
+      const listed = st.runs.find((r) => r.key === st.otherKey);
+      const shown = st.other && st.other.summary;
+      if (!listed || !shown || st.refreshing) return;
+      if (listed.events !== shown.events || listed.status !== shown.status) pickOther(st.otherKey, true);
+    }
+
+    function renderPicker() {
+      const current = AA.runKey(st.run);
+      const wanted = st.runs.filter((r) => r.key !== current).map((r) => r.key + "|" + r.status).join(",");
+      if (picker.dataset.list === wanted) return;
+      picker.dataset.list = wanted;
+      AA.clear(picker);
+      picker.appendChild(AA.el("option", { value: "", text: "pick a run" }));
+      st.runs.filter((r) => r.key !== current).forEach((r) => {
+        picker.appendChild(AA.el("option", { value: r.key, text: AA.fmt.time(r.started) + " · " + r.status + " · " + r.run_id }));
+      });
+      picker.value = st.otherKey;
+    }
+
+    function render() {
+      renderPicker();
+      const shown = !st.run ? "none" : !st.otherKey ? "pick" : st.error ? "error:" + st.error : !st.other ? "loading" : "cmp:" + inputsKey();
+      if (shown === st.shown) return; // nothing new: keep the DOM (and the reader's scroll)
+      st.shown = shown;
+      AA.clear(out);
+      if (!st.run) return;
+      if (!st.otherKey) { out.appendChild(AA.el("p", { class: "muted", text: "Pick another run to see what differs." })); return; }
+      if (st.error) { out.appendChild(AA.el("p", { class: "notice bad", text: st.error })); return; }
+      if (!st.other) { out.appendChild(AA.el("p", { class: "muted", text: "loading..." })); return; }
+      AA.renderComparison(out, result(), ["this run", "other run"]);
+    }
+
+    return {
+      update(run, runs) {
+        if (AA.runKey(st.run) !== AA.runKey(run) && st.otherKey === AA.runKey(run)) {
+          st.otherKey = "";
+          st.other = null;
+        }
+        st.run = run;
+        st.runs = runs || [];
+        refreshOther();
+        render();
+      },
+    };
+  };
+
+  AA.compareRuns = { facts: facts, diffSteps: diffSteps, compare: compare };
+})();
+</script>
+<script>
+// Runs list, run header, detail and node panels, tools catalogue and approvals.
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+  const el = (...args) => AA.el(...args);
+
+  function status(value) {
+    return el("span", { class: "status " + value, text: value });
+  }
+
+  AA.renderRuns = function (container, runs, selected, onSelect) {
+    AA.clear(container);
+    if (!runs.length) {
+      container.appendChild(el("p", { class: "muted", text: "No runs yet. Call record() in your app, then run it." }));
+      return;
+    }
+    runs.forEach((run) => {
+      const meta = [AA.fmt.ms(run.duration_ms), AA.fmt.usd(run.cost_usd), run.framework, (run.flows || []).join(", ")]
+        .filter(Boolean).join(" · ");
+      container.appendChild(el("button", {
+        type: "button",
+        class: "run" + (run.key === selected ? " selected" : ""),
+        title: run.run_id,
+        on: { click: () => onSelect(run.key) },
+      }, [el("span", { class: "when", text: AA.fmt.time(run.started) }), status(run.status), el("span", { class: "meta", text: meta })]));
+    });
+  };
+
+  function fact(name, value) {
+    return value === "" || value === null || value === undefined ? null : el("div", null, [el("span", { text: name }), String(value)]);
+  }
+
+  AA.renderHead = function (container, run) {
+    AA.clear(container);
+    if (!run) {
+      container.appendChild(el("p", { class: "muted", text: "Pick a run." }));
+      return;
+    }
+    const s = run.summary;
+    const meta = (run.meta || [])[0] || {};
+    container.appendChild(el("div", { class: "card-head" }, [el("h2", { text: "Run" }), el("code", { text: s.run_id }), status(s.status)]));
+    container.appendChild(el("div", { class: "facts" }, [
+      fact("started", AA.fmt.time(s.started)),
+      fact("duration", AA.fmt.ms(s.duration_ms)),
+      fact("cost", AA.fmt.usd(s.cost_usd)),
+      fact("framework / backend", s.framework),
+      fact("events", s.events),
+      fact("errors", s.errors || ""),
+      fact("processes", s.processes > 1 ? s.processes : ""),
+      fact("content captured", meta.capture_content ? "yes" : "no"),
+    ]));
+    if (run.truncated) container.appendChild(el("p", { class: "notice bad", text: "This run hit the recorder's event cap; later events were not written." }));
+  };
+
+  // A span (with its events) or one event index.
+  AA.renderDetail = function (container, run, span, eventIndex) {
+    AA.clear(container);
+    container.appendChild(el("h2", { text: "Detail" }));
+    if (!run || (!span && (eventIndex === null || eventIndex === undefined))) {
+      container.appendChild(el("p", { class: "muted", text: "Click a node in the graph or a call in the timeline." }));
+      return;
+    }
+    if (span) {
+      container.appendChild(el("h3", { text: span.family + ": " + (span.name || "") }));
+      container.appendChild(el("div", { class: "chips" }, [status(span.status)].concat(AA.spanChips(span).map((c) => el("span", { class: "chip " + c[1], text: c[0] })))));
+      container.appendChild(el("div", { class: "facts" }, [
+        fact("duration", AA.fmt.ms((span.end - span.start) * 1000)),
+        fact("lane", span.lane + 1),
+        fact("node", span.node),
+        fact("call", span.call_id),
+        fact("parent", span.parent_id),
+      ]));
+    }
+    const indexes = span ? span.events.concat(span.marks.map((m) => m.event)) : [eventIndex];
+    Array.from(new Set(indexes)).sort((a, b) => a - b).forEach((index) => {
+      const ev = run.events[index];
+      if (!ev) return;
+      container.appendChild(el("h3", null, el("code", { text: ev.type })));
+      const shown = { ts: ev.ts, run_id: ev.run_id, call_id: ev.call_id, parent_id: ev.parent_id, data: ev.data };
+      if (ev.omitted) shown.omitted = ev.omitted;
+      container.appendChild(el("pre", { text: AA.fmt.json(shown) }));
+    });
+  };
+
+  // Scrolls a just-opened panel into view when it is wholly off screen (a stacked, narrow layout
+  // puts it below the graph). True when it scrolled.
+  AA.revealPanel = function (container, view) {
+    const win = view || window;
+    if (!container || typeof container.getBoundingClientRect !== "function") return false;
+    const box = container.getBoundingClientRect();
+    const height = win.innerHeight || 0;
+    if (!height || (box.top < height && box.bottom > 0)) return false;
+    container.scrollIntoView({ block: box.bottom - box.top > height ? "start" : "nearest" });
+    return true;
+  };
+
+  // The node panel: what one graph node did. info comes from AA.graphLive.snapshot.
+  AA.renderNodePanel = function (container, node, info, handlers) {
+    AA.clear(container);
+    const status = AA.graphLive.STATUSES.find((s) => s.key === info.status) || AA.graphLive.STATUSES[0];
+    container.appendChild(el("div", { class: "card-head" }, [
+      el("h2", { text: "Node" }),
+      el("span", { class: "spacer" }),
+      el("button", { type: "button", class: "ghost small", text: "close", title: "close (Esc)", on: { click: handlers.onClose } }),
+    ]));
+    container.appendChild(el("h3", null, [el("span", { class: "node-status st-" + status.key, text: status.icon + " " + status.label }), " ", el("code", { text: node.id })]));
+    const kind = node.fan_out ? "fan-out over " + node.over : node.fan_in ? "fan-in of " + (node.sources || []).join(", ") : node.kind;
+    container.appendChild(el("div", { class: "facts" }, [
+      fact("kind", kind),
+      fact("tool", node.tool),
+      fact("visits", info.visits),
+      fact("calls", info.calls),
+      fact("errors", info.errors || ""),
+      fact("cost", AA.fmt.usd(info.cost)),
+      fact("items", info.items && info.items.total ? info.items.done + "/" + info.items.total + " done" : ""),
+      fact("pause gate", node.pause),
+      fact("timeout", node.timeout ? node.timeout + " s" : ""),
+      fact("retries", node.retries || ""),
+    ]));
+    if (info.errorKinds.length) {
+      container.appendChild(el("div", { class: "chips" }, Array.from(new Set(info.errorKinds)).map((k) => el("span", { class: "chip bad", text: k }))));
+    }
+    container.appendChild(el("h3", { text: "Changed state" }));
+    container.appendChild(info.changed.length
+      ? el("div", { class: "chips" }, info.changed.map((name) => el("span", { class: "chip", text: name })))
+      : el("p", { class: "muted", text: info.visits ? "No state field changed." : "Not run yet." }));
+    if (info.updates) container.appendChild(el("pre", { text: AA.fmt.json(info.updates) }));
+    else if (info.changed.length) container.appendChild(el("p", { class: "muted", text: "Values are recorded with FlowRunner(trace_state=True)." }));
+    if (info.visitList.length > 1) {
+      container.appendChild(el("h3", { text: "Visits" }));
+      container.appendChild(el("ol", { class: "visits" }, info.visitList.map((v) => el("li", { text: "visit " + v.visit + ": " + (v.changed.join(", ") || "no change") }))));
+    }
+    container.appendChild(el("div", { class: "actions" }, [
+      el("button", { type: "button", class: "ghost", text: "Show in Timeline", on: { click: () => handlers.onTimeline(node.id) } }),
+      el("button", { type: "button", class: "ghost", text: "Show in Events", on: { click: () => handlers.onEvents(node.id) } }),
+      el("button", { type: "button", class: "ghost", text: "Show in State", on: { click: () => handlers.onState(node.id) } }),
+    ]));
+  };
+
+  function setting(name, value) {
+    if (value === null || value === undefined || value === "" || value === false) return null;
+    return el("span", { class: "chip", text: name + (value === true ? "" : ": " + value) });
+  }
+
+  AA.renderTools = function (container, tools) {
+    AA.clear(container);
+    if (!tools) {
+      container.appendChild(el("p", { class: "muted", text: "This run has no tool catalogue (record(executor) writes one when a run starts)." }));
+      return;
+    }
+    if (!tools.length) {
+      container.appendChild(el("p", { class: "muted", text: "The registry had no tools." }));
+      return;
+    }
+    tools.forEach((tool) => {
+      container.appendChild(el("details", { class: "tool-card" }, [
+        el("summary", { text: tool.name }),
+        el("p", { class: "muted", text: tool.description }),
+        el("div", { class: "chips" }, [
+          setting("kind", tool.kind),
+          setting("confirm", tool.confirm === "never" ? null : tool.confirm),
+          setting("cache ttl", tool.cache_ttl === null ? null : tool.cache_ttl + " s"),
+          setting("cache scope", tool.cache_ttl === null ? null : tool.cache_scope),
+          setting("effects", tool.effects),
+          setting("idempotent", tool.idempotent === null ? null : String(tool.idempotent)),
+          setting("timeout", tool.timeout === null ? null : tool.timeout + " s"),
+          setting("retries", tool.retries || null),
+          setting("parallel safe", tool.parallel_safe),
+          setting("once per run", tool.once_per_run),
+          setting("tags", (tool.tags || []).join(", ")),
+        ]),
+        el("pre", { text: AA.fmt.json(tool.schema) }),
+      ]));
+    });
+  };
+
+  AA.renderApprovals = function (container, approvals, onDecide) {
+    AA.clear(container);
+    container.appendChild(el("p", { class: "muted", text: "Decisions are stored for the app; its own executor.resume(approval_id) then runs the call. This page never runs a tool." }));
+    if (!approvals.length) {
+      container.appendChild(el("p", { class: "muted", text: "Nothing is waiting." }));
+      return;
+    }
+    approvals.forEach((record) => {
+      const reason = el("input", { type: "text", placeholder: "reason (optional)", maxlength: 500, "aria-label": "reason" });
+      const notice = el("div", { class: "notice" });
+      const decide = (approved) => onDecide(record, approved, reason.value, notice);
+      const actions = record.decidable
+        ? el("div", { class: "actions" }, [
+            reason,
+            el("button", { type: "button", class: "approve", text: "Approve", on: { click: () => decide(true) } }),
+            el("button", { type: "button", class: "deny", text: "Deny", on: { click: () => decide(false) } }),
+          ])
+        : el("p", { class: "notice", text: "Not decided here: " + record.why_not });
+      container.appendChild(el("div", { class: "approval" }, [
+        el("div", { class: "card-head" }, [el("strong", { text: record.tool }), el("code", { text: record.approval_id })]),
+        el("div", { class: "facts" }, [fact("run", record.run_id), fact("created", AA.fmt.time(record.created_at)), fact("hint", record.hint)]),
+        el("pre", { text: AA.fmt.json(record.arguments) }),
+        actions,
+        notice,
+      ]));
+    });
+  };
+})();
+</script>
+<script>
+// Top-level views (Runs, and Chat when the server runs an agent): AA.views.show(name).
+"use strict";
+
+(function () {
+  const AA = (window.AA = window.AA || {});
+  const views = {};
+  let current = null;
+
+  // A tab list: the picked tab is the one in the Tab order (roving tabindex), arrows move along.
+  function selectTab(buttons, picked) {
+    buttons.forEach((b) => {
+      const on = b === picked;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+      b.setAttribute("tabindex", on ? "0" : "-1");
+    });
+  }
+
+  function arrowKeys(list, pick) {
+    list.addEventListener("keydown", (ev) => {
+      const tabs = Array.from(list.querySelectorAll('[role="tab"]')).filter((b) => !b.hidden);
+      const at = tabs.indexOf(document.activeElement);
+      if (at < 0) return;
+      const next = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabs.length - 1 }[ev.key];
+      if (next === undefined) return;
+      ev.preventDefault();
+      const target = tabs[(next + tabs.length) % tabs.length];
+      target.focus();
+      pick(target);
+    });
+  }
+
+  function linkPanel(button, panel) {
+    if (!button || !panel) return;
+    if (!button.id) button.id = panel.id + "-tab";
+    button.setAttribute("aria-controls", panel.id);
+    panel.setAttribute("role", "tabpanel");
+    panel.setAttribute("aria-labelledby", button.id);
+  }
+
+  AA.tabs = { select: selectTab, arrowKeys: arrowKeys, linkPanel: linkPanel };
+
+  function show(name) {
+    if (!views[name] || !views[name].section) {
+      console.warn("Agent Adapter viewer: no view named " + name);
+      return false;
+    }
+    const before = current;
+    Object.keys(views).forEach((key) => {
+      if (views[key].section) views[key].section.hidden = key !== name;
+    });
+    const buttons = Object.keys(views).map((key) => views[key].button).filter(Boolean);
+    selectTab(buttons, views[name].button);
+    current = name;
+    if (before && before !== name && views[before].onHide) views[before].onHide();
+    if (views[name].onShow) views[name].onShow();
+    return true;
+  }
+
+  // Add or extend a view: {section, button, onShow, onHide}; a button shows its view on click.
+  function register(name, parts) {
+    const view = (views[name] = Object.assign(views[name] || {}, parts || {}));
+    if (view.button && !view.button.dataset.wired) {
+      view.button.dataset.wired = "1";
+      view.button.addEventListener("click", () => show(name));
+      linkPanel(view.button, view.section);
+    }
+    return view;
+  }
+
+  AA.views = { show: show, register: register, current: () => current, has: (name) => Boolean(views[name]) };
+
+  register("runs", { section: document.getElementById("runs-view"), button: document.getElementById("view-runs") });
+  register("chat", { section: document.getElementById("chat-view"), button: document.getElementById("view-chat") });
+  // The Chat tab always shows, so chat is easy to find; without an agent it says how to add one.
+  const chatButton = document.getElementById("view-chat");
+  if (chatButton) chatButton.hidden = false;
+  const chatOff = document.getElementById("chat-off");
+  if (chatOff && !AA.chatMode) {
+    chatOff.hidden = false;
+    const shell = document.getElementById("chat-shell");
+    if (shell) shell.hidden = true;
+    const why = document.getElementById("chat-off-why");
+    if (why && AA.embedded) why.textContent = "This is an exported file: chat needs a live viewer.";
+  }
+  const topTabs = document.getElementById("top-tabs");
+  if (topTabs) arrowKeys(topTabs, (button) => show(button.getAttribute("data-view")));
+  if (views.runs.section) show("runs");
+})();
+</script>
+<script>
+// Runs view: page state, polling (live mode) and wiring between the graph, tabs and panels.
+"use strict";
+
+(function () {
+  const AA = window.AA;
+  const POLL_MS = 1000;
+  const THEMES = ["auto", "light", "dark"];
+  const TABS = ["timeline", "tools", "events", "state", "compare", "approvals"];
+  const state = { runs: [], key: null, run: null, loaded: null, filter: null, span: null, node: null, tab: "timeline", flow: null, approvalIds: null, locked: false };
+  const busy = { runs: false, run: false, approvals: false }; // one request of each kind at a time
+  const timers = [];
+  const $ = (id) => document.getElementById(id);
+  const views = {};
+
+  function applyTheme(theme) {
+    if (theme === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", theme);
+    $("theme").textContent = "theme: " + theme;
+  }
+
+  function setupTheme() {
+    let theme = AA.storage.get("aa-viewer-theme") || "auto";
+    if (THEMES.indexOf(theme) < 0) theme = "auto";
+    applyTheme(theme);
+    $("theme").addEventListener("click", () => {
+      theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+      AA.storage.set("aa-viewer-theme", theme);
+      applyTheme(theme);
+    });
+  }
+
+  function showTab(name) {
+    state.tab = name;
+    const buttons = Array.from(document.querySelectorAll("#runs-view .tab"));
+    AA.tabs.select(buttons, buttons.find((b) => b.getAttribute("data-tab") === name));
+    TABS.forEach((tab) => { $("tab-" + tab).hidden = tab !== name; });
+    if (name === "approvals") refreshApprovals(true);
+    else renderTab();
+  }
+
+  function setupTabs() {
+    document.querySelectorAll("#runs-view .tab").forEach((button) => {
+      const name = button.getAttribute("data-tab");
+      AA.tabs.linkPanel(button, $("tab-" + name));
+      button.addEventListener("click", () => showTab(name));
+    });
+    AA.tabs.arrowKeys(document.querySelector("#runs-view .tabs"), (button) => showTab(button.getAttribute("data-tab")));
+    const tabButtons = Array.from(document.querySelectorAll("#runs-view .tab"));
+    AA.tabs.select(tabButtons, tabButtons[0]);
+    $("flow-pick").addEventListener("change", () => {
+      state.flow = $("flow-pick").value;
+      state.node = null;
+      renderRun();
+    });
+    views.graph = AA.createGraph($("graph"), {
+      onOpen: openNode,
+      onEscape: closeNode,
+      onStep: () => { if (state.node) renderDetail(); }, // the panel follows the replay
+    });
+    views.events = AA.createEvents($("tab-events"));
+    views.state = AA.createStatePanel($("tab-state"));
+    views.compare = AA.createCompare($("tab-compare"), loadAll);
+    document.addEventListener("keydown", (ev) => { // Esc closes the node panel (the graph handles its own)
+      const tag = ev.target && ev.target.tagName;
+      if (ev.key !== "Escape" || ev.defaultPrevented || !state.node || $("runs-view").hidden) return;
+      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") closeNode();
+    });
+  }
+
+  function openNode(id) {
+    state.node = id;
+    state.span = null;
+    renderDetail();
+    AA.revealPanel($("detail"));
+  }
+
+  function closeNode() {
+    state.node = null;
+    views.graph.select(null);
+    renderDetail();
+  }
+
+  function selectSpan(span) {
+    state.span = span.id;
+    state.node = null;
+    views.graph.select(null);
+    renderRun();
+  }
+
+  function currentGraph() {
+    const graphs = (state.run && state.run.graphs) || {};
+    const names = Object.keys(graphs);
+    if (!names.length) return null;
+    if (!graphs[state.flow]) state.flow = names[0];
+    return graphs[state.flow];
+  }
+
+  function renderFlowPicker() {
+    const names = Object.keys((state.run && state.run.graphs) || {});
+    const pick = $("flow-pick");
+    pick.hidden = names.length < 2;
+    if (pick.dataset.names !== names.join(",")) {
+      pick.dataset.names = names.join(",");
+      AA.clear(pick);
+      names.forEach((name) => pick.appendChild(AA.el("option", { value: name, text: name })));
+    }
+    pick.value = state.flow || "";
+  }
+
+  function renderTimeline() {
+    const note = $("timeline-note");
+    note.hidden = !state.filter;
+    AA.clear(note);
+    if (state.filter) {
+      note.appendChild(AA.el("span", { text: "Showing calls under node " + state.filter + ". " }));
+      note.appendChild(AA.el("button", { type: "button", class: "ghost small", text: "show all", on: { click: () => { state.filter = null; renderTimeline(); } } }));
+    }
+    AA.renderTimeline($("timeline-body"), state.run, { filter: state.filter, selected: state.span, onSelect: selectSpan });
+  }
+
+  // Only the visible tab is drawn on each update; the others catch up when shown.
+  function renderTab() {
+    const run = state.run;
+    if (state.tab === "timeline") renderTimeline();
+    else if (state.tab === "tools") AA.renderTools($("tab-tools"), run ? run.tools : null);
+    else if (state.tab === "events") views.events.update(run);
+    else if (state.tab === "state") views.state.update(run);
+    else if (state.tab === "compare") views.compare.update(run, state.runs);
+  }
+
+  function renderDetail() {
+    const graph = currentGraph();
+    const node = state.node && graph ? graph.nodes.find((n) => n.id === state.node) : null;
+    const snap = node ? views.graph.snapshot() : null;
+    if (node && snap && snap.nodes[node.id]) {
+      AA.renderNodePanel($("detail"), node, snap.nodes[node.id], {
+        onClose: closeNode,
+        onTimeline: (id) => { state.filter = id; showTab("timeline"); },
+        onEvents: (id) => { showTab("events"); views.events.showNode(id); views.events.focus(); },
+        onState: (id) => { showTab("state"); views.state.showNode(id); },
+      });
+      return;
+    }
+    const run = state.run;
+    const span = run && state.span ? run.spans.find((s) => s.id === state.span) : null;
+    AA.renderDetail($("detail"), run, span, null);
+  }
+
+  function renderRun() {
+    const run = state.run;
+    AA.renderHead($("run-head"), run);
+    const graph = currentGraph();
+    $("graph-card").hidden = !graph;
+    renderFlowPicker();
+    if (graph) views.graph.update(graph, run);
+    renderTab();
+    renderDetail();
+  }
+
+  // All of a run's events, page by page, onto `events` (already-held events are kept).
+  async function fetchAll(key, events, stillWanted) {
+    let detail = null;
+    for (;;) {
+      detail = await AA.api.run(key, events.length);
+      if (!detail || !stillWanted()) return null;
+      if (detail.events_total < events.length) {
+        events.length = 0; // the run was read again (a file rotated): start over
+        continue;
+      }
+      Array.prototype.push.apply(events, detail.events);
+      if (!detail.events.length || events.length >= detail.events_total) break;
+    }
+    detail.events = events;
+    return detail;
+  }
+
+  function loadAll(key) {
+    return fetchAll(key, [], () => true);
+  }
+
+  // The run with only the events after `events` fetched; `events` (already held) is extended.
+  function loadMore(key, events) {
+    return fetchAll(key, events, () => true);
+  }
+
+  async function loadRun(key) {
+    if (busy.run) return; // a slow response must not stack requests
+    busy.run = true;
+    try {
+      const events = state.run && state.loaded === key ? state.run.events : [];
+      const detail = await fetchAll(key, events, () => key === state.key);
+      if (!detail) return; // another run was picked meanwhile
+      state.run = detail;
+      state.loaded = key;
+      renderRun();
+    } catch (err) {
+      if (!unauthorized(err)) console.error("Agent Adapter viewer: loading run " + key + " failed", err);
+    } finally {
+      busy.run = false;
+    }
+  }
+
+  function hashKey() {
+    const match = /(?:^#|&)run=([A-Za-z0-9_-]+)/.exec(window.location.hash || "");
+    return match ? match[1] : null;
+  }
+
+  function pick(key) {
+    if (key !== state.key) {
+      state.key = key;
+      state.filter = state.span = state.node = state.flow = null;
+      state.run = null;
+      try {
+        window.history.replaceState(null, "", "#run=" + key); // a link to this run
+      } catch (err) {
+        console.warn("Agent Adapter viewer: cannot update the address", err);
+      }
+    }
+    AA.renderRuns($("run-list"), state.runs, state.key, pick);
+    loadRun(key);
+  }
+
+  // Without a valid token nothing loads: say so once and stop polling.
+  function locked(message) {
+    state.locked = true;
+    timers.forEach((timer) => clearInterval(timer));
+    $("live").hidden = true;
+    AA.renderHead($("run-head"), null);
+    $("run-head").firstChild.textContent = message;
+    $("run-head").firstChild.className = "notice bad";
+  }
+
+  function unauthorized(err) {
+    if (err && err.status === 401) {
+      locked("The viewer refused the access token (it may have restarted): open the address agent-adapter ui printed.");
+      return true;
+    }
+    return false;
+  }
+
+  async function refreshRuns() {
+    if (busy.runs || state.locked) return;
+    busy.runs = true;
+    try {
+      state.runs = await AA.api.runs();
+    } catch (err) {
+      if (!unauthorized(err)) console.error("Agent Adapter viewer: listing runs failed", err);
+      return;
+    } finally {
+      busy.runs = false;
+    }
+    AA.renderRuns($("run-list"), state.runs, state.key, pick);
+    if (!state.key && state.runs.length) {
+      const wanted = hashKey();
+      pick(state.runs.some((r) => r.key === wanted) ? wanted : state.runs[0].key);
+      return;
+    }
+    const current = state.runs.find((r) => r.key === state.key);
+    if (current && state.run && (current.events !== state.run.summary.events || current.status !== state.run.summary.status)) loadRun(state.key);
+  }
+
+  async function refreshApprovals(force) {
+    if (!AA.approvalsOn || busy.approvals) return;
+    const tab = $("tab-approvals");
+    // Never wipe a reason being typed or a decision notice being read.
+    if (!force && tab.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
+    busy.approvals = true;
+    try {
+      const approvals = await AA.api.approvals();
+      const ids = approvals.map((a) => a.approval_id).join(",");
+      $("approvals-tab").textContent = "Approvals (" + approvals.length + ")";
+      if (!force && ids === state.approvalIds) return; // nothing changed: keep the inputs
+      state.approvalIds = ids;
+      AA.renderApprovals(tab, approvals, decide);
+    } catch (err) {
+      if (!unauthorized(err)) console.error("Agent Adapter viewer: listing approvals failed", err);
+    } finally {
+      busy.approvals = false;
+    }
+  }
+
+  async function decide(record, approved, reason, notice) {
+    notice.className = "notice";
+    notice.textContent = "saving...";
+    try {
+      await AA.api.decide(record.approval_id, approved, reason);
+      notice.className = "notice good";
+      notice.textContent = (approved ? "Approved" : "Denied") + ". The app's executor.resume(approval_id) picks it up.";
+      setTimeout(() => refreshApprovals(true), 4000);
+    } catch (err) {
+      notice.className = "notice bad";
+      notice.textContent = "Not saved: " + err.message;
+      unauthorized(err);
+    }
+  }
+
+  async function start() {
+    setupTheme();
+    setupTabs();
+    $("approvals-tab").hidden = !AA.approvalsOn;
+    $("exported").hidden = !AA.embedded;
+    if (!AA.embedded && !AA.hasToken()) {
+      locked("No access token: open the full address agent-adapter ui printed (it ends in #token=...).");
+      return;
+    }
+    await refreshRuns();
+    if (AA.embedded || state.locked) return;
+    $("live").hidden = false;
+    timers.push(setInterval(refreshRuns, POLL_MS));
+    if (AA.approvalsOn) {
+      refreshApprovals();
+      timers.push(setInterval(() => { if (state.tab === "approvals") refreshApprovals(); }, POLL_MS * 3));
+    }
+  }
+
+  AA.runsView = { pick: pick, loadAll: loadAll, loadMore: loadMore, current: () => state.run };
+  start();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "id": "resp_2",
+  "object": "response",
+  "created_at": 1,
+  "model": "gpt-5.6",
+  "status": "completed",
+  "output": [
+    {"type": "message", "id": "msg_1", "role": "assistant", "status": "completed",
+     "content": [{"type": "output_text", "text": "Hello ", "annotations": []},
+                 {"type": "output_text", "text": "there", "annotations": []}]}
+  ],
+  "parallel_tool_calls": true,
+  "tool_choice": "auto",
+  "tools": [],
+  "usage": {
+    "input_tokens": 12000,
+    "output_tokens": 40,
+    "total_tokens": 12040,
+    "input_tokens_details": {
+      "cached_tokens": 4000,
+      "cache_write_tokens": 7000,
+      "cache_write_tokens_details": {"ttl_30m_tokens": 3000, "ttl_12h_tokens": 4000}
+    },
+    "output_tokens_details": {"reasoning_tokens": 0}
+  }
+}

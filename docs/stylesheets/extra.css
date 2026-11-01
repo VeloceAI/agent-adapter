@@ -1,0 +1,85 @@
+/* Brand palette: indigo primary, teal accent (matches docs/assets/mark.svg). */
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #4338ca;
+  --md-primary-fg-color--light: #6366f1;
+  --md-primary-fg-color--dark: #312e81;
+  --md-accent-fg-color: #0f766e;
+  --md-accent-fg-color--transparent: rgba(15, 118, 110, 0.1);
+  --md-accent-bg-color: #ffffff;
+  --aa-ok: #15803d;
+  --aa-planned: #b45309;
+  --aa-blocked: #b91c1c;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #4f46e5;
+  --md-primary-fg-color--light: #818cf8;
+  --md-primary-fg-color--dark: #312e81;
+  --md-accent-fg-color: #2dd4bf;
+  --md-accent-fg-color--transparent: rgba(45, 212, 191, 0.1);
+  --md-accent-bg-color: #0f172a;
+  --md-typeset-a-color: #a5b4fc;
+  --aa-ok: #4ade80;
+  --aa-planned: #fbbf24;
+  --aa-blocked: #f87171;
+}
+
+/* Dark mode: outline buttons in light indigo (8.1:1 on slate) instead of #4f46e5 (2.6:1). */
+[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary) {
+  color: #a5b4fc;
+  border-color: #a5b4fc;
+}
+[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary):is(:hover, :focus) {
+  color: var(--md-accent-bg-color);
+  border-color: var(--md-accent-fg-color);
+}
+
+/* Status markers: `:material-check-circle:{ .status-ok } Available`. */
+.md-typeset .status-ok { color: var(--aa-ok); }
+.md-typeset .status-planned { color: var(--aa-planned); }
+.md-typeset .status-blocked { color: var(--aa-blocked); }
+
+/* Home page hero. */
+.md-typeset .aa-hero {
+  text-align: center;
+  padding: 1.5rem 0 0.5rem;
+}
+.md-typeset .aa-hero img {
+  width: 96px;
+  height: 96px;
+}
+.md-typeset .aa-hero h1 {
+  margin: 0.6rem 0 0.4rem;
+  font-weight: 700;
+  color: var(--md-typeset-color);
+}
+.md-typeset .aa-hero .aa-pitch {
+  font-size: 1.15rem;
+  margin: 0 auto 1.2rem;
+  max-width: 34rem;
+}
+.md-typeset .aa-hero .md-button {
+  margin: 0.25rem;
+}
+
+/* Mermaid diagrams: centre and keep them from crowding the text. */
+.md-typeset .mermaid {
+  text-align: center;
+  margin: 1em 0;
+}
+/* Diagrams fit the column; a click or the corner button enlarges one (javascripts/diagrams.js). */
+.md-typeset figure.aa-diagram { display: block; width: auto; max-width: 100%; margin: 1em 0; }
+.md-typeset figure.aa-diagram .mermaid { margin: 0; cursor: zoom-in; }
+.md-typeset .aa-diagram__enlarge {
+  display: block; margin: .25em 0 0 auto; min-height: 2.2rem; padding: 0 .8em; cursor: pointer;
+  border: 1px solid var(--md-default-fg-color--lightest); border-radius: 6px;
+  background: var(--md-default-bg-color); color: var(--md-default-fg-color--light); font-size: .7rem;
+}
+.md-typeset .aa-diagram__enlarge:hover, .md-typeset .aa-diagram__enlarge:focus-visible { color: var(--md-accent-fg-color); }
+
+/* The run viewer demo embedded in Navigate the graph. */
+.md-typeset iframe.aa-demo { display: block; border: 1px solid var(--md-default-fg-color--lightest); border-radius: 8px; margin: 1em 0; }
+/* Never taller than the screen, so a page scroll can start above or below it on a phone. */
+.md-typeset iframe.aa-demo { height: min(760px, 75vh); }
+@media (max-width: 760px) { .md-typeset iframe.aa-demo { height: 60vh; } }

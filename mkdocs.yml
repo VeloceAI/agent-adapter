@@ -1,0 +1,288 @@
+site_name: Agent Adapter
+# The Veloce docs host; it fills sitemap.xml and canonical links.
+site_url: https://agent-adapter.veloceai.in/
+site_description: Build with any framework. Ship with one safety layer. Approvals, budgets, cost and traces for every agent's tools.
+copyright: Copyright &copy; 2026 Veloce AI · Apache-2.0
+exclude_docs: |
+  superpowers/
+theme:
+  name: material
+  # Favicon fallbacks and link-preview tags (overrides/main.html).
+  custom_dir: overrides
+  # System fonts: the site loads no font from a third-party host.
+  font: false
+  # The header is indigo in both schemes, so one white mark serves light and dark.
+  logo: assets/mark-on-primary.svg
+  favicon: assets/favicon.svg
+  icon:
+    repo: material/source-branch
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to system preference
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.instant
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+extra_css:
+  - stylesheets/extra.css
+# Mermaid served from the site itself, so diagrams render offline; the theme uses this global
+# instead of fetching it from a CDN. Its MIT licence sits next to it.
+extra_javascript:
+  - path: assets/javascripts/vendor/mermaid-11.17.2.min.js
+    defer: true
+  - path: assets/javascripts/diagrams.js
+    defer: true
+# Each page's description (search results, link previews) from its first paragraph.
+hooks:
+  - scripts/docs_hooks.py
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+      dedent_subsections: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+plugins:
+  - search:
+      lang: en
+      # Also split on dots, underscores and camelCase so `ToolSpec.invoke` finds "invoke".
+      separator: '[\s\-,:!=\[\]()"`/_]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: false
+            heading_level: 3
+nav:
+  - Home: index.md
+  - Get started:
+      - Install: get-started/install.md
+      - Quickstart: get-started/quickstart.md
+      - Wrap existing code: get-started/wrap-existing-code.md
+      - First flow: get-started/first-flow.md
+      - For AI coding agents: get-started/for-ai-agents.md
+      - Which feature do I need?: choose.md
+      - Features: features.md
+      - Troubleshooting: troubleshooting.md
+  - How-to:
+      - Attach anywhere: how-to/attach-anywhere.md
+      - Wrap a legacy class: how-to/wrap-legacy-code.md
+      - Parallel retrieval: how-to/parallel-retrieval.md
+      - Human in the loop: how-to/human-in-the-loop.md
+      - Budgets: how-to/budgets.md
+      - Caching: how-to/caching.md
+      - Bring your own model: how-to/bring-your-own-model.md
+      - Compress a long context: how-to/compress-long-context.md
+      - Sync code and backends: how-to/sync-backends.md
+      - Testing tools: how-to/testing-tools.md
+      - See your runs: how-to/see-your-runs.md
+      - Navigate the graph: how-to/navigate-the-graph.md
+      - Chat with your agent: how-to/chat-with-your-agent.md
+      - Chat flows by example: how-to/chat-flows.md
+      - Wrap a framework for chat: how-to/chat-wrappers.md
+      - Optimise your agent: how-to/optimise-your-agent.md
+      - "Tutorial: a research agent": tutorials/research-agent.md
+      - Cookbook:
+          - cookbook/index.md
+          - Retry a flaky tool: cookbook/retry-flaky-tool.md
+          - Cap spend per user: cookbook/spend-per-user.md
+          - Redact arguments and results: cookbook/redact.md
+          - Parallel retrieval with a deadline: cookbook/parallel-deadline.md
+          - Approval over Slack or email: cookbook/approval-notify.md
+          - Cache model answers across workers: cookbook/cache-llm.md
+          - Test tools with fakes: cookbook/test-with-fakes.md
+          - A registry per tenant: cookbook/tenant-registry.md
+  - Examples:
+      - Gallery: examples.md
+      - Basics: examples/basics.md
+      - No-framework backends: examples/backends.md
+      - Agent frameworks: examples/frameworks.md
+      - Context compression: examples/compression.md
+      - Approval: examples/approval.md
+      - Cost and cache: examples/cost-cache.md
+      - Parallel fan-out and fan-in: examples/parallel.md
+      - Flows: examples/flows.md
+      - Serving and protocols: examples/serving.md
+      - Optimiser: examples/optimiser.md
+      - Cookbook: examples/cookbook.md
+  - Backends:
+      - FastAPI: backends/fastapi.md
+      - Flask: backends/flask.md
+      - Django: backends/django.md
+      - Celery: backends/celery.md
+      - Scripts and batch jobs: backends/scripts.md
+      - Serverless functions: backends/serverless.md
+      - Queues and consumers: backends/queues.md
+      - Data pipelines: backends/pipelines.md
+      - Other web frameworks: backends/other-asgi.md
+      - Notebooks and apps: backends/notebooks.md
+      - Deploy (Docker, Kubernetes): backends/deploy.md
+  - Connect:
+      - Cross-language:
+          - cross-language/index.md
+          - MCP: cross-language/mcp.md
+          - HTTP server: cross-language/http-server.md
+          - OpenAPI: cross-language/openapi.md
+          - TypeScript client: cross-language/typescript-client.md
+      - Connect anywhere:
+          - connect/index.md
+          - Hermes Agent: connect/hermes.md
+          - Letta: connect/letta.md
+          - Mastra: connect/mastra.md
+          - Spring AI: connect/spring-ai.md
+          - MAF .NET: connect/maf-dotnet.md
+          - Genkit: connect/genkit.md
+          - ADK Go: connect/adk-go.md
+          - LangGraph.js: connect/langgraph-js.md
+          - Vercel AI SDK: connect/vercel-ai-sdk.md
+          - OpenAI hosted MCP: connect/openai-hosted-mcp.md
+          - Azure AI Foundry: connect/azure-foundry.md
+          - Bedrock AgentCore: connect/bedrock-agentcore.md
+  - Integrations:
+      - integrations/index.md
+      - Support matrix: support-matrix.md
+      - "Support matrix: backends": support-backends.md
+      - Compression by framework: integrations/compression-by-framework.md
+      - OpenAI: integrations/openai.md
+      - Gemini: integrations/gemini.md
+      - Anthropic: integrations/anthropic.md
+      - LangChain: integrations/langchain.md
+      - OpenAPI: integrations/openapi.md
+      - MCP: integrations/mcp.md
+      - MCP tasks and OAuth: integrations/mcp-tasks.md
+      - OpenAI Agents SDK: integrations/openai-agents.md
+      - Pydantic AI: integrations/pydantic-ai.md
+      - LlamaIndex: integrations/llamaindex.md
+      - CrewAI: integrations/crewai.md
+      - Microsoft Agent Framework: integrations/agent-framework.md
+      - Agno: integrations/agno.md
+      - Strands Agents: integrations/strands.md
+      - Haystack: integrations/haystack.md
+      - Claude Agent SDK: integrations/claude-agent.md
+      - Semantic Kernel: integrations/semantic-kernel.md
+      - DSPy: integrations/dspy.md
+      - smolagents: integrations/smolagents.md
+      - AutoGen: integrations/autogen.md
+      - LangGraph: integrations/langgraph.md
+      - Google ADK: integrations/adk.md
+      - CAMEL-AI: integrations/camel.md
+      - AG2: integrations/ag2.md
+      - A2A: integrations/a2a.md
+      - AG-UI: integrations/ag-ui.md
+  - Concepts:
+      - Architecture:
+          - architecture/index.md
+          - Tool lifecycle: architecture/tool-lifecycle.md
+          - Schema pipeline: architecture/schema-pipeline.md
+          - Executor and flows: architecture/executor-and-flows.md
+          - HITL, cost and cache: architecture/hitl-cost-cache.md
+      - Tools: concepts/tools.md
+      - Registry: concepts/registry.md
+      - Schemas: concepts/schemas.md
+      - Strict mode and nulls: concepts/strict-mode.md
+      - Context, events and ports: concepts/context.md
+      - Runtime: concepts/runtime.md
+      - Executor: concepts/executor.md
+      - Executor policies: concepts/executor-policies.md
+      - Flows: concepts/flows.md
+      - Flow pause and resume: concepts/flow-resume.md
+      - Hooks: concepts/hooks.md
+      - Approval: concepts/approval.md
+      - Resume a parked call: concepts/approval-resume.md
+      - Approval batches: concepts/approval-batches.md
+      - Approval stores: concepts/approval-stores.md
+      - Database approval stores: concepts/approval-stores-db.md
+      - Cost: concepts/cost.md
+      - Tracing: concepts/tracing.md
+      - Cache: concepts/cache.md
+      - Embeddings: concepts/embeddings.md
+      - Model ports: concepts/models.md
+      - Instrumented models and tool loop: concepts/tool-loop.md
+      - Context compression: concepts/context-compression.md
+      - Errors: concepts/errors.md
+      - Optimiser: optimiser.md
+      - Glossary: concepts/glossary.md
+  - Guides:
+      - Security: guides/security.md
+      - Performance: guides/performance.md
+      - Observability: guides/observability.md
+      - Versioning: guides/versioning.md
+      - Migration:
+          - migration/index.md
+          - Raw tool calling: migration/raw-tool-calling.md
+          - LangChain tools: migration/langchain-tools.md
+          - Hand-rolled approval: migration/hand-rolled-approval.md
+          - From LangGraph: tutorials/migrate-langgraph.md
+  - Reference:
+      - API reference: reference.md
+      - Top level: reference/top-level.md
+      - Errors: reference/errors.md
+      - Executor: reference/exec.md
+      - Hooks: reference/hooks.md
+      - Approval: reference/approval.md
+      - Flows: reference/flow.md
+      - Cost: reference/cost.md
+      - Cache: reference/cache.md
+      - Embeddings: reference/embeddings.md
+      - Context compression: reference/context.md
+      - Runtime: reference/runtime.md
+      - Tracing: reference/tracing.md
+      - Models: reference/models.md
+      - HTTP server: reference/server.md
+      - Handlers: reference/handlers.md
+      - Run viewer: reference/viewer.md
+      - "Integrations: model APIs and protocols": reference/integrations-providers.md
+      - "Integrations: frameworks": reference/integrations-frameworks.md
+      - "Integrations: protocol": reference/integrations-base.md
+      - Optimiser: reference/optimiser.md
+      - CLI: reference/cli.md
+      - Changelog: changelog.md
+  - Contributing:
+      - Writing an integration: contributing/writing-an-integration.md
+      - Performance regression tests: contributing/performance-tests.md
+      - Cutting a release: contributing/release.md
+      - Roadmap: roadmap.md

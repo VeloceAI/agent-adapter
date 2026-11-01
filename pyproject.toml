@@ -1,0 +1,263 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-adapter"
+dynamic = ["version"]
+description = "One safety layer for every agent's tools: approvals, budgets, cost and traces, in any framework or none."
+readme = "README.md"
+requires-python = ">=3.11"
+# PEP 639 expression; PyPI rejects a License :: classifier next to it.
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Veloce AI" }]
+keywords = ["llm", "agents", "tools", "function-calling", "mcp", "approval", "guardrails"]
+dependencies = ["pydantic>=2.12,<3"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Documentation = "https://agent-adapter.veloceai.in/"
+Changelog = "https://agent-adapter.veloceai.in/changelog/"
+
+[project.optional-dependencies]
+openai = ["openai>=3.41,<4"]
+gemini = ["google-genai>=2.30,<3"]
+anthropic = ["anthropic>=2.3,<3"]
+redis = ["redis>=8.1,<9"]
+otel = ["opentelemetry-api>=1.39,<2"]
+langchain = ["langchain-core>=1.4,<2"]
+langgraph = ["langgraph>=1.2.15,<2", "langgraph-checkpoint>=4.3,<5"]
+adk = ["google-adk>=2.13,<3"]
+mcp = ["mcp>=2.3,<3"]
+openai-agents = ["openai-agents>=0.24,<1"]
+pydantic-ai = ["pydantic-ai-slim>=2.60,<3"]
+llamaindex = ["llama-index-core>=0.14,<0.15"]
+crewai = ["crewai>=1.15,<2"]
+openapi = ["httpx>=0.27,<1", "pyyaml>=6,<7"]
+agent-framework = ["agent-framework-core>=1.23,<2"]
+agno = ["agno>=3.1,<4"]
+dspy = ["dspy>=3.4,<4"]
+strands = ["strands-agents>=1.60,<2"]
+haystack = ["haystack-ai>=3.3,<4"]
+smolagents = ["smolagents>=1.24,<2"]
+claude-agent = ["claude-agent-sdk>=0.2.150,<0.3", "mcp>=2.3,<3"]
+autogen = ["autogen-core>=0.7.5,<0.8", "autogen-agentchat>=0.7.5,<0.8"]
+semantic-kernel = ["semantic-kernel>=1.44,<2"]
+# camel-ai imports mcp.server.FastMCP, which mcp 2.x removed, but does not cap mcp itself.
+camel = ["camel-ai>=0.2.90,<0.3", "mcp<2"]
+ag2 = ["ag2>=1.2.2,<2"]
+a2a = ["a2a-sdk[http-server]>=1.3,<2"]
+ag-ui = ["ag-ui-protocol>=1.0,<2"]
+sqlalchemy = ["sqlalchemy[asyncio]>=2.0.30,<3"]
+dynamodb = ["aioboto3>=13,<16"]
+# mcp: create_app mounts /mcp by default. h11: CVE-2025-43859.
+server = ["agent-adapter[mcp]", "starlette>=1.0,<2", "uvicorn>=0.30,<1", "h11>=0.16,<1"]
+server-wsgi = ["agent-adapter[server]", "a2wsgi>=1.10,<2"]
+# Every extra that co-installs from wheels without downgrading another; `pip check` runs in the
+# contract-all-compatible session. Own environment: crewai (mcp<2), strands (mcp<2.2),
+# semantic-kernel (pydantic<2.14), adk (opentelemetry<=1.44), dspy (LiteLLM),
+# camel (needs mcp<2; pins pydantic<=2.12.0, while google-genai in `all` needs >=2.12.5).
+all = [
+    "agent-adapter[openai,gemini,anthropic,redis,otel,langchain,langgraph,mcp]",
+    "agent-adapter[openai-agents,pydantic-ai,llamaindex,openapi,agent-framework,agno]",
+    # Not dspy: it pulls in LiteLLM, which this package never installs by default.
+    "agent-adapter[haystack,smolagents,claude-agent,autogen,server,server-wsgi]",
+    "agent-adapter[ag2,a2a,ag-ui,sqlalchemy,dynamodb]",
+]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "nox>=2024.10",
+    "hatchling>=1.27",  # tests/test_package.py builds the wheel and sdist
+    "tzdata>=2024.1",  # zoneinfo tests (Windows has no system time-zone database)
+    "fakeredis>=2.26",  # Redis store and cache tests without a server
+    "lupa>=2.2",  # lets fakeredis run the stores' real Lua scripts
+    "sqlalchemy[asyncio]>=2.0.30,<3",  # SQLAlchemyApprovalStore on SQLite
+    "aiosqlite>=0.20,<1",
+    "moto[dynamodb]>=5,<6",  # DynamoDBApprovalStore against moto (brings boto3)
+]
+docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.26"]
+
+[project.entry-points."agent_adapter.integrations"]
+openai = "agent_adapter.integrations.openai:INTEGRATION"
+gemini = "agent_adapter.integrations.gemini:INTEGRATION"
+anthropic = "agent_adapter.integrations.anthropic:INTEGRATION"
+langchain = "agent_adapter.integrations.langchain:INTEGRATION"
+langgraph = "agent_adapter.integrations.langgraph:INTEGRATION"
+adk = "agent_adapter.integrations.adk:INTEGRATION"
+mcp = "agent_adapter.integrations.mcp:INTEGRATION"
+openai_agents = "agent_adapter.integrations.openai_agents:INTEGRATION"
+pydantic_ai = "agent_adapter.integrations.pydantic_ai:INTEGRATION"
+llamaindex = "agent_adapter.integrations.llamaindex:INTEGRATION"
+crewai = "agent_adapter.integrations.crewai:INTEGRATION"
+openapi = "agent_adapter.integrations.openapi:INTEGRATION"
+agent_framework = "agent_adapter.integrations.agent_framework:INTEGRATION"
+agno = "agent_adapter.integrations.agno:INTEGRATION"
+dspy = "agent_adapter.integrations.dspy:INTEGRATION"
+strands = "agent_adapter.integrations.strands:INTEGRATION"
+haystack = "agent_adapter.integrations.haystack:INTEGRATION"
+claude_agent = "agent_adapter.integrations.claude_agent:INTEGRATION"
+smolagents = "agent_adapter.integrations.smolagents:INTEGRATION"
+autogen = "agent_adapter.integrations.autogen:INTEGRATION"
+semantic_kernel = "agent_adapter.integrations.semantic_kernel:INTEGRATION"
+camel = "agent_adapter.integrations.camel:INTEGRATION"
+ag2 = "agent_adapter.integrations.ag2:INTEGRATION"
+a2a = "agent_adapter.integrations.a2a:INTEGRATION"
+ag_ui = "agent_adapter.integrations.ag_ui:INTEGRATION"
+
+[project.scripts]
+agent-adapter = "agent_adapter.cli:main"
+
+[tool.hatch.version]
+path = "agent_adapter/_version.py"
+
+[tool.hatch.build.targets.sdist]
+# Allow-list: hatchling reads only the root .gitignore, so anything else in the tree would ship.
+# pyproject.toml is always added; README.md is the readme and _version.py the version source.
+only-include = ["agent_adapter", "README.md", "CHANGELOG.md", "LICENSE", "NOTICE"]
+# Non-Python data that must ship even if an ignore rule ever matches it (tests check both).
+artifacts = ["agent_adapter/_guide/AGENTS.md", "agent_adapter/_guide/llms-full.txt"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["agent_adapter"]
+# `agent-adapter guide` reads them (concise and --full)
+artifacts = ["agent_adapter/_guide/AGENTS.md", "agent_adapter/_guide/llms-full.txt"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+filterwarnings = ["error"]
+markers = ["contract: framework contract tests"]
+
+[tool.coverage.run]
+source = ["agent_adapter"]
+branch = true
+# Optional-dependency modules: their coverage is measured in their own nox sessions.
+omit = [
+    "agent_adapter/models/openai.py",
+    "agent_adapter/models/gemini.py",
+    "agent_adapter/models/anthropic.py",
+    "agent_adapter/cache/redis.py",
+    "agent_adapter/tracing/otel.py",
+    "agent_adapter/server/asgi.py",
+    "agent_adapter/server/wsgi.py",
+    "agent_adapter/server/__main__.py",
+    "agent_adapter/cli/__main__.py",
+    "agent_adapter/integrations/langchain.py",
+    "agent_adapter/integrations/langgraph.py",
+    "agent_adapter/integrations/langgraph/*",
+    "agent_adapter/integrations/adk.py",
+    "agent_adapter/integrations/adk/*",
+    "agent_adapter/integrations/mcp/*",
+    "agent_adapter/integrations/openai_agents.py",
+    "agent_adapter/integrations/pydantic_ai.py",
+    "agent_adapter/integrations/llamaindex.py",
+    "agent_adapter/integrations/crewai.py",
+    "agent_adapter/integrations/openapi.py",
+    "agent_adapter/integrations/openapi/*",
+    "agent_adapter/integrations/agent_framework.py",
+    "agent_adapter/integrations/agno.py",
+    "agent_adapter/integrations/dspy.py",
+    "agent_adapter/integrations/strands.py",
+    "agent_adapter/integrations/haystack.py",
+    "agent_adapter/integrations/claude_agent.py",
+    "agent_adapter/integrations/smolagents.py",
+    "agent_adapter/integrations/autogen.py",
+    "agent_adapter/integrations/semantic_kernel.py",
+    "agent_adapter/integrations/camel.py",
+    "agent_adapter/integrations/ag2.py",
+    "agent_adapter/integrations/pydantic_ai_compress.py",
+    "agent_adapter/integrations/agno_compress.py",
+    "agent_adapter/integrations/smolagents_compress.py",
+    "agent_adapter/integrations/autogen_compress.py",
+    "agent_adapter/integrations/ag2_compress.py",
+    "agent_adapter/integrations/a2a/*",
+    "agent_adapter/integrations/ag_ui/*",
+]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# The docs, the build workspace and the built site are not Python sources to lint.
+extend-exclude = ["docs", ".superpowers", "site"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["agent_adapter"]
+plugins = ["pydantic.mypy"]
+
+# Lazily imported optional dependencies (contract §2.3); type stubs may be absent.
+[[tool.mypy.overrides]]
+module = [
+    "openai.*",
+    "anthropic.*",
+    "google.*",
+    "httpx.*",
+    "httpx2.*",
+    "redis.*",
+    "opentelemetry.*",
+    "starlette.*",
+    "uvicorn.*",
+    "anyio.*",
+    "a2wsgi.*",
+    "yaml.*",
+    "langchain.*",
+    "langchain_core.*",
+    "langgraph.*",
+    "mcp.*",
+    "agents.*",
+    "pydantic_ai.*",
+    "llama_index.*",
+    "crewai.*",
+    "agent_framework.*",
+    "agno.*",
+    "dspy.*",
+    "strands.*",
+    "haystack.*",
+    "claude_agent_sdk.*",
+    "smolagents.*",
+    "autogen_core.*",
+    "autogen_agentchat.*",
+    "semantic_kernel.*",
+    "fastapi.*",
+    "flask.*",
+    "werkzeug.*",
+    "django.*",
+    "celery.*",
+    "asgiref.*",
+    "aiohttp",
+    "aiohttp.*",
+    "sqlalchemy.*",
+    "aioboto3.*",
+    "a2a.*",
+    "ag_ui.*",
+    "camel.*",
+    "ag2.*",
+    "jsonschema.*",
+]
+ignore_missing_imports = true

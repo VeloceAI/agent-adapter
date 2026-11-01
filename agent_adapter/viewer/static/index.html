@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="aa-csrf" content="__AA_CSRF__">
+<meta name="aa-approvals" content="__AA_APPROVALS__">
+<meta name="aa-chat" content="__AA_CHAT__">
+<title>Agent Adapter Runs</title>
+<link rel="icon" type="image/svg+xml" href="static/favicon.svg">
+<link rel="stylesheet" href="static/viewer.css">
+<link rel="stylesheet" href="static/graph.css">
+<link rel="stylesheet" href="static/tabs.css">
+<link rel="stylesheet" href="static/chat.css">
+</head>
+<body>
+<header class="bar">
+  <h1>Agent Adapter <span class="muted">runs</span></h1>
+  <nav id="top-tabs" class="top-tabs" role="tablist" aria-label="views">
+    <button type="button" role="tab" id="view-chat" data-view="chat" class="top-tab" hidden>Chat</button>
+    <button type="button" role="tab" id="view-runs" data-view="runs" class="top-tab active" aria-selected="true">Runs</button>
+  </nav>
+  <span id="live" class="live" hidden>live</span>
+  <span id="exported" class="muted" hidden>exported file</span>
+  <span class="spacer"></span>
+  <button id="theme" class="ghost" type="button" title="Switch theme">theme: auto</button>
+</header>
+<section id="chat-view" class="view" hidden>
+<div id="chat-off" class="card chat-off" hidden>
+  <h2>Chat with your agent</h2>
+  <p id="chat-off-why">This viewer was started without an agent, so there is nothing to chat with.</p>
+  <p>Start it with one. The chat then sits next to the run's graph, timeline, events, state and cost:</p>
+  <pre><code>agent-adapter ui --agent app:chat
+agent-adapter ui --model app:model --tools app:registry</code></pre>
+  <p>Or from Python: <code>from agent_adapter.viewer import serve; serve(agent=chat)</code></p>
+</div>
+<div id="chat-shell" class="chat-shell">
+  <aside class="card chat-sessions">
+    <div class="card-head"><h2>Chats</h2><span class="spacer"></span><button type="button" id="chat-new" class="ghost small">New chat</button></div>
+    <div id="chat-session-list" class="run-list"></div>
+  </aside>
+  <main class="card chat-main" id="chat-main">
+    <div id="chat-head" class="chat-head"></div>
+    <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-label="conversation"></div>
+    <div id="chat-state" class="chat-state" hidden></div>
+    <form id="chat-composer" class="composer" autocomplete="off">
+      <p id="chat-editing" class="notice" hidden></p>
+      <div id="chat-attachments" class="chips"></div>
+      <textarea id="chat-input" rows="2" placeholder="Message the agent" aria-label="message" aria-describedby="chat-keys"></textarea>
+      <div class="composer-bar">
+        <button type="button" id="chat-attach" class="ghost small" title="Attach files (or drop them here)">Attach</button>
+        <input type="file" id="chat-file" multiple hidden>
+        <button type="button" id="chat-state-toggle" class="ghost small" aria-expanded="false" aria-controls="chat-state">State</button>
+        <span id="chat-keys" class="muted small-print">Enter sends · Shift+Enter new line · Esc stops</span>
+        <span id="chat-error" class="notice bad" role="alert"></span>
+        <span class="spacer"></span>
+        <button type="button" id="chat-stop" class="deny" hidden>Stop</button>
+        <button type="submit" id="chat-send" class="approve">Send</button>
+      </div>
+      <div id="chat-drop" class="drop-hint" hidden>Drop files to attach them</div>
+    </form>
+  </main>
+  <aside class="card chat-inspector" id="chat-inspector" aria-label="turn inspector"></aside>
+</div>
+</section>
+<section id="runs-view" class="view">
+<div class="shell">
+  <aside class="runs card">
+    <h2>Runs</h2>
+    <div id="run-list" class="run-list"><p class="muted">No runs yet.</p></div>
+  </aside>
+  <main class="main">
+    <section class="card" id="run-head"><p class="muted">Pick a run.</p></section>
+    <section class="card" id="graph-card" hidden>
+      <div class="card-head">
+        <h2>Flow</h2>
+        <select id="flow-pick" aria-label="flow" hidden></select>
+        <span class="muted">click a node for details; drag to pan, wheel to zoom</span>
+      </div>
+      <div id="graph" class="graph"></div>
+    </section>
+    <section class="card">
+      <nav class="tabs" role="tablist" aria-label="run details">
+        <button type="button" role="tab" data-tab="timeline" class="tab active" aria-selected="true">Timeline</button>
+        <button type="button" role="tab" data-tab="events" class="tab" aria-selected="false">Events</button>
+        <button type="button" role="tab" data-tab="state" class="tab" aria-selected="false">State</button>
+        <button type="button" role="tab" data-tab="compare" class="tab" aria-selected="false">Compare</button>
+        <button type="button" role="tab" data-tab="tools" class="tab" aria-selected="false">Tools</button>
+        <button type="button" role="tab" data-tab="approvals" class="tab" id="approvals-tab" aria-selected="false" hidden>Approvals</button>
+      </nav>
+      <div id="tab-timeline" class="tab-body">
+        <p id="timeline-note" class="notice" hidden></p>
+        <div id="timeline-body"></div>
+      </div>
+      <div id="tab-events" class="tab-body" hidden></div>
+      <div id="tab-state" class="tab-body" hidden></div>
+      <div id="tab-compare" class="tab-body" hidden></div>
+      <div id="tab-tools" class="tab-body" hidden></div>
+      <div id="tab-approvals" class="tab-body" hidden></div>
+    </section>
+  </main>
+  <aside class="detail card" id="detail">
+    <h2>Detail</h2>
+    <p class="muted">Click a node in the graph or a call in the timeline.</p>
+  </aside>
+</div>
+</section>
+<!-- AA_DATA -->
+<script src="static/data.js"></script>
+<script src="static/graphlive.js"></script>
+<script src="static/graphnav.js"></script>
+<script src="static/graph.js"></script>
+<script src="static/graphbar.js"></script>
+<script src="static/timeline.js"></script>
+<script src="static/events.js"></script>
+<script src="static/statepanel.js"></script>
+<script src="static/compare.js"></script>
+<script src="static/panels.js"></script>
+<script src="static/views.js"></script>
+<script src="static/app.js"></script>
+<script src="static/chatapi.js"></script>
+<script src="static/markdown.js"></script>
+<script src="static/chatcards.js"></script>
+<script src="static/inspector.js"></script>
+<script src="static/chatextras.js"></script>
+<script src="static/chatsessions.js"></script>
+<script src="static/chatcomposer.js"></script>
+<script src="static/chat.js"></script>
+</body>
+</html>

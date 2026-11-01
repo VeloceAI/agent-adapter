@@ -1,0 +1,20 @@
+[
+  {"type": "response.created", "sequence_number": 0, "response": {"id": "resp_s", "object": "response", "created_at": 1, "model": "gpt-5", "status": "in_progress", "output": [], "parallel_tool_calls": true, "tool_choice": "auto", "tools": []}},
+  {"type": "response.output_text.delta", "sequence_number": 1, "output_index": 0, "item_id": "msg_1", "content_index": 0, "delta": "Let me ", "logprobs": []},
+  {"type": "response.output_text.delta", "sequence_number": 2, "output_index": 0, "item_id": "msg_1", "content_index": 0, "delta": "check.", "logprobs": []},
+  {"type": "response.output_item.added", "sequence_number": 3, "output_index": 1, "item": {"type": "function_call", "id": "fc_1", "call_id": "call_b", "name": "get_weather", "arguments": "", "status": "in_progress"}},
+  {"type": "response.output_item.added", "sequence_number": 4, "output_index": 2, "item": {"type": "function_call", "id": "fc_2", "call_id": "call_c", "name": "get_time", "arguments": "", "status": "in_progress"}},
+  {"type": "response.function_call_arguments.delta", "sequence_number": 5, "output_index": 2, "item_id": "fc_2", "delta": "{}"},
+  {"type": "response.function_call_arguments.delta", "sequence_number": 6, "output_index": 1, "item_id": "fc_1", "delta": "{\"city\":"},
+  {"type": "response.function_call_arguments.delta", "sequence_number": 7, "output_index": 1, "item_id": "fc_1", "delta": "\"Oslo\"}"},
+  {"type": "response.function_call_arguments.done", "sequence_number": 8, "output_index": 1, "item_id": "fc_1", "arguments": "{\"city\":\"Oslo\"}"},
+  {"type": "response.completed", "sequence_number": 9, "response": {
+    "id": "resp_s", "object": "response", "created_at": 1, "model": "gpt-5", "status": "completed",
+    "output": [
+      {"type": "message", "id": "msg_1", "role": "assistant", "status": "completed", "content": [{"type": "output_text", "text": "Let me check.", "annotations": []}]},
+      {"type": "function_call", "id": "fc_1", "call_id": "call_b", "name": "get_weather", "arguments": "{\"city\":\"Oslo\"}", "status": "completed"},
+      {"type": "function_call", "id": "fc_2", "call_id": "call_c", "name": "get_time", "arguments": "{}", "status": "completed"}
+    ],
+    "parallel_tool_calls": true, "tool_choice": "auto", "tools": [],
+    "usage": {"input_tokens": 20, "output_tokens": 9, "total_tokens": 29, "input_tokens_details": {"cached_tokens": 0, "cache_write_tokens": 5}, "output_tokens_details": {"reasoning_tokens": 0}}}}
+]

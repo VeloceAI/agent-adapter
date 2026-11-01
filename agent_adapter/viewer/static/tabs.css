@@ -1,0 +1,37 @@
+/* Top views, and the Events, State and Compare tabs of a run. */
+.top-tabs { display: flex; gap: 2px; margin-left: 8px; }
+.top-tab { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 12px; color: var(--muted); }
+.top-tab:hover { border-color: var(--line); }
+.top-tab.active { color: var(--text); background: var(--accent-soft); border-color: var(--accent); }
+
+.ev-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.ev-filters select, .ev-filters input { padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--text); font: inherit; font-size: 12px; }
+.ev-filters input { min-width: 160px; flex: 1; max-width: 320px; }
+.ev-selects { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.ev-body { max-height: 60vh; overflow: auto; }
+.ev-body:focus-visible, .st-steps:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ev-json td { background: var(--code-bg); }
+.ev-json pre { margin: 0; max-height: 40vh; }
+
+.st-grid { display: grid; grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 760px) { .st-grid { grid-template-columns: minmax(0, 1fr); } }
+.st-steps { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow: auto; }
+.st-steps li { padding: 5px 6px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; }
+.st-steps li:hover { background: var(--accent-soft); }
+.st-steps li.selected { border-color: var(--accent); background: var(--accent-soft); }
+.st-n { display: inline-block; min-width: 2em; color: var(--muted); font-size: 11px; }
+.chip.added { border-color: var(--ok); color: var(--ok); }
+.chip.changed { border-color: var(--accent); color: var(--accent); }
+.chip.same { color: var(--muted); }
+.st-table pre { margin: 0; max-height: 30vh; }
+.st-table tr.st-changed td:last-child pre, .st-table tr.st-added td:last-child pre { box-shadow: inset 3px 0 0 var(--accent); }
+
+.cmp-table tbody th { width: 9em; }
+.cmp-table tr.differs td { background: var(--accent-soft); }
+.cmp-steps td:first-child { width: 6em; }
+.cmp-steps tr.op-added td:first-child { box-shadow: inset 3px 0 0 var(--ok); color: var(--ok); }
+.cmp-steps tr.op-removed td:first-child { box-shadow: inset 3px 0 0 var(--error); color: var(--error); }
+.cmp-steps tr.op-changed td:first-child { box-shadow: inset 3px 0 0 var(--paused); color: var(--paused); }
+
+.detail .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.visits { margin: 4px 0; padding-left: 20px; font-size: 12px; }

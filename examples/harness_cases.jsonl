@@ -1,0 +1,8 @@
+{"id": "returns", "input": "return an item", "expected": "HC-101", "tags": ["orders"]}
+{"id": "refund", "input": "refund status", "expected": "HC-102", "tags": ["billing"]}
+{"id": "shipping", "input": "shipping times", "expected": "HC-201", "tags": ["orders"]}
+{"id": "tracking", "input": "track a parcel", "expected": "HC-202", "tags": ["orders"]}
+{"id": "warranty", "input": "warranty claim", "expected": "HC-301", "tags": ["orders"]}
+{"id": "password", "input": "reset my password", "expected": "HC-401", "tags": ["account"]}
+{"id": "invoice", "input": "download an invoice", "expected": "HC-501", "tags": ["billing"]}
+{"id": "cancel", "input": "cancel a subscription", "expected": "HC-502", "tags": ["billing"]}

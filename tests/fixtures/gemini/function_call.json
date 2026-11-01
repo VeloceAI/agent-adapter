@@ -1,0 +1,24 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {"text": "thinking...", "thought": true},
+          {"functionCall": {"id": "fc-1", "name": "get_weather", "args": {"city": "Paris"}}, "thoughtSignature": "c2ln"}
+        ]
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 3000,
+    "candidatesTokenCount": 12,
+    "totalTokenCount": 3052,
+    "cachedContentTokenCount": 2048,
+    "thoughtsTokenCount": 40
+  },
+  "modelVersion": "gemini-2.5-flash",
+  "responseId": "abc"
+}

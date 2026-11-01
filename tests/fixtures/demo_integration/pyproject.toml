@@ -1,0 +1,23 @@
+# A sample third-party integration, installed by the `plugin` nox session.
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-adapter-demo-integration"
+version = "0.1.0"
+description = "Sample third-party agent_adapter integration (test fixture)."
+requires-python = ">=3.11"
+dependencies = ["agent-adapter"]
+
+# --8<-- [start:entry-points]
+[project.entry-points."agent_adapter.integrations"]
+demo = "demo_integration:INTEGRATION"
+# --8<-- [end:entry-points]
+# Deliberately unusable entries: discovery must warn and skip each one.
+demo_broken = "demo_integration.broken:INTEGRATION"
+demo_missing = "demo_integration.missing:INTEGRATION"
+demo_not_an_integration = "demo_integration:NotAnIntegration"
+
+[tool.hatch.build.targets.wheel]
+packages = ["demo_integration"]

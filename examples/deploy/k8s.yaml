@@ -1,0 +1,56 @@
+# The tool server Deployment: liveness on /healthz, readiness on /readyz, a preStop drain.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tools
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: tools}
+  template:
+    metadata:
+      labels: {app: tools}
+    spec:
+      terminationGracePeriodSeconds: 45  # > preStop sleep (10) + graceful shutdown (30)
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: tools
+          image: registry.example.com/tools:1.0.0
+          ports:
+            - containerPort: 8000
+          env:
+            - name: ALLOWED_HOSTS
+              value: tools,tools.default.svc.cluster.local
+            - name: REDIS_URL
+              value: redis://redis:6379/0
+            - name: TOOLS_TOKEN
+              valueFrom:
+                secretKeyRef: {name: tools-auth, key: token}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+              httpHeaders: [{name: Host, value: tools}]
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+              httpHeaders: [{name: Host, value: tools}]
+            periodSeconds: 5
+            failureThreshold: 1
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tools
+spec:
+  selector: {app: tools}
+  ports:
+    - port: 80
+      targetPort: 8000
