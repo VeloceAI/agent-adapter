@@ -4,21 +4,20 @@ What is still open after 1.1.0, ordered by priority. This file is for maintainer
 not part of the docs site or the sdist. The public plan is the Roadmap page
 (`docs/roadmap.md`).
 
+1.1.0 is on PyPI (2026-11-08): `pip install agent-adapter`.
+
 ```mermaid
 flowchart LR
-  T["Trusted publisher<br/>on PyPI"] --> P["Tag v1.1.0<br/>→ PyPI"]
   D["Host the docs<br/>agent-adapter.veloceai.in"] --> A["Adopt in the<br/>first production pipeline"]
-  P --> A
+  P["On PyPI<br/>1.1.0"] --> A
 ```
 
-## 1. Before the first public install
+## 1. Next
 
 | Task | Why | Done when |
 |---|---|---|
-| Add the PyPI trusted publisher (owner `VeloceAI`, repo `agent-adapter`, workflow `release.yml`, no environment) | `release.yml` uploads with OIDC; no token is stored | a pending publisher exists for `agent-adapter` |
-| Push tag `v1.1.0` | runs `release.yml`: build, `twine check --strict`, upload | `pip install agent-adapter==1.1.0` works in a fresh venv |
-| Host the docs at `https://agent-adapter.veloceai.in/` | `site_url`, the PyPI project links and the agent guide point there | `mkdocs build --strict` output is served on that host |
-| Absolute logo and screenshot URLs in `README.md` | PyPI shows relative images as broken; GitHub is fine | the images load on the PyPI page |
+| Host the docs at `https://agent-adapter.veloceai.in/` | `site_url`, the PyPI project links and the agent guide point there; they do not open yet | `mkdocs build --strict` output is served on that host |
+| Bump the workflow actions (`checkout`, `setup-python`, `upload-artifact`, `download-artifact`) | GitHub warns they target the deprecated Node.js 20 | the release run shows no Node.js warning |
 
 ## 2. Decisions waiting on the owner
 
