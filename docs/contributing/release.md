@@ -130,6 +130,8 @@ One-time setup, by a PyPI owner of `agent-adapter`: on PyPI, add a trusted publi
 owner `VeloceAI`, repository `agent-adapter`, workflow `release.yml` and no environment.
 For a project that does not exist yet, add it as a pending publisher.
 
+Then publish the docs with `bash scripts/deploy_docs.sh` (maintainers with SSH access).
+
 ## The TypeScript client
 
 `clients/typescript/package.json` is `"private": true` (licence `Apache-2.0`), so

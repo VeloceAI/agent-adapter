@@ -282,8 +282,9 @@ Guard tests that catch common mistakes:
 - **Publish.** Push a tag `vX.Y.Z`: `.github/workflows/release.yml` builds and uploads to
   PyPI with trusted publishing. `.github/workflows/ci.yml` runs `scripts/check.py` on Linux, started
   by hand from the Actions tab (Actions minutes are limited); run `check.py` locally instead.
-- **Still open:** the PyPI trusted publisher, hosting the docs at `site_url`, and the nox
-  matrix in CI. The maintainer list is `NEXT_STEPS.md`.
+- **Docs.** `bash scripts/deploy_docs.sh` builds the site and publishes it to `site_url`
+  (nginx on the Veloce AI web server, over SSH).
+- **Still open:** the nox matrix in CI. The maintainer list is `NEXT_STEPS.md`.
 
 ## 11. Other files at the root
 
@@ -297,6 +298,7 @@ Guard tests that catch common mistakes:
 | `NEXT_STEPS.md` | open work for maintainers, by priority |
 | `mkdocs.yml`, `overrides/`, `docs/` | the docs site (Material for MkDocs, offline Mermaid, `scripts/docs_hooks.py`) |
 | `clients/typescript/` | the TypeScript client for the HTTP server (private, 0.1.0) |
+| `scripts/deploy_docs.sh` | builds the docs and publishes them to `agent-adapter.veloceai.in` |
 | `scripts/bench_overhead.py` | the executor overhead benchmark (not in the suite; smoke test in `tests/docs/test_bench_overhead.py`) |
 | `docs/superpowers/` | internal design specs and the interface contract; excluded from the site |
 

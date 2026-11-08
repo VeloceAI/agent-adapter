@@ -4,11 +4,12 @@ What is still open after 1.1.0, ordered by priority. This file is for maintainer
 not part of the docs site or the sdist. The public plan is the Roadmap page
 (`docs/roadmap.md`).
 
-1.1.0 is on PyPI (2026-11-08): `pip install agent-adapter`.
+1.1.0 is on PyPI (2026-11-08): `pip install agent-adapter`. The docs are live at
+`https://agent-adapter.veloceai.in/` (2026-11-08); redeploy with `bash scripts/deploy_docs.sh`.
 
 ```mermaid
 flowchart LR
-  D["Host the docs<br/>agent-adapter.veloceai.in"] --> A["Adopt in the<br/>first production pipeline"]
+  D["Docs live<br/>agent-adapter.veloceai.in"] --> A["Adopt in the<br/>first production pipeline"]
   P["On PyPI<br/>1.1.0"] --> A
 ```
 
@@ -16,14 +17,14 @@ flowchart LR
 
 | Task | Why | Done when |
 |---|---|---|
-| Host the docs at `https://agent-adapter.veloceai.in/` | `site_url`, the PyPI project links and the agent guide point there; they do not open yet | `mkdocs build --strict` output is served on that host |
+| Make the two "worst case stays fast" subtests in `tests/viewer/js/` count work | they time an 80 KB markdown input and fail when the machine is busy (seen 2026-11-08) | they pass while another suite runs beside them |
 | Bump the workflow actions (`checkout`, `setup-python`, `upload-artifact`, `download-artifact`) | GitHub warns they target the deprecated Node.js 20 | the release run shows no Node.js warning |
 
 ## 2. Decisions waiting on the owner
 
 | Decision | Options | Recommendation |
 |---|---|---|
-| Make the repository public | stays private; public when the docs are live | public: free branch protection and unlimited CI minutes |
+| Make the repository public | stays private, or public now that the docs are live | public: free branch protection and unlimited CI minutes; first fix the old "proprietary" lines in `docs/superpowers/` |
 | TypeScript client version | keep `0.1.0` (private), or bump it to `1.0.0` with the Python release | bump it when the client is first used outside this repo |
 | Review the security changes | read CHANGELOG `[1.0.0]` → Security | approval bridges, HTTP approve, MCP auth, loopback guard and approval stores touch auth logic |
 
