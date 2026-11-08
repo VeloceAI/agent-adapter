@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Build the docs and publish them to https://agent-adapter.veloceai.in/ (nginx on the veloceai.in VPS).
-# Needs the SSH host alias Hitesh_hostinger in ~/.ssh/config. Usage: bash scripts/deploy_docs.sh
+# Usage: DOCS_HOST=<ssh host> DOCS_DIR=<folder nginx serves> bash scripts/deploy_docs.sh
 set -euo pipefail
 
-HOST="${DOCS_HOST:-Hitesh_hostinger}"
-REMOTE=/root/agent-adapter/docs
+HOST="${DOCS_HOST:?set DOCS_HOST to the docs server}"
+REMOTE="${DOCS_DIR:?set DOCS_DIR to the folder nginx serves}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD="$(mktemp -d)"
 trap 'rm -rf "$BUILD"' EXIT

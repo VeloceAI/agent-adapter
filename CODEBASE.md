@@ -302,22 +302,7 @@ Guard tests that catch common mistakes:
 | `scripts/bench_overhead.py` | the executor overhead benchmark (not in the suite; smoke test in `tests/docs/test_bench_overhead.py`) |
 | `docs/superpowers/` | internal design specs and the interface contract; excluded from the site |
 
-## 12. Notes for the two workstations
+## 12. Maintainer machines
 
-Skip this section on any other machine.
-
-- **The laptop with git** (`C:\VeloceAI\agent_adapter`). The repository is
-  `VeloceAI/agent-adapter` (public), branch `main`; pushing needs the repo-local credential
-  override for the Veloce-AI account. Everything lives on C:; do not use D:.
-- **The build machine** (no git). Venvs, nox envs, caches and builds live under `D:\aa`.
-  Work done there reaches the repository as an archive that is merged on the laptop: keep
-  the Apache-2.0 and PyPI changes (`LICENSE`, `NOTICE`, `pyproject.toml` metadata, the
-  install docs) when merging.
-- **Memory.** Both have 16 GB of RAM: run the full suite and nox sessions one at a time.
-  Run nox with `.venv\Scripts\python.exe -m nox --reuse-existing-virtualenvs -s <session>`
-  and `NO_MKDOCS_2_WARNING=1`.
-- **Parallel work.** Run at most three parallel agents or heavy jobs. Never run
-  `mkdocs serve` during agent work: build with `mkdocs build --strict -d <folder>` and
-  serve that folder.
-- **Internal ledger.** The build history and every design ruling are in
-  `.superpowers/build/progress.md` (not in git).
+Machine-specific notes (paths, accounts, the docs server) live in
+`.superpowers/WORKSTATIONS.md`, which is not in git.
