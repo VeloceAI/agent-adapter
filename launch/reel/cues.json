@@ -1,5 +1,6 @@
-{"total": 30, "bpm": 120, "mood": "bright",
- "sections": [{"kind": "pulse", "start": 0, "end": 3.5}, {"kind": "drive", "start": 3.5, "end": 7.5},
-              {"kind": "lift", "start": 7.5, "end": 23}, {"kind": "resolve", "start": 23, "end": 30}],
- "hits": [{"at": 7.5, "size": 1.0, "riser": 2.0}, {"at": 23, "size": 0.9, "riser": 2.0}],
- "cuts": [3.5, 13.5, 26], "ticks": [16.1, 18.4, 20.7]}
+{"total": 29, "bpm": 120, "mood": "bright", "voice": "assets/voice/narration.wav",
+ "sections": [{"kind": "drive", "start": 0, "end": 3.2}, {"kind": "drive", "start": 3.2, "end": 8.16},
+              {"kind": "lift", "start": 8.16, "end": 18.88}, {"kind": "drive", "start": 18.88, "end": 23.68},
+              {"kind": "resolve", "start": 23.68, "end": 29}],
+ "hits": [{"at": 3.2, "size": 0.7}, {"at": 8.16, "size": 0.6}, {"at": 18.88, "size": 0.8, "riser": 1.0}, {"at": 23.68, "size": 0.9, "riser": 1.2}],
+ "cuts": [3.2, 4.8, 8.16, 13.84, 18.88, 21.28, 23.68], "ticks": []}

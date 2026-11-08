@@ -59,6 +59,15 @@
   margin: 0 auto 1.2rem;
   max-width: 34rem;
 }
+.md-typeset .aa-hero .aa-reel {
+  display: block;
+  width: 300px;
+  max-width: 80%;
+  margin: 1.6rem auto 0;
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
+}
+
 .md-typeset .aa-hero .md-button {
   margin: 0.25rem;
 }
@@ -83,3 +92,15 @@
 /* Never taller than the screen, so a page scroll can start above or below it on a phone. */
 .md-typeset iframe.aa-demo { height: min(760px, 75vh); }
 @media (max-width: 760px) { .md-typeset iframe.aa-demo { height: 60vh; } }
+
+.md-typeset .aa-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  justify-content: center;
+  margin-top: 1.2rem;
+}
+
+.md-typeset .aa-share .md-button {
+  margin: 0;
+}

@@ -10,6 +10,10 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 
 - [Home](https://agent-adapter.veloceai.in/): Agent Adapter is an open-source (Apache-2.0), framework-independent Python SDK (version **1.1.0**)
 
+## Watch the reel
+
+- [Watch the reel](https://agent-adapter.veloceai.in/reel/): Write a tool once, as a plain Python function
+
 ## Get started
 
 - [Install](https://agent-adapter.veloceai.in/get-started/install/): Agent Adapter is on PyPI under the Apache-2.0 licence

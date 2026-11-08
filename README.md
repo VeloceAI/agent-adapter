@@ -8,17 +8,18 @@
 <h3 align="center">Build with any framework. Ship with one safety layer.</h3>
 
 <p align="center">
-  Write a tool once, as a plain Python function. Every call to it, from any model or agent
-  framework, is approved, budgeted, priced and traced the same way.
+  Write a tool once, as a plain Python function. Use it in any agent framework, any backend
+  or on its own, with approvals, budgets, cost and traces built in.
 </p>
+
+<p align="center"><a href="https://agent-adapter.veloceai.in/assets/video/agent-adapter-reel.mp4"><img src="docs/assets/video/agent-adapter-reel-play.jpg" alt="Watch Agent Adapter in 29 seconds" width="270"></a><br><sub>Watch it in 29 seconds · <a href="https://agent-adapter.veloceai.in/reel/">share it</a></sub></p>
 
 <p align="center">
   Version 1.1.0 · Python 3.11+ · Apache-2.0 · 21 frameworks and engines · Coverage gate 90%
 </p>
 
 <p align="center">
-  <a href="#quickstart">Quickstart</a> ·
-  <a href="#why-agent-adapter">Why</a> ·
+  <a href="#quickstart">Quickstart</a> · <a href="#why-agent-adapter">Why</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#a-tour-in-code">Tour</a> ·
   <a href="#see-your-runs-and-chat-with-your-agent">Viewer and chat</a> ·

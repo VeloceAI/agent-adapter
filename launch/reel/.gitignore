@@ -7,3 +7,8 @@ renders/
 assets/music/
 # OFL fonts live in the VeloceAI video kit; copy them in before building.
 assets/fonts/
+assets/clips/
+assets/voice/
+captions.srt
+audio/timings.json
+audio/captions.json

@@ -11,23 +11,23 @@ hide:
 
 # Agent Adapter
 
-<p class="aa-pitch">Write a tool once, as a plain Python function.<br>Use it with any model API or agent framework, or from plain code.</p>
+<p class="aa-pitch">Write a tool once, as a plain Python function.<br>Use it in any agent framework, any backend or on its own, with approvals, budgets, cost and traces built in.</p>
 
 [Attach anywhere](how-to/attach-anywhere.md){ .md-button .md-button--primary }
 [Quickstart](get-started/quickstart.md){ .md-button }
 [See every feature](features.md){ .md-button }
 
-[Which feature do I need?](choose.md) · [Cookbook](cookbook/index.md) ·
-[Troubleshooting](troubleshooting.md) · [Support matrix](support-matrix.md) ·
-:fontawesome-brands-python: [PyPI](https://pypi.org/project/agent-adapter/) · :fontawesome-brands-github: [GitHub](https://github.com/VeloceAI/agent-adapter)
+[Which feature do I need?](choose.md) · [Cookbook](cookbook/index.md) · [Troubleshooting](troubleshooting.md) · [Support matrix](support-matrix.md) · :fontawesome-brands-python: [PyPI](https://pypi.org/project/agent-adapter/) · :fontawesome-brands-github: [GitHub](https://github.com/VeloceAI/agent-adapter)
+
+<video class="aa-reel" src="assets/video/agent-adapter-reel.mp4" poster="assets/video/agent-adapter-reel.jpg" controls playsinline preload="none" aria-label="Agent Adapter in 29 seconds"></video>
+
+[:material-share-variant: Share this video](reel.md){ .md-button }
 
 </div>
 
 ## What it is
 
-Agent Adapter is an open-source (Apache-2.0), framework-independent Python SDK (version **1.1.0**). It
-turns your functions into LLM tools, checks their schemas once at startup, and runs every
-call through one executor that applies approval, budgets, guards, caching and cost
+Agent Adapter is an open-source (Apache-2.0), framework-independent Python SDK (version **1.1.0**). It turns your functions into LLM tools, checks their schemas once at startup, and runs every call through one executor that applies approval, budgets, guards, caching and cost
 tracking. The core depends only on pydantic; every framework is an optional extra.
 
 No agent framework is needed: a FastAPI service calling an LLM gets tools, approvals,
@@ -47,8 +47,7 @@ flowchart LR
 
 ## Attach anywhere
 
-The same tool, the same executor and the same safety rules, wherever the call comes from.
-[Attach anywhere](how-to/attach-anywhere.md) picks the entry point for your situation.
+The same tool, the same executor and the same safety rules, wherever the call comes from. [Attach anywhere](how-to/attach-anywhere.md) picks the entry point for your situation.
 
 | You have | Use | Page |
 |---|---|---|

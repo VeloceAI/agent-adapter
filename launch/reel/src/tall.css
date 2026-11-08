@@ -1,8 +1,0 @@
-html, body { width: 1080px; height: 1920px; }
-:root { --h1: 104px; --h2: 84px; --h3: 60px; --body: 46px; --small: 34px; --code: 42px; --chip: 34px; --stamp: 46px;
-  --mark: 120px; --brand: 88px; --pad: 44px; --deck: 620px; --evcols: 150px 1fr; }
-.glow-a { width: 1500px; height: 1500px; left: -300px; top: 100px; }
-.glow-b { width: 1000px; height: 1000px; left: 380px; top: 1150px; }
-/* Instagram covers the top ~250 px, the bottom ~350 px and the right ~120 px. */
-.inner { left: 90px; right: 150px; top: 290px; bottom: 400px; gap: 56px; }
-#s6 .inner, #s5 .inner { gap: 40px; }

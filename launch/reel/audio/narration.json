@@ -1,0 +1,13 @@
+{"voice": "af_heart", "speed": 1.05, "lead_in": 0.15, "lead_out": 0.0,
+ "scenes": [
+  {"id": "hook", "chunks": [{"id": "h1", "say": "Stop rewriting your tools for every agent framework.", "cap": "Stop rewriting your tools for every agent framework.", "gap": 0.25}]},
+  {"id": "one", "chunks": [{"id": "o1", "say": "Write one Python function.", "cap": "Write one Python function.", "gap": 0.2}]},
+  {"id": "convert", "chunks": [{"id": "c1", "say": "Agent Adapter turns it into a tool for every framework.", "cap": "Agent Adapter turns it into a tool for every framework.", "gap": 0.25}]},
+  {"id": "attach", "chunks": [{"id": "a1", "say": "One line plugs it into LangChain, CrewAI, OpenAI Agents, or MCP.", "cap": "One line plugs it into LangChain, CrewAI, OpenAI Agents, or MCP.", "gap": 0.25}]},
+  {"id": "backend", "chunks": [{"id": "b1", "say": "It runs in your backend too. FastAPI, Django, Celery, even Lambda.", "cap": "It runs in your backend too. FastAPI, Django, Celery, even Lambda.", "gap": 0.25}]},
+  {"id": "safety", "chunks": [{"id": "s1", "say": "And every call goes through one safety layer.", "cap": "And every call goes through one safety layer.", "gap": 0.2}]},
+  {"id": "features", "chunks": [{"id": "f1", "say": "Approvals. Budgets. Cost. Traces.", "cap": "Approvals. Budgets. Cost. Traces.", "gap": 0.3}]},
+  {"id": "end", "tail": 2.0, "chunks": [
+    {"id": "e1", "say": "Write it once.", "cap": "Write it once.", "gap": 0.15},
+    {"id": "e2", "say": "pip install agent adapter.", "cap": "pip install agent-adapter", "gap": 0.2}]}
+ ]}
