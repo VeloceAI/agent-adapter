@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "agent-adapter"
 dynamic = ["version"]
 description = "One safety layer for every agent's tools: approvals, budgets, cost and traces, in any framework or none."
-readme = "README.md"
+readme = "PYPI.md"  # the PyPI page: README.md has images, diagrams and repo links PyPI cannot show
 requires-python = ">=3.11"
 # PEP 639 expression; PyPI rejects a License :: classifier next to it.
 license = "Apache-2.0"
@@ -143,7 +143,7 @@ path = "agent_adapter/_version.py"
 [tool.hatch.build.targets.sdist]
 # Allow-list: hatchling reads only the root .gitignore, so anything else in the tree would ship.
 # pyproject.toml is always added; README.md is the readme and _version.py the version source.
-only-include = ["agent_adapter", "README.md", "CHANGELOG.md", "LICENSE", "NOTICE"]
+only-include = ["agent_adapter", "README.md", "PYPI.md", "CHANGELOG.md", "LICENSE", "NOTICE"]
 # Non-Python data that must ship even if an ignore rule ever matches it (tests check both).
 artifacts = ["agent_adapter/_guide/AGENTS.md", "agent_adapter/_guide/llms-full.txt"]
 

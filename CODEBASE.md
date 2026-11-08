@@ -277,8 +277,8 @@ Guard tests that catch common mistakes:
 - **Version.** It lives in `agent_adapter/_version.py`. The steps are in
   `docs/contributing/release.md`.
 - **Build.** `python -m build` produces the wheel and the sdist. The sdist holds only
-  `agent_adapter/`, `README.md`, `CHANGELOG.md`, `LICENSE` and `NOTICE`. Then run
-  `twine check --strict`.
+  `agent_adapter/`, `README.md`, `PYPI.md` (the PyPI page), `CHANGELOG.md`, `LICENSE` and
+  `NOTICE`. Then run `twine check --strict`.
 - **Publish.** Push a tag `vX.Y.Z`: `.github/workflows/release.yml` builds and uploads to
   PyPI with trusted publishing. `.github/workflows/ci.yml` runs `scripts/check.py` on Linux, started
   by hand from the Actions tab (Actions minutes are limited); run `check.py` locally instead.

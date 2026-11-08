@@ -92,11 +92,12 @@ py -3.12 -m venv $venv
 
 The wheel holds only `agent_adapter/` (`[tool.hatch.build.targets.wheel]`). The sdist
 is allow-listed (`[tool.hatch.build.targets.sdist] only-include`): `agent_adapter/`,
-`README.md`, `CHANGELOG.md`, `LICENSE` and `NOTICE` only.
+`README.md`, `PYPI.md`, `CHANGELOG.md`, `LICENSE` and `NOTICE` only.
 
-`README.md` is the long description. Its logo paths are relative, so an index shows a
-broken image: once `site_url` is real, point `<picture>` at absolute URLs. Keep mermaid
-out of the README; an index shows it as raw text.
+`PYPI.md` is the long description PyPI shows; `README.md` stays the GitHub page. PyPI
+cannot show images, mermaid or links into the repository, so `PYPI.md` has none (a test
+checks it and runs its examples). A published description never changes: edit `PYPI.md`
+before tagging.
 
 ## 6. Smoke test
 
