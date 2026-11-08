@@ -18,7 +18,8 @@ hide:
 [See every feature](features.md){ .md-button }
 
 [Which feature do I need?](choose.md) · [Cookbook](cookbook/index.md) ·
-[Troubleshooting](troubleshooting.md) · [Support matrix](support-matrix.md)
+[Troubleshooting](troubleshooting.md) · [Support matrix](support-matrix.md) ·
+:fontawesome-brands-python: [PyPI](https://pypi.org/project/agent-adapter/) · :fontawesome-brands-github: [GitHub](https://github.com/VeloceAI/agent-adapter)
 
 </div>
 
@@ -115,13 +116,13 @@ The same tool, the same executor and the same safety rules, wherever the call co
 
 ## Install
 
-Install from PyPI (Python 3.11+); details in [Install](get-started/install.md).
+Install from [PyPI](https://pypi.org/project/agent-adapter/) (Python 3.11+); the source is on [GitHub](https://github.com/VeloceAI/agent-adapter). Details in [Install](get-started/install.md).
 
 | Command | Adds |
 |---|---|
-| `pip install -e .` | the core (pydantic only): tools, executor, flows, approval, cost, cache |
-| `pip install -e ".[openai]"` (one extra per provider, framework or protocol) | that SDK; [every extra](get-started/install.md#extras) |
-| `pip install -e ".[all]"` | every extra that co-installs; CrewAI, Strands, Semantic Kernel, ADK, CAMEL-AI and DSPy need their own environment ([why](integrations/index.md#install-several)) |
+| `pip install agent-adapter` | the core (pydantic only): tools, executor, flows, approval, cost, cache |
+| `pip install "agent-adapter[openai]"` (one extra per provider, framework or protocol) | that SDK; [every extra](get-started/install.md#extras) |
+| `pip install "agent-adapter[all]"` | every extra that co-installs; CrewAI, Strands, Semantic Kernel, ADK, CAMEL-AI and DSPy need their own environment ([why](integrations/index.md#install-several)) |
 
 ## Quickstart
 

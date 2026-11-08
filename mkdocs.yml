@@ -2,6 +2,9 @@ site_name: Agent Adapter
 # The Veloce docs host; it fills sitemap.xml and canonical links.
 site_url: https://agent-adapter.veloceai.in/
 site_description: Build with any framework. Ship with one safety layer. Approvals, budgets, cost and traces for every agent's tools.
+repo_url: https://github.com/VeloceAI/agent-adapter
+repo_name: VeloceAI/agent-adapter
+edit_uri: ""
 copyright: Copyright &copy; 2026 Veloce AI · Apache-2.0
 exclude_docs: |
   superpowers/
@@ -48,6 +51,14 @@ theme:
     - content.code.annotate
     - content.tabs.link
     - toc.follow
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/VeloceAI/agent-adapter
+      name: Source on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/agent-adapter/
+      name: agent-adapter on PyPI
 extra_css:
   - stylesheets/extra.css
 # Mermaid served from the site itself, so diagrams render offline; the theme uses this global

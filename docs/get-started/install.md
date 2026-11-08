@@ -1,7 +1,8 @@
 # Install
 
-Agent Adapter is on PyPI under the Apache-2.0 licence. Install it with pip, or from a
-checkout of the repository.
+Agent Adapter is on [PyPI](https://pypi.org/project/agent-adapter/) under the Apache-2.0
+licence. Install it with pip, or from a checkout of the
+[GitHub repository](https://github.com/VeloceAI/agent-adapter).
 
 ## Requirements
 
@@ -27,7 +28,8 @@ confusion). `agent-adapter doctor` warns when one is set.
 
 ## Install from a checkout
 
-1. Clone the repository and open its root folder.
+1. Clone the repository and open its root folder:
+   `git clone https://github.com/VeloceAI/agent-adapter.git && cd agent-adapter`
 2. Create a virtual environment.
 
     === "Windows"
