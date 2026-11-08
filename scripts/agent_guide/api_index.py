@@ -10,6 +10,7 @@ import re
 import types
 import typing
 from collections.abc import Iterator
+from pathlib import PurePath
 from typing import Any
 
 import agent_adapter
@@ -73,6 +74,8 @@ def default(value: Any) -> str:
     """A default value's repr without memory addresses, shortened when long."""
     if inspect.isroutine(value) or inspect.isclass(value):
         return getattr(value, "__name__", "...")
+    if isinstance(value, PurePath):  # WindowsPath or PosixPath would make the guide OS-specific
+        return f"Path({value.as_posix()!r})"
     text = ADDRESS.sub("", repr(value))
     return text if len(text) <= MAX_DEFAULT else "..."
 

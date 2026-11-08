@@ -43,6 +43,7 @@ def runs(tmp_path: Path) -> Path:
     recorder.emit(event("run.started", 1.0))
     recorder.emit(event("custom.note", 1.1, text="</script><script>alert(1)</script>"))
     recorder.emit(event("run.finished", 1.2, ok=True))
+    assert recorder.flush()  # the writer thread may not have written them yet
     return folder
 
 
