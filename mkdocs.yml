@@ -116,6 +116,7 @@ nav:
       - Quickstart: get-started/quickstart.md
       - Wrap existing code: get-started/wrap-existing-code.md
       - First flow: get-started/first-flow.md
+      - Prompt for any AI: get-started/ai-prompt.md
       - For AI coding agents: get-started/for-ai-agents.md
       - Which feature do I need?: choose.md
       - Features: features.md

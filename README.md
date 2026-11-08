@@ -23,8 +23,8 @@
   <a href="#how-it-works">How it works</a> ·
   <a href="#a-tour-in-code">Tour</a> ·
   <a href="#see-your-runs-and-chat-with-your-agent">Viewer and chat</a> ·
-  <a href="#install">Install</a> ·
-  <a href="docs/index.md">Docs</a>
+  <a href="#install">Install</a> · <a href="docs/index.md">Docs</a> ·
+  <a href="docs/get-started/ai-prompt.md">Prompt for any AI</a>
 </p>
 
 LangChain, CrewAI or ADK help you build an agent. Agent Adapter makes every tool call

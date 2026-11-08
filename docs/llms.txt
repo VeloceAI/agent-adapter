@@ -20,6 +20,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Quickstart](https://agent-adapter.veloceai.in/get-started/quickstart/): Start with one function and one call
 - [Wrap existing code](https://agent-adapter.veloceai.in/get-started/wrap-existing-code/): Use `registry.wrap()` for code you cannot or will not edit
 - [First flow](https://agent-adapter.veloceai.in/get-started/first-flow/): Build a three-node flow that classifies a support ticket, then either looks up a policy with a tool or escalates
+- [Prompt for any AI](https://agent-adapter.veloceai.in/get-started/ai-prompt/): Paste this into Claude, ChatGPT, Gemini, Cursor or any coding assistant that can see your project
 - [For AI coding agents](https://agent-adapter.veloceai.in/get-started/for-ai-agents/): One file teaches an AI coding agent (Claude Code, Cursor, Copilot) the SDK: what to install, which function does each job, the safety rules and the common...
 - [Which feature do I need?](https://agent-adapter.veloceai.in/choose/): Answer the questions top to bottom
 - [Features](https://agent-adapter.veloceai.in/features/): What Agent Adapter does, grouped by area, with a link to each guide
