@@ -67,6 +67,8 @@ class Turn:
     approvals: list[dict[str, Any]] = field(default_factory=list)
     replay_of: str = ""
     edit_of: str = ""
+    memories: list[dict[str, Any]] = field(default_factory=list)  # recalled at the start
+    memory_saved: int = 0  # records saved to memory after this turn
 
     def view(self) -> dict[str, Any]:
         """What the page shows of a turn (`state_before` stays on the server)."""
@@ -88,6 +90,8 @@ class Session:
     created: float = field(default_factory=time.time)
     updated: float = field(default_factory=time.time)
     uploaded_bytes: int = 0
+    user_id: str = ""  # the user the chat belongs to; sessions of other users stay unseen
+    memory_upto: int = 0  # turns already offered to memory saving
     running: str = ""  # the id of the running turn; never saved
     # JSON copy of `state` taken between turns: what is saved and shown. Only the loop
     # thread touches `state` while a turn runs, so other threads never read it then.
@@ -107,6 +111,8 @@ class Session:
             "created": self.created,
             "updated": self.updated,
             "uploaded_bytes": self.uploaded_bytes,
+            "user_id": self.user_id,
+            "memory_upto": self.memory_upto,
         }
 
     def summary(self) -> dict[str, Any]:
@@ -141,6 +147,8 @@ def session_from_dict(data: dict[str, Any]) -> tuple[Session, bool]:
         created=float(data.get("created", 0.0)),
         updated=float(data.get("updated", 0.0)),
         uploaded_bytes=int(data.get("uploaded_bytes", 0)),
+        user_id=str(data.get("user_id", "")),
+        memory_upto=int(data.get("memory_upto", 0)),
     )
     interrupted = False
     for turn in turns:

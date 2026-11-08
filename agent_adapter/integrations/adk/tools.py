@@ -74,7 +74,6 @@ def _tool_class() -> type:
     """The `BaseTool` subclass, built on first use so `google.adk` is imported lazily."""
     from google.adk.tools.base_tool import BaseTool
 
-    types = genai_types()
     base: Any = BaseTool
 
     class AdapterTool(base):  # type: ignore[misc]
@@ -86,7 +85,7 @@ def _tool_class() -> type:
             self._runner = runner
 
         def _get_declaration(self) -> Any:
-            return types.FunctionDeclaration(
+            return genai_types().FunctionDeclaration(
                 name=self.name,
                 description=self.description,
                 parameters_json_schema=to_gemini_parameters(self.spec.json_schema()),

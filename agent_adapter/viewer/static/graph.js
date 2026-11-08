@@ -56,6 +56,7 @@
   function subtitle(n) {
     if (n.fan_out) return "fan-out over " + (n.over || "items");
     if (n.fan_in) return "fan-in: " + (n.sources || []).join(", ");
+    if (n.subflow) return "sub-flow: " + n.subflow.flow;
     if (n.tool) return "tool: " + n.tool;
     return n.kind === "fn" ? "function" : n.kind;
   }
@@ -73,6 +74,7 @@
       parts.push(AA.svg("rect", { class: "stack", x: p.x + 4, y: p.y - 4, width: W, height: H, rx: 6 }));
     }
     parts.push(AA.svg("rect", { class: "main", x: p.x, y: p.y, width: W, height: H, rx: n.kind === "call" ? H / 2 : 6 }));
+    if (n.subflow) parts.push(AA.svg("rect", { class: "subframe", x: p.x + 3, y: p.y + 3, width: W - 6, height: H - 6, rx: 4 })); // a graph inside
     return parts;
   }
 
@@ -148,6 +150,12 @@
     [icon, name, sub, badge, progress].forEach((t) => group.appendChild(t));
     if (n.pause) group.appendChild(AA.svg("text", { class: "g-gate", x: p.x + W - 8, y: p.y - 4, "text-anchor": "end", text: "⏸ gate" }));
     layer.appendChild(group);
+    if (n.subflow && handlers.expand) { // outside the group, so a click opens the sub-flow, not the panel
+      layer.appendChild(AA.svg("text", {
+        class: "g-open", x: p.x + 8, y: p.y - 4, role: "button", "aria-label": "open sub-flow " + n.subflow.flow,
+        text: "⊞ open", on: { click: () => handlers.expand(n.id) },
+      }));
+    }
     refs.nodes[n.id] = { group: group, title: title, icon: icon, badge: badge, progress: progress, node: n };
   }
 
@@ -181,6 +189,7 @@
     if (info.calls) parts.push(info.calls + (info.calls === 1 ? " call" : " calls"));
     if (info.errors) parts.push(info.errors + (info.errors === 1 ? " error" : " errors"));
     if (n.pause) parts.push("pause gate: " + n.pause);
+    if (n.subflow) parts.push("sub-flow " + n.subflow.flow + " (o opens it)");
     return parts.join(", ");
   }
 
@@ -254,7 +263,8 @@
   function signature(graph) {
     const nodes = (graph.nodes || []).map((n) => [n.id, n.kind, n.layer, n.x, n.order, n.end, n.pause]);
     const edges = (graph.edges || []).map((e) => [e.source, e.target, e.kind, e.label, e.loop, e.via]);
-    return JSON.stringify([graph.flow, graph.start, nodes, edges]);
+    const parent = graph.parent ? [graph.parent.flow, graph.parent.node] : null;
+    return JSON.stringify([graph.flow, parent, graph.start, nodes, edges]);
   }
 
   AA.graphScene = { W: W, H: H, build: build, draw: draw, paint: paint, drawMini: drawMini, paintMini: paintMini, signature: signature, curve: curve };

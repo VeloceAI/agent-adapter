@@ -74,6 +74,19 @@ def test_framework_comes_from_source_then_events_then_providers(tmp_path: Path) 
     assert summary(tmp_path / "c")["framework"] == "openai"
 
 
+def test_a_retrieval_failure_fails_the_run_and_its_backend_is_not_the_framework(
+    tmp_path: Path,
+) -> None:
+    failed = dict(retriever="docs", backend="llamaindex", k=5, latency_ms=1.0, error_kind="x")
+    recorder = Recorder(tmp_path)  # a call outside a run scope: over once its span ends
+    recorder.emit(event("tool.started", 1.0, "c", tool="search_docs", kind="retrieval"))
+    recorder.emit(event("retrieval.failed", 2.0, "r", **failed))
+    done = dict(tool="search_docs", latency_ms=2.0, attempts=1, cached=False)
+    recorder.emit(event("tool.finished", 3.0, "c", **done))
+    found = summary(tmp_path)
+    assert found["status"] == "failed" and found["framework"] == ""
+
+
 def test_refresh_reads_only_new_complete_lines(tmp_path: Path) -> None:
     path = tmp_path / segment_name(1000, "run_x", 1)
     good = json.dumps({"kind": "event", "type": "run.started", "ts": 1.0, "data": {}})

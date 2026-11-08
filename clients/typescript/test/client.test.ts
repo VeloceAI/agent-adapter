@@ -4,6 +4,7 @@ import { inspect } from "node:util";
 
 import {
   ApprovalAlreadyDecidedError,
+  ForbiddenError,
   NotFoundError,
   ToolArgsInvalidError,
   ToolClient,
@@ -243,5 +244,44 @@ describe("secrets", () => {
     const tc = new ToolClient({ baseUrl: "https://srv", token: "s3cr3t-token" });
     assert.ok(!inspect(tc, { depth: 10, showHidden: true }).includes("s3cr3t-token"));
     assert.ok(!JSON.stringify(tc).includes("s3cr3t-token"));
+  });
+});
+
+describe("budget", () => {
+  const daily = {
+    name: "budget",
+    scope: "principal",
+    key: "ana",
+    window: "day:2026-11-05",
+    limit_usd: 5,
+    spent_usd: 1.25,
+    reserved_usd: 0.25,
+    remaining_usd: 3.5,
+    resets_at: 1793836800,
+    on_exceed: "stop",
+  };
+
+  test("budget lists the caller's budgets", async () => {
+    const { tc, fake } = client([json(200, { budgets: [daily] })]);
+    assert.deepEqual(await tc.budget(), [daily]);
+    assert.equal(fake.requests[0]!.url.pathname, "/aa/budget");
+  });
+
+  test("budget reads one scope and another key", async () => {
+    const { tc, fake } = client([json(200, { budgets: [] })]);
+    assert.deepEqual(await tc.budget({ scope: "team", key: "shop" }), []);
+    const url = fake.requests[0]!.url;
+    assert.equal(url.pathname, "/aa/budget/team");
+    assert.equal(url.searchParams.get("key"), "shop");
+  });
+
+  test("budget refuses a reply without a list", async () => {
+    const { tc } = client([json(200, { budgets: "none" })]);
+    await assert.rejects(tc.budget(), ToolProtocolError);
+  });
+
+  test("budget raises ForbiddenError for another key without the approver scope", async () => {
+    const { tc } = client([problem(403, "forbidden")]);
+    await assert.rejects(tc.budget({ key: "bo" }), ForbiddenError);
   });
 });

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import dataclasses
-import json
 import logging
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
@@ -17,6 +16,7 @@ from agent_adapter.core.ports import LLMPort
 from agent_adapter.core.registry import Registry
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.core.types import ErrorInfo
+from agent_adapter.evals._text import user_text as user_text
 from agent_adapter.exec.executor import Executor
 from agent_adapter.exec.tool_loop import run_tool_loop
 from agent_adapter.flow.runner import FlowRunner
@@ -90,13 +90,6 @@ def _unique_cases(cases: Sequence[EvalCase]) -> tuple[EvalCase, ...]:
     if duplicates:
         raise OptimiserError(f"duplicate case ids: {duplicates}")
     return tuple(cases)
-
-
-def user_text(case: EvalCase) -> str:
-    """The case input as the user turn: a str as is, anything else as JSON."""
-    if isinstance(case.input, str):
-        return case.input
-    return json.dumps(case.input, ensure_ascii=False, sort_keys=True, default=str)
 
 
 def failed_run(case: EvalCase, exc: BaseException) -> CaseRun:

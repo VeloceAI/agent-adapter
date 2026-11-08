@@ -25,9 +25,17 @@ from agent_adapter.core.errors import (
     ToolUsageError,
     log_failure,
 )
+from agent_adapter.evals.store import DEFAULT_EVALS_FOLDER
+from agent_adapter.viewer._case_routes import CASE_PATH, case_request
+from agent_adapter.viewer._drain import drain
+from agent_adapter.viewer._evals import EvalFolder, evals_route
+from agent_adapter.viewer._runs_routes import TAGS_PATH, SearchCache, runs_listing, tags_request
+from agent_adapter.viewer._tags import TagStore
 from agent_adapter.viewer.approvals import ApprovalDesk
 from agent_adapter.viewer.assets import page, static_file
+from agent_adapter.viewer.chat.evalcases import EvalCases
 from agent_adapter.viewer.chat.routes import handle_get, handle_post
+from agent_adapter.viewer.chat.setup import DEFAULT_CHAT_DIR
 from agent_adapter.viewer.chat.stream import CLIENT_GONE
 from agent_adapter.viewer.launch import PATH as LAUNCH_PATH
 from agent_adapter.viewer.launch import SCRUB, LaunchCodes
@@ -91,10 +99,17 @@ class ViewerServer(ThreadingHTTPServer):
         desk: ApprovalDesk | None,
         port: int,
         chat: ChatHost | None = None,
+        evals: EvalFolder | None = None,
+        cases_dir: Path | None = None,
     ) -> None:
         self.folder = folder
+        self.tags = TagStore(folder.tags_folder)
+        self.search = SearchCache()
+        self.evals = evals if evals is not None else EvalFolder()
         self.desk = desk
         self.chat = chat
+        home = cases_dir if cases_dir is not None else Path(DEFAULT_CHAT_DIR)
+        self.cases = chat.evals if chat is not None else EvalCases(home)
         self.token = secrets.token_urlsafe(32)
         self.csrf = secrets.token_urlsafe(32)
         self.refusals = 0  # requests without the token; only the first is a WARNING
@@ -140,8 +155,13 @@ def make_server(
     approvals: str | Path | None = None,
     reviewer: str = "",
     chat: ChatHost | None = None,
+    evals: str | Path = DEFAULT_EVALS_FOLDER,
+    cases_dir: str | Path = DEFAULT_CHAT_DIR,
 ) -> ViewerServer:
     """A bound, not yet serving, viewer server (`port=0` picks a free port); `chat` turns chat on.
+
+    `evals` is the folder of saved eval reports the Evals view lists; runs saved as eval
+    cases go to the chat's `eval_cases.jsonl`, or without chat to the one in `cases_dir`.
 
     Raises:
         ConfigError: a non-loopback `host`, a bad target, or a bad approvals database/reviewer.
@@ -150,7 +170,7 @@ def make_server(
     check_host(host)
     folder = RunFolder(target)
     desk = ApprovalDesk(approvals, reviewer) if approvals is not None else None
-    server = ViewerServer(folder, desk, port, chat)
+    server = ViewerServer(folder, desk, port, chat, EvalFolder(evals), Path(cases_dir))
     logger.info("viewer on %s for %s", server.base_url, folder.target)
     return server
 
@@ -191,8 +211,10 @@ class _Handler(BaseHTTPRequestHandler):
             else:
                 self._send(HTTPStatus.OK, *found)
         elif path == "/api/runs":
-            self.server.folder.refresh()
-            self._json(HTTPStatus.OK, {"runs": self.server.folder.summaries()})
+            self._json(
+                HTTPStatus.OK,
+                runs_listing(self.server.folder, self.server.tags, query, self.server.search),
+            )
         elif (match := _RUN.match(path)) is not None:
             self.server.folder.refresh()
             detail = self.server.folder.detail(match.group(1), since=_since(query))
@@ -200,6 +222,8 @@ class _Handler(BaseHTTPRequestHandler):
                 self._json(HTTPStatus.NOT_FOUND, {"error": "no such run"})
             else:
                 self._json(HTTPStatus.OK, detail)
+        elif path == "/api/evals" or path.startswith("/api/evals/"):
+            self._json(*evals_route(self.server.evals, path, query))
         elif path == "/api/approvals" and self.server.desk is not None:
             self._json(HTTPStatus.OK, {"approvals": self.server.desk.pending()})
         else:
@@ -211,6 +235,13 @@ class _Handler(BaseHTTPRequestHandler):
         parts = urlsplit(self.path)
         if _is_chat(parts.path):
             self._chat(handle_post, parts.path, parse_qs(parts.query))
+            return
+        if (tagged := TAGS_PATH.match(parts.path)) is not None:
+            tags_request(self, self.server.folder, self.server.tags, tagged.group(1))
+            return
+        if (asked := CASE_PATH.match(parts.path)) is not None:
+            server = self.server
+            case_request(self, server.folder, server.tags, server.cases, asked.group(1))
             return
         match = _DECIDE.match(self.path)
         desk = self.server.desk
@@ -330,15 +361,26 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_header(name, value)
         self.end_headers()
 
-    def _body(self) -> tuple[bool, str] | None:
+    def raw_body(self, limit: int = MAX_BODY) -> bytes | None:
+        """The request body, or None when it is empty or over `limit` bytes."""
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
             return None
-        if length <= 0 or length > MAX_BODY:
+        if length <= 0:
+            return None
+        if length > limit:
+            if not drain(self.rfile, length):
+                self.close_connection = True
+            return None
+        return self.rfile.read(length)
+
+    def _body(self) -> tuple[bool, str] | None:
+        raw = self.raw_body()
+        if raw is None:
             return None
         try:
-            data = json.loads(self.rfile.read(length))
+            data = json.loads(raw)
         except ValueError:
             return None
         if not isinstance(data, dict) or not isinstance(data.get("approved"), bool):

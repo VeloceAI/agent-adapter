@@ -267,3 +267,16 @@ def test_malformed_closing_event_still_ends_the_span(h, caplog):
     assert span.end_time == int((T0 + 0.2) * 1e9)
     assert "OTel sink failed for tool.finished" in caplog.text
     assert h.sink._open == {}
+
+
+def test_a_node_cache_hit_is_a_span_event_on_the_node_span(h):
+    h.emit("node.started", call_id="f:n:1", flow="f", node="n", visit=1)
+    h.emit("node.cached", call_id="f:n:1", flow="f", node="n", visit=1)
+    h.emit("node.finished", call_id="f:n:1", flow="f", node="n", visit=1, cached=True)
+    [event] = h.spans()["node f.n"].events
+    assert event.name == "node.cached"
+
+
+def test_a_node_cache_hit_without_an_open_span_is_ignored(h):
+    h.emit("node.cached", call_id="f:n:1", flow="f", node="n", visit=1)
+    assert h.spans() == {}

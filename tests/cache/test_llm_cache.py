@@ -102,6 +102,7 @@ async def test_broken_backend_is_a_miss_with_a_warning(caplog):
 @pytest.mark.parametrize(
     "data",
     [b"not json", encode("tool", {"provider": "x"}), encode("llm", {"provider": "x"})],
+    ids=["not-json", "tool-kind", "llm-bad-payload"],  # stable ids: xdist workers must agree
 )
 async def test_bad_entries_are_misses(data):
     port = DictCache()

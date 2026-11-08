@@ -16,7 +16,7 @@ flowchart LR
 |---|---|
 | `cost/prices.py` | `Prices`, `ResolvedPrice`: resolve a model, price tokens and units, read caps |
 | `cost/_table.py` | validates the table shape (strict: unknown keys are errors) |
-| `cost/prices_default.json` | the packaged table (OpenAI and Gemini list prices, 2026-10-29) |
+| `cost/prices_default.json` | the packaged table: OpenAI, Gemini and Anthropic list prices and context windows (2026-11-05) |
 | `cost/ledger.py` | `Ledger`: the `LedgerPort` implementation |
 | `cost/sinks.py`, `cost/summary.py` | `MemorySink`, `CallbackSink`, `JsonlSink`, `read_jsonl`; `LedgerSummary`, `StageSummary` |
 
@@ -81,12 +81,12 @@ A table has `version` (required in a full table), `currency` (`"USD"`), `unit`
 | `tiers`; `periods` | prices plus `max_prompt_tokens`, ascending, the last `null` (no limit); prices or `tiers` plus `from` / `until` ISO dates (inclusive, UTC), no overlaps |
 | `cache_storage_per_hour` | USD per 1M token-hours; also allowed per period |
 | `per_call`, `per_second`, `free` | USD per call; per second of call time; `true`: costs 0, never warns, no other price. Also per period |
-| `caps`; `note` | `ModelCaps` flags (unknown flags are errors), e.g. `{"context_window": 128000}` for [compression](context-compression.md#the-policy); free text |
+| `caps`; `source`; `note` | `ModelCaps` flags (unknown flags are errors), e.g. `{"context_window": 128000, "max_output_tokens": 16384}` for [compression](context-compression.md#the-policy); where the row was read (a URL); free text |
 
 An entry with only `caps` is **caps-only**: it gives `caps()` but never blocks a price, so
-`price()` uses the next match (e.g. your `"*"`) or returns `None`. The packaged
-`claude-` entry is caps-only until an Anthropic price can be cited. `gpt-5.6` has no
-cache-write prices; its `-sol` / `-terra` / `-luna` variants are unknown until you add them.
+`price()` uses the next match (e.g. your `"*"`) or returns `None`. The packaged `claude-`
+entry is caps-only, for Claude ids without a row. Every other packaged row but `gpt-5.6`
+has its vendor's `context_window` and `max_output_tokens`, read from the page in `source`.
 
 ## Your own models
 

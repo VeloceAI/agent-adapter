@@ -19,7 +19,7 @@ def prices():
 
 def test_default_is_cached_and_versioned(prices):
     assert Prices.default() is prices
-    assert prices.version == "2026-10-29"
+    assert prices.version == "2026-11-05"
 
 
 def test_default_file_is_package_data():
@@ -86,7 +86,7 @@ def test_snapshot_suffixes_resolve(prices, model, expected):
 
 
 @pytest.mark.parametrize(
-    "model", ["gpt-5.6-luna", "gpt-5-pro", "gpt-5-nano", "gpt-4.1-nano", "gpt-5-1", "gpt-5-12"]
+    "model", ["gpt-5.4-nano", "gpt-5-pro", "gpt-5-nano", "gpt-4.1-nano", "gpt-5-1", "gpt-5-12"]
 )
 def test_variants_without_a_row_are_unknown(prices, model, caplog):
     prices_module._WARNED.discard(f"model:{model}")
@@ -147,7 +147,7 @@ def test_gemini_caps(prices):
     assert prices.caps("gemini-4-argon").min_cache_tokens == 4096
 
 
-def test_anthropic_is_caps_only(prices):
+def test_anthropic_without_a_row_is_caps_only(prices):
     assert prices.price("claude-sonnet-4-5") is None
     assert prices.cost("claude-sonnet-4-5", Usage(input_tokens=1)) is None
     caps = prices.caps("claude-sonnet-4-5")
@@ -159,8 +159,8 @@ def test_no_uncited_rows(prices):
     assert "gemini-3-pro-preview" not in data["models"]
     assert prices.resolve("gemini-3-pro-preview") is None
     assert data["units"] == {}
-    assert not any(key.startswith("gpt-5.6-") for key in data["models"])
-    assert prices.resolve("gpt-5.6-sol") is None  # not priced at gpt-5.6 rates
+    for unverified in ("gpt-6-sol", "gpt-5.4-nano", "gpt-5-nano"):  # no cited window yet
+        assert unverified not in data["models"]
     providers = {entry["provider"] for entry in data["models"].values()}
     assert providers == {"openai", "gemini", "anthropic"}
     priced_anthropic = [
@@ -168,7 +168,12 @@ def test_no_uncited_rows(prices):
         for key, entry in data["models"].items()
         if entry["provider"] == "anthropic" and ({"input", "tiers", "periods"} & set(entry))
     ]
-    assert priced_anthropic == []
+    assert priced_anthropic == [
+        "claude-fable-5-1",
+        "claude-opus-5-5",
+        "claude-sonnet-5-5",
+        "claude-haiku-5-5",
+    ]
 
 
 def test_gemini_2_5_pro_cost_example(prices):

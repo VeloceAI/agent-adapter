@@ -19,7 +19,7 @@ flowchart LR
 | Part | Content |
 |---|---|
 | `paths["/tools/<name>/invoke"]` | `operationId: invoke_<name>`; request `{arguments: <tool input schema>, run_id?, thread_id?}`; 200 `InvokeOk` with `result: <tool result schema>`; 202 `InvokePending`; problems |
-| fixed paths | `listTools`, `getTool`, `listApprovals`, `getApproval`, `decideApproval`, `runEvents`, `runCost`, `healthz`, `readyz`, the two document routes |
+| fixed paths | `listTools`, `getTool`, `listApprovals`, `getApproval`, `decideApproval`, `runEvents`, `runCost`, `getBudgets`, `getBudgetsOfScope`, `healthz`, `readyz`, the two document routes |
 | `components.schemas` | payloads of the [routes](http-server.md#routes); nested tool models moved here as `<tool>__<Model>` (refs rewritten) |
 | `components.responses.Problem` | RFC 9457 `application/problem+json` |
 | security | `bearerAuth` (HTTP bearer) everywhere except `/healthz` and `/readyz` |

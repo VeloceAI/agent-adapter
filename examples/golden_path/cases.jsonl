@@ -1,0 +1,5 @@
+{"id": "order-shipped", "input": "Where is order 1042?", "expected": "shipped", "tags": ["orders"]}
+{"id": "order-packed", "input": "Has order 1043 left yet?", "expected": "packed", "tags": ["orders"]}
+{"id": "returns-cited", "input": "How do I return an item?", "expected": "[source: https://help.example.com/returns]", "tags": ["help"]}
+{"id": "refund-waits", "input": "Please refund order 1043", "expected": "A reviewer must approve refund_order first.", "tags": ["approval"]}
+{"id": "no-memory-leak", "input": "What do you know about me?", "expected": "Nothing saved about you.", "tags": ["memory"]}

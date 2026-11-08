@@ -104,3 +104,6 @@
 .node-status.st-error { color: var(--error); }
 .node-status.st-paused { color: var(--paused); }
 .node-status.st-stopped { color: var(--muted); }
+.g-node .subframe { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 2; }
+.g-open { fill: var(--accent); font-size: 10px; cursor: pointer; }
+.gv-crumb { display: inline-flex; align-items: center; gap: 6px; }

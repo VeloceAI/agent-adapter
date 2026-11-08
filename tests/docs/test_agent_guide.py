@@ -22,7 +22,7 @@ from tests.docs.test_no_internal_refs import _hits
 ROOT = Path(__file__).resolve().parents[2]
 FORBIDDEN_DOMAIN = re.compile(r"\b(tax|taxes|gst|pan|80c|taxmann|income-tax)\b", re.I)
 PYTHON_BLOCK = re.compile(r"^```python\n(.*?)^```$", re.M | re.S)
-CONCISE_MAX_BYTES = 27_000  # about 6.5k tokens: cheap to load into every agent session
+CONCISE_MAX_BYTES = 32_000  # about 7.5k tokens: cheap to load into every agent session
 ORDER = (
     "## What it is",
     "## Install",
@@ -134,8 +134,28 @@ def test_agent_guide_install_table_lists_every_extra(tier: str, request) -> None
     assert "install '" not in install  # single quotes fail in cmd.exe
 
 
-def test_agent_guide_has_about_thirty_five_recipes() -> None:
-    assert 30 <= len(recipes.recipes()) <= 45
+def test_agent_guide_recipe_count_stays_readable() -> None:
+    assert 30 <= len(recipes.recipes()) <= 70  # full_only ones cost AGENTS.md one line each
+
+
+def test_indexed_recipes_are_only_named_in_the_concise_tier(concise: str, full: str) -> None:
+    indexed = [recipe for recipe in recipes.recipes() if recipe.index]
+    assert indexed, "later features are named in the one index line"
+    line = next(row for row in concise.splitlines() if row.startswith("More features ("))
+    for recipe in indexed:
+        assert recipe.index in line and recipe.code not in concise and recipe.use not in concise
+        assert recipe.code in full
+    assert "More features (" not in full
+
+
+def test_full_only_recipes_are_one_line_in_the_concise_tier(concise: str, full: str) -> None:
+    only = [recipe for recipe in recipes.recipes() if recipe.full_only and not recipe.index]
+    assert only, "the concise tier lists at least one recipe by name"
+    for recipe in only:
+        title = recipe.want[0].upper() + recipe.want[1:]
+        assert f"\n- {title}\n" in concise and recipe.use not in concise
+        assert recipe.code not in concise
+        assert recipe.code in full and f"\n- {title}\n" not in full
 
 
 def test_agent_guide_viewer_row_follows_the_package(concise: str) -> None:

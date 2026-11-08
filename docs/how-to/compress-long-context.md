@@ -136,7 +136,7 @@ loop, and it compresses before every model call.
 
 ## Checklist
 
-- Set `model_max_tokens`, or give the model a `context_window` in your price table.
+- A model outside the packaged price table needs `model_max_tokens` or a `context_window` cap.
 - Pass `count_tokens=` for exact counts.
 - Add `if_still_too_long=` so a provider overflow is retried once with a stronger policy.
 - Pin what must never change: `Message(role="user", content=..., pinned=True)`.

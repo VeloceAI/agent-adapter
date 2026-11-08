@@ -58,7 +58,7 @@ confusion). `agent-adapter doctor` warns when one is set.
     python -c "import agent_adapter; print(agent_adapter.__version__)"
     ```
 
-    You should see `1.0.0`.
+    You should see `1.1.0`.
 
 ## Extras
 

@@ -22,7 +22,7 @@ from agent_adapter.core.messages import (
 )
 from agent_adapter.core.types import ToolCall, Usage
 from agent_adapter.models._convert import with_parsed
-from agent_adapter.models._port import closing, collect_stream, replay
+from agent_adapter.models._port import PartialOutputs, closing, collect_stream, replay
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +81,9 @@ class CallableModel:
     async def stream(self, request: LLMRequest) -> AsyncIterator[StreamEvent]:
         """`stream_fn`'s events, or the generated reply replayed as deltas.
 
+        With `output_schema`, text deltas are followed by `PartialOutput` unless `stream_fn`
+        sends its own.
+
         Raises:
             ModelOutputInvalid: `stream_fn` ended without `StreamDone`.
             ConfigError: `request.compression` is invalid or could not run.
@@ -94,10 +97,13 @@ class CallableModel:
             return
         if self._stream_fn is not None:
             done = False
+            partial = PartialOutputs(request)
             async with closing(self._stream_fn(request)) as events:
                 async for event in events:
                     done = done or isinstance(event, StreamDone)
                     yield event
+                    if (extra := partial.after(event)) is not None:
+                        yield extra
             if not done:
                 raise ModelOutputInvalid(
                     f"{self.provider} {self._model(request)}: stream_fn ended without StreamDone",

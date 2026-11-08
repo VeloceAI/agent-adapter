@@ -57,8 +57,8 @@ passes `allow_safety_tuning=True`. `RegistryHost` runs `hooks=` on tool calls on
 tunable hook acting on LLM calls has no effect there.
 
 `judge(case, run) -> Score | None` grades a run (`value` in [0, 1]); `None` or a failing judge
-leaves the run ungraded (ready-made: `optimiser.graders`; cases: `load_cases(path)`). The proposer never sees the judge's numbers unless
-`show_scores_to_proposer=True`, and never sees `EvalCase.expected`; it does see
+leaves the run ungraded. Cases and graders are the [evals](how-to/evaluate-your-agent.md) ones (`agent_adapter.evals.graders`, `load_cases(path)`; `optimiser.graders` re-exports them).
+The proposer never sees the judge's numbers unless `show_scores_to_proposer=True`, and never sees `EvalCase.expected`; it does see
 `Score.notes` as reviewer remarks, so keep expected answers out of them.
 
 ## Budget
@@ -141,7 +141,7 @@ limit stopped the run before any final was chosen.
 | Module | Does |
 |---|---|
 | `model.py` / `surface.py` | data model and config; path grammar, caps, editor rules, `validate_tree` |
-| `hosts.py` / `callable_host.py` / `cases.py` / `graders.py` / `apply.py` / `evidence.py` / `prompts.py` | hosts, `apply_tree`; `CallableHost`, `NullModel`; `load_cases`; ready-made judges; `load_harness`, `layout_from_tree`; bounded evidence; our prompts and schemas |
+| `hosts.py` / `callable_host.py` / `cases.py` / `graders.py` / `apply.py` / `evidence.py` / `prompts.py` | hosts, `apply_tree`; `CallableHost`, `NullModel`; `load_cases` and judges (from `evals`); `load_harness`, `layout_from_tree`; bounded evidence; our prompts and schemas |
 | `propose.py` / `probe.py` / `compose.py` / `loop.py` | the three stages; `optimise()` with budget and resume |
 | `lessons.py` / `report.py` / `__main__.py` | lessons store and reflection; outputs; CLI |
 

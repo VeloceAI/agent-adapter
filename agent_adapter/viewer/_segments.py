@@ -15,6 +15,7 @@ from typing import Any
 from agent_adapter._version import __version__
 from agent_adapter.core.registry import Registry
 from agent_adapter.core.types import Event
+from agent_adapter.exec._settings import ToolPolicy
 from agent_adapter.tracing.events import EventType
 from agent_adapter.viewer._files import (
     FORMAT_VERSION,
@@ -58,6 +59,7 @@ class Options:
     max_events_per_run: int
     registry: Callable[[], Registry | None]
     source: str
+    policy: Callable[[], ToolPolicy | None] | None = None
 
 
 class Segments:
@@ -67,6 +69,7 @@ class Segments:
         self.options = options
         self.open: OrderedDict[str, Segment] = OrderedDict()
         self._last_rotation = 0.0
+        self._last_start_ms = 0
         self._catalogue: tuple[tuple[int, ...], bytes] | None = None
 
     def event(self, event: Event, out: dict[Path, list[bytes]]) -> None:
@@ -131,7 +134,9 @@ class Segments:
         if found is not None:
             self.open.move_to_end(key)
             return found
-        path = self.options.folder / segment_name(int(ts * 1000), key, os.getpid())
+        # Strictly increasing, so runs opened within one clock tick still sort in order.
+        start_ms = self._last_start_ms = max(int(ts * 1000), self._last_start_ms + 1)
+        path = self.options.folder / segment_name(start_ms, key, os.getpid())
         segment = Segment(path)
         self.open[key] = segment
         while len(self.open) > MAX_OPEN:
@@ -157,9 +162,10 @@ class Segments:
         registry = self.options.registry()
         if registry is None:
             return []
-        version = tuple(id(spec) for spec in registry)
+        policy = self.options.policy() if self.options.policy is not None else None
+        version = (*(id(spec) for spec in registry), id(policy))
         if self._catalogue is None or self._catalogue[0] != version:
-            line = dumps({"kind": "tools", "tools": catalogue(registry)})
+            line = dumps({"kind": "tools", "tools": catalogue(registry, policy)})
             self._catalogue = (version, line)
         return [self._catalogue[1]]
 

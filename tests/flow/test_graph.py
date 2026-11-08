@@ -223,7 +223,7 @@ def test_node_options_are_checked():
         "node 'a': retries must be an int >= 0, got -2",
         "node 'a': pause must be a bool or a callable, got 'yes'",
         "node 'a': prompt must be a string, got 3",
-        "node 'b': action must be a function, Call, Map or Join, got int",
+        "node 'b': action must be a function, Call, Map, Join or SubFlow, got int",
     ]
 
 

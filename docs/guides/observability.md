@@ -57,8 +57,11 @@ The last line is `True` when `opentelemetry-api` is installed.
 | approval | `approval.requested`, `approval.decided` |
 | models | `llm.started`, `.finished`, `.cached`, `.failed`, `.fallback` |
 | embeddings | `embedding.started`, `.finished`, `.failed` (a text count, never the texts) |
-| flows | `flow.started`, `flow.finished`, `node.started`, `.finished`, `.failed`, `.paused` |
-| budget | `budget.warning` |
+| memory | `memory.added`, `.searched`, `.deleted`, `.exported` (counts, never the texts) |
+| retrieval | `retrieval.searched`, `.failed` (document ids and counts, never the texts) |
+| sandbox | `sandbox.started`, `.finished`, `.failed` (sizes, exit codes, never the code or output) |
+| flows | `flow.started`, `flow.finished`, `node.started`, `.finished`, `.failed`, `.paused`, `.cached`; `checkpoint.saved`, `run.recovered` |
+| budget | `budget.warning`, `.reserved`, `.exceeded` |
 | yours | `custom.<name>` via `ctx.emit("name", ...)` |
 
 Required data keys per type: `REQUIRED_DATA` in `agent_adapter.tracing`. A sink is sync,

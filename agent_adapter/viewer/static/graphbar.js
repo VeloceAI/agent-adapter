@@ -57,7 +57,7 @@
 
   // container gets the view; options: {onOpen(id), onEscape(), onStep()} (onStep: replay moved).
   AA.createGraph = function (container, options) {
-    const st = { graph: null, run: null, sig: "", refs: null, mini: null, selected: null, focused: null, hover: null, matches: null, step: null, steps: [], timer: null, snap: null, snapKey: "", sized: false };
+    const st = { graph: null, run: null, sig: "", refs: null, mini: null, selected: null, focused: null, hover: null, matches: null, step: null, steps: [], timer: null, snap: null, snapKey: "", sized: false, top: null, path: [] };
     const scene = {};
     const button = (text, title, onClick) => AA.el("button", { type: "button", class: "ghost small", title: title, "aria-label": title, text: text, on: { click: onClick } });
     const search = AA.el("input", { type: "search", class: "gv-search", placeholder: "/ search nodes", "aria-label": "search nodes" });
@@ -65,8 +65,10 @@
     const slider = AA.el("input", { type: "range", min: 0, max: 0, value: 0, step: 1, class: "gv-slider", "aria-label": "replay step" });
     const where = AA.el("span", { class: "gv-step muted" });
     const notice = AA.el("span", { class: "gv-notice muted", role: "status" });
+    const crumb = AA.el("span", { class: "gv-crumb", hidden: true }); // where an opened sub-flow sits
     const copyBox = AA.el("textarea", { class: "gv-copy", readonly: true, rows: 6, "aria-label": "Mermaid text", hidden: true });
     const bar = AA.el("div", { class: "gv-bar" }, [
+      crumb,
       button("−", "zoom out (-)", () => camera.zoomBy(1 / 1.25)),
       button("+", "zoom in (+)", () => camera.zoomBy(1.25)),
       button("fit", "fit the graph (0)", () => camera.fit()),
@@ -80,7 +82,7 @@
     const world = AA.svg("g", { class: "gv-world" });
     const svg = AA.svg("svg", { class: "gv-svg", role: "group", "aria-label": "flow graph" }, world);
     const mini = AA.svg("svg", { class: "gv-mini", "aria-hidden": "true", preserveAspectRatio: "xMidYMid meet" });
-    const stage = AA.el("div", { class: "gv-stage", tabindex: 0, role: "group", "aria-roledescription": "graph", "aria-label": "Flow graph. Arrow keys move between nodes, Enter opens one, + and - zoom, 0 fits, / searches." }, [svg, mini]);
+    const stage = AA.el("div", { class: "gv-stage", tabindex: 0, role: "group", "aria-roledescription": "graph", "aria-label": "Flow graph. Arrow keys move between nodes, Enter opens one, o opens a sub-flow and u goes back up, + and - zoom, 0 fits, / searches." }, [svg, mini]);
     AA.clear(container);
     [bar, copyBox, stage, legend()].forEach((part) => container.appendChild(part));
 
@@ -91,6 +93,7 @@
       focus: (id) => focusNode(id),
       hover: (id) => { st.hover = id && st.graph ? AA.graphLive.paths(st.graph, id) : null; paint(); },
       escape: () => { st.selected = null; st.hover = null; paint(); if (options.onEscape) options.onEscape(); },
+      expand: (id) => expand(id),
     };
     const camera = AA.graphNav.attach(stage, world, scene, {
       focused: () => st.focused, focus: handlers.focus, open: handlers.open, escape: handlers.escape,
@@ -182,6 +185,86 @@
       setTimeout(() => { notice.textContent = ""; }, 3000);
     }
 
+    // The graph on show: the run's graph, or the sub-flow `st.path` leads to (a bad step ends it).
+    function resolve(top) {
+      let current = top;
+      const kept = [];
+      for (const id of st.path) {
+        const node = (current.nodes || []).find((n) => n.id === id);
+        if (!node || !node.subflow) break;
+        current = Object.assign({}, node.subflow, { parent: { flow: current.flow, node: id } });
+        kept.push(id);
+      }
+      st.path = kept;
+      return current;
+    }
+
+    function renderCrumb() {
+      AA.clear(crumb);
+      crumb.hidden = !st.path.length;
+      if (!st.path.length) return;
+      crumb.appendChild(button("‹ up", "back to the enclosing flow (u)", () => collapse()));
+      crumb.appendChild(AA.el("span", { class: "muted", text: [st.top.flow].concat(st.path).join(" › ") + " (" + st.graph.flow + ")" }));
+    }
+
+    function expand(id) {
+      const node = st.graph && st.graph.nodes.find((n) => n.id === id);
+      if (!node || !node.subflow) return;
+      st.path = st.path.concat([id]);
+      moved();
+    }
+
+    function collapse() {
+      if (!st.path.length) return;
+      st.path = st.path.slice(0, -1);
+      moved();
+    }
+
+    function moved() { // a different graph on show: live, nothing picked
+      stopPlay();
+      st.step = null;
+      st.selected = null;
+      st.hover = null;
+      st.matches = null;
+      search.value = "";
+      if (options.onEscape) options.onEscape();
+      render(st.run);
+      stage.focus({ preventScroll: true });
+    }
+
+    function render(run) {
+      st.run = run;
+      const graph = resolve(st.top);
+      const sig = AA.graphScene.signature(graph);
+      const fresh = sig !== st.sig;
+      st.graph = graph;
+      st.steps = AA.graphLive.replaySteps(run && run.events, graph.flow, graph);
+      if (fresh) {
+        const active = document.activeElement;
+        const hadFocus = Boolean(active) && active !== stage && stage.contains(active); // a node had it
+        st.sig = sig;
+        Object.keys(scene).forEach((key) => delete scene[key]);
+        Object.assign(scene, AA.graphScene.build(graph));
+        st.refs = AA.graphScene.draw(world, graph, scene, handlers);
+        st.mini = AA.graphScene.drawMini(mini, graph, scene);
+        st.focused = st.graph.nodes.some((n) => n.id === st.focused) ? st.focused : null;
+        if (!st.sized) { // a first height that suits the graph; the user may resize it after
+          st.sized = true;
+          stage.style.height = Math.round(Math.min(Math.max(scene.bounds.h + 24, 260), 640)) + "px";
+        }
+        camera.fit();
+        if (hadFocus && st.focused) focusNode(st.focused); // the redraw replaced the focused node
+        else if (hadFocus) stage.focus({ preventScroll: true });
+      }
+      renderCrumb();
+      paint();
+    }
+
+    stage.addEventListener("keydown", (ev) => {
+      if (typing(ev.target) || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      if (ev.key === "o" && st.focused) { ev.preventDefault(); expand(st.focused); }
+      else if (ev.key === "u" && st.path.length) { ev.preventDefault(); collapse(); }
+    });
     slider.addEventListener("input", () => { stopPlay(); setStep(Number(slider.value)); });
     search.addEventListener("input", () => {
       const found = st.graph ? AA.graphLive.search(st.graph, search.value) : [];
@@ -217,33 +300,14 @@
           st.step = null;
           st.selected = null;
           st.hover = null;
+          st.path = [];
         }
-        st.run = run;
-        const sig = AA.graphScene.signature(graph);
-        const fresh = sig !== st.sig;
-        st.graph = graph;
-        st.steps = AA.graphLive.replaySteps(run && run.events, graph.flow);
-        if (fresh) {
-          const active = document.activeElement;
-          const hadFocus = Boolean(active) && active !== stage && stage.contains(active); // a node had it
-          st.sig = sig;
-          Object.keys(scene).forEach((key) => delete scene[key]);
-          Object.assign(scene, AA.graphScene.build(graph));
-          st.refs = AA.graphScene.draw(world, graph, scene, handlers);
-          st.mini = AA.graphScene.drawMini(mini, graph, scene);
-          st.focused = st.graph.nodes.some((n) => n.id === st.focused) ? st.focused : null;
-          if (!st.sized) { // a first height that suits the graph; the user may resize it after
-            st.sized = true;
-            stage.style.height = Math.round(Math.min(Math.max(scene.bounds.h + 24, 260), 640)) + "px";
-          }
-          camera.fit();
-          if (hadFocus && st.focused) focusNode(st.focused); // the redraw replaced the focused node
-          else if (hadFocus) stage.focus({ preventScroll: true });
-        }
-        paint();
+        st.top = graph;
+        render(run);
       },
       select(id) { st.selected = id; paint(); },
       snapshot: () => st.snap,
+      shown: () => st.graph, // the graph on show (a sub-flow once one is opened)
       fit: () => camera.fit(),
       destroy() { stopPlay(); camera.destroy(); document.removeEventListener("keydown", onSlash); AA.clear(container); },
     };

@@ -130,10 +130,10 @@ async def test_all_of_weights_the_graded_ones_and_ignores_none():
     judge = all_of(contains(), code_check(lambda c, r: False), ungraded, odd, weights=[3, 1, 1, 1])
     score = await grade(judge, "80C")
     assert (score.value, score.passed) == (0.75, False)
-    assert score.notes == "the check failed"
+    assert score.notes == "the check failed; all_of[2] not graded; all_of[3] not graded"
     assert await grade(all_of(ungraded), "x") is None
     assert (await grade(all_of(code_check(lambda c, r: 0.4)), "x")).passed is None
-    assert (await grade(all_of(contains(), odd), "80C")).passed is None
+    assert (await grade(all_of(contains(), odd), "80C")).passed is False  # fail closed
 
 
 async def test_all_of_survives_a_raising_judge_but_not_cancellation():
@@ -144,10 +144,10 @@ async def test_all_of_survives_a_raising_judge_but_not_cancellation():
         raise asyncio.CancelledError
 
     assert (await grade(all_of(broken, contains()), "80C")).value == 1.0
-    assert (await grade(all_of(broken, contains()), "80C")).passed is None
+    assert (await grade(all_of(broken, contains()), "80C")).passed is False
     assert (await grade(all_of(broken, contains()), "no")).passed is False
     raising_check = code_check(lambda c, r: 1 / 0)
-    assert (await grade(all_of(raising_check, contains()), "80C")).passed is None
+    assert (await grade(all_of(raising_check, contains()), "80C")).passed is False
     with pytest.raises(asyncio.CancelledError):
         await grade(all_of(cancelled), "x")
 

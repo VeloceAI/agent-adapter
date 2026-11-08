@@ -12,7 +12,7 @@ from agent_adapter.core.context import ToolContext
 from agent_adapter.core.errors import ToolUsageError
 from agent_adapter.core.messages import LLMRequest, LLMResponse
 from agent_adapter.core.tool import ToolSpec
-from agent_adapter.core.types import ToolCall, ToolResult
+from agent_adapter.core.types import LedgerEntry, ToolCall, ToolResult
 
 
 @dataclass(frozen=True)
@@ -73,6 +73,10 @@ class Hook:
         return None
 
     async def on_llm_error(self, inv: LLMInvocation, error: BaseException) -> ShortCircuit | None:
+        return None
+
+    async def on_llm_end(self, inv: LLMInvocation, billed: LedgerEntry | None) -> None:
+        """Runs once when the call ends, however it ends; `billed` is its ledger entry or None."""
         return None
 
     async def before_node(self, inv: NodeInvocation) -> ShortCircuit | None:

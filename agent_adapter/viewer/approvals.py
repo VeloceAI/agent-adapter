@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from agent_adapter.approval.deferred import server_owned
+from agent_adapter.approval.memory import approval_context
 from agent_adapter.approval.sqlite_store import SQLiteApprovalStore
 from agent_adapter.approval.store import ApprovalRecord
 from agent_adapter.core.errors import ApprovalAlreadyDecided, ConfigError, ToolUsageError
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 MAX_REASON = 500
 MAX_REVIEWER = 120
 MAX_LISTED = 200
+MAX_HISTORY = 1_000  # decided records of each outcome read for approval memory
 
 
 class ApprovalDesk:
@@ -42,9 +44,18 @@ class ApprovalDesk:
         self.store = SQLiteApprovalStore(self.path)
 
     def pending(self) -> list[dict[str, Any]]:
-        """Pending records, newest first, with secret-named arguments masked."""
+        """Pending records, newest first, masked, each with similar past decisions (advice)."""
         records = asyncio.run(self.store.list(status="pending", limit=MAX_LISTED))
-        return [view(record) for record in records]
+        if not records:
+            return []
+        history = [
+            *asyncio.run(self.store.list(status="approved", limit=MAX_HISTORY)),
+            *asyncio.run(self.store.list(status="denied", limit=MAX_HISTORY)),
+        ]
+        return [
+            {**view(record), "context": approval_context(record.request, history).view()}
+            for record in records
+        ]
 
     def decide(self, approval_id: str, *, approved: bool, reason: str = "") -> dict[str, Any]:
         """Record approve or deny as this desk's reviewer; only a pending tool record.

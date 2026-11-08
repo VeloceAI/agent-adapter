@@ -13,19 +13,26 @@ PLACE_ROUNDS = 4  # coordinate passes pulling each item towards its neighbours
 _GAP = {(True, True): 1.0, (True, False): 0.6, (False, True): 0.6, (False, False): 0.35}
 _DUMMY_WEIGHT = 4.0  # long edges stay straight before short ones do
 WORK = 6_000  # item passes per layout; big graphs (many long edges) get fewer passes
+MAX_DEPTH = 8  # sub-flows nested deeper (a hand-edited file) are left out
 
 Rows = list[list[str]]
 Links = dict[str, list[str]]
 
 
-def layout(graph: Mapping[str, Any]) -> dict[str, Any]:
+def layout(graph: Mapping[str, Any], *, depth: int = 0) -> dict[str, Any]:
     """A copy of `graph`: nodes get `layer`, `order` and `x`; edges get `via` (bend x per layer).
 
     Loop edges are ignored for depth and order; an edge that closes a cycle in a graph not
     marked so (a hand-edited or foreign file) is marked `loop` here. `x` is in node slots (one
-    node and its gap); `width` is the span of `x` plus one slot.
+    node and its gap); `width` is the span of `x` plus one slot. A sub-flow node's `subflow`
+    graph is laid out the same way.
     """
     nodes = [dict(node) for node in graph.get("nodes", [])]
+    for node in nodes:
+        if isinstance(node.get("subflow"), Mapping) and depth < MAX_DEPTH:
+            node["subflow"] = layout(node["subflow"], depth=depth + 1)
+        else:
+            node.pop("subflow", None)
     edges = [dict(edge) for edge in graph.get("edges", [])]
     names = list(dict.fromkeys(str(node["id"]) for node in nodes))
     known = set(names)

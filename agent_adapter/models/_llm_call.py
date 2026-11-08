@@ -11,15 +11,17 @@ from contextvars import ContextVar
 from datetime import UTC, datetime
 from typing import Any, Literal
 
-from agent_adapter.core.context import ToolContext
+from agent_adapter.core.context import NODE_KEY, ToolContext
 from agent_adapter.core.control import control_flow_member
 from agent_adapter.core.errors import ApprovalPending, ToolUsageError, log_failure
 from agent_adapter.core.messages import LLMRequest, LLMResponse
 from agent_adapter.core.ports import EventSink, LedgerPort
 from agent_adapter.core.types import ErrorInfo, LedgerEntry, Usage
 from agent_adapter.hooks.base import Hook, LLMInvocation
+from agent_adapter.hooks.builtin._content import message_dicts
 from agent_adapter.models.entries import next_entry_id
 from agent_adapter.runtime.current import current_context, resolve_context, use_context
+from agent_adapter.tracing._content import Content, emit_with_content
 from agent_adapter.tracing.events import EventType, emit, make_event
 from agent_adapter.tracing.sinks import first_sink
 
@@ -82,6 +84,7 @@ class LLMCall:
         self.model = request.model or settings.model
         self.inv = LLMInvocation(request, settings.provider, self.model, self.ctx)
         self.reply: LLMResponse | None = None  # what the provider returned, for billing
+        self.billed: LedgerEntry | None = None  # the entry this call recorded, for on_llm_end
         # Responses of InstrumentedModels that ran inside this call's port.
         self.inner: list[Inner] = []
         # Errors nested calls reported as llm.failed, with the sink they reported to.
@@ -111,6 +114,18 @@ class LLMCall:
     def emit(self, type: str, /, **data: Any) -> None:
         event = make_event(type, self._event_ctx, call_id=self.entry_id, **data)
         emit(self.ctx.sink, event)
+
+    def emit_content(self, type: str, content: Content, /, **data: Any) -> None:
+        event = make_event(type, self._event_ctx, call_id=self.entry_id, **data)
+        emit_with_content(self.ctx.sink, event, content)
+
+    def _content(self, response: LLMResponse) -> dict[str, Any]:
+        """Input and reply, recorded once the before-llm guards passed and after-llm ran."""
+        run = self.ctx.run_id
+        return {
+            "input_messages": message_dicts(self.inv.request.messages, run),
+            "output_messages": message_dicts([response.message], run),
+        }
 
     def _ids(self) -> dict[str, Any]:
         return {"provider": self.settings.provider, "model": self.model, "stage": self.stage}
@@ -145,8 +160,9 @@ class LLMCall:
             self.emit(EventType.LLM_CACHED, **self._ids())
             return
         data: dict[str, Any] = {"nested": True} if nested else {}
-        self.emit(
+        self.emit_content(
             EventType.LLM_FINISHED,
+            lambda: self._content(response),
             **self._ids(),
             latency_ms=entry.latency_ms,
             usage=billed.usage.model_dump(mode="json"),
@@ -251,6 +267,9 @@ class LLMCall:
         metadata = {"parent_call_id": self.parent_id} if self.parent_id else {}
         if source == "hook":
             metadata["source"] = "hook"
+        node = self.ctx.extras.get(NODE_KEY)
+        if isinstance(node, str) and node:
+            metadata["node"] = node
         entry = LedgerEntry.from_usage(
             usage,
             kind="llm",
@@ -282,6 +301,7 @@ class LLMCall:
         return entry.model_copy(update=update)
 
     def _record(self, entry: LedgerEntry) -> None:
+        self.billed = entry
         ledger = self.ctx.ledger
         if ledger is None:
             return

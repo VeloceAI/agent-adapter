@@ -39,7 +39,7 @@ edited arguments), run events, cost per run, provider-shaped catalogues. Errors:
 | `GET /approvals?run_id=&status=` · `GET /approvals/{id}` | approvals |
 | `POST /approvals/{id}/decide` `{approved, edited_arguments?, reason?}` | 200 result or `denied` |
 | `GET /runs/{run_id}/events?close_on=` | `text/event-stream`, replay with `Last-Event-ID` |
-| `GET /runs/{run_id}/cost` | ledger summary (404 without a ledger) |
+| `GET /runs/{run_id}/cost` · `GET /budget` · `GET /budget/{scope}?key=` | ledger summary (404 without a ledger) · the caller's [budgets](../how-to/team-budgets.md) (`key`: approvers only) |
 | `GET /openapi.json` · `GET /openapi-3.0.json` | [OpenAPI](openapi.md) 3.1 · 3.0.3, filtered to the caller's tools |
 
 ## OpenAPI 3.0.3 (Go, Rust, API gateways)

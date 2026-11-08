@@ -80,6 +80,28 @@
       if (AA.embedded) return AA.embedded.runs || [];
       return (await getJSON("api/runs")).runs || [];
     },
+    // Runs matching a search (`q`, `tag`), with tags: { runs, tags, total }.
+    async runList(params) {
+      if (AA.embedded) {
+        const runs = AA.embedded.runs || [];
+        return { runs: runs, tags: [], total: runs.length };
+      }
+      const query = new URLSearchParams();
+      if (params && params.q) query.set("q", params.q);
+      if (params && params.tag) query.set("tag", params.tag);
+      const text = query.toString();
+      return getJSON("api/runs" + (text ? "?" + text : ""));
+    },
+    async setTags(key, change) {
+      const response = await fetch("api/runs/" + encodeURIComponent(key) + "/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-AA-CSRF": AA.csrf, "X-AA-Token": memoryToken },
+        body: JSON.stringify(change),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw failure(response, body);
+      return body.tags || [];
+    },
     async run(key, since) {
       const from = since || 0;
       if (AA.embedded) {

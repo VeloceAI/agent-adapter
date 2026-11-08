@@ -18,6 +18,7 @@ BASE_NAMES = {
     "context",
     "control",
     "callables",
+    "_partial_json",  # stdlib-only JSON prefix parser: models (streams) and viewer (chat drafts)
 }
 SUBPACKAGES = {
     "core",
@@ -34,15 +35,22 @@ SUBPACKAGES = {
     "integrations",
     "server",
     "optimiser",
+    "evals",
     "embeddings",
+    "memory",
+    "retrieval",
+    "chat",
+    "sandbox",
+    "policy",
+    "audit",
     "context",
     "handlers",
     "cli",
     "viewer",
 }
-# `handlers` (queues, serverless), `cli` (the command) and `viewer` (run recorder and local
-# page) are leaf entry points: no other package imports them.
-_ALL = {"base", "root"} | (SUBPACKAGES - {"handlers", "cli", "viewer"})
+# `handlers` (queues, serverless), `cli` (the command), `viewer` (run recorder and local
+# page) and `audit` (the audit sink) are leaf entry points: no other package imports them.
+_ALL = {"base", "root"} | (SUBPACKAGES - {"handlers", "cli", "viewer", "audit"})
 # R5: package keys each package may import ("root" = `agent_adapter` itself, outside the DAG).
 # Every package may also import the leaf `_version` (see VERSION).
 ALLOWED = {
@@ -56,7 +64,18 @@ ALLOWED = {
     "cost": {"base", "runtime", "cost"},
     "cache": {"base", "runtime", "cost", "cache"},
     "embeddings": {"base", "runtime", "tracing", "cache", "embeddings"},
-    "approval": {"base", "runtime", "tracing", "approval"},
+    "memory": {"base", "core", "runtime", "tracing", "embeddings", "memory"},
+    # exec only for the shared sync loop (`retrieve_sync`).
+    "retrieval": {"base", "core", "runtime", "tracing", "embeddings", "exec", "retrieval"},
+    "sandbox": {"base", "core", "runtime", "tracing", "sandbox"},
+    # The policy file builds hooks, approvals and limits from existing parts; nothing imports it.
+    "policy": {"base", "core", "hooks", "approval", "exec", "memory", "policy"},
+    # hooks: secret and PII scrubbers; exec: audit(executor) attaches like viewer.record.
+    "audit": {"base", "core", "runtime", "tracing", "hooks", "exec", "audit"},
+    # The chat contract above exec and memory, so neither imports the other for it.
+    "chat": {"base", "core", "exec", "memory", "chat"},
+    # hooks only for `is_secret_field` (approval memory never names secret fields).
+    "approval": {"base", "runtime", "tracing", "hooks", "approval"},
     "hooks": {"base", "core", "runtime", "tracing", "hooks"},
     # models and exec import context lazily: ports honour LLMRequest.compression, and
     # run_tool_loop(compression=) compresses its history.
@@ -101,10 +120,24 @@ ALLOWED = {
     "integrations": _ALL - {"server", "optimiser"},
     "server": _ALL - {"optimiser"},
     "optimiser": _ALL - {"integrations", "server", "root"},
+    "evals": _ALL - {"integrations", "server", "optimiser", "root"},
     "handlers": {"base", "runtime", "approval", "exec", "handlers"},
-    "cli": {"base", "integrations", "viewer", "cli"},
-    # Standard library and the core packages only: never a framework, integration or server.
-    "viewer": {"base", "core", "runtime", "tracing", "hooks", "approval", "exec", "viewer"},
+    "cli": {"base", "integrations", "viewer", "cli", "evals", "sandbox", "policy", "audit"},
+    # Core packages plus evals (reports), memory (chat recall) and the chat contract: never a
+    # framework, integration or server.
+    "viewer": {
+        "base",
+        "core",
+        "runtime",
+        "tracing",
+        "hooks",
+        "approval",
+        "exec",
+        "viewer",
+        "evals",
+        "memory",
+        "chat",
+    },
 }
 SCHEMA_IMPORTERS = {"core/registry.py", "core/imported.py"}
 VERSION = "_version"
@@ -138,6 +171,8 @@ INTEGRATION_ROOTS = {
     "ag_ui": ("ag_ui", "starlette"),
     "camel": ("camel", "jsonschema"),
     "ag2": ("ag2",),
+    "temporal": ("temporalio",),
+    "dbos": ("dbos",),
 }
 ODM_ROOTS: dict[str, set[str]] = {
     "models/openai.py": {"openai", "httpx2"},
@@ -150,7 +185,17 @@ ODM_ROOTS: dict[str, set[str]] = {
     "server/wsgi.py": {"a2wsgi", "starlette"},
     "approval/sqlalchemy_store.py": {"sqlalchemy"},
     "approval/sqlalchemy_schema.py": {"sqlalchemy"},
+    "hooks/builtin/budgets/sqlalchemy_store.py": {"sqlalchemy"},
+    "exec/checkpoints/sqlalchemy_store.py": {"sqlalchemy"},
     "context/formats/langchain.py": {"langchain_core"},
+    "hooks/builtin/guards/presidio.py": {"presidio_analyzer", "presidio_anonymizer"},
+    "hooks/builtin/guards/nemo.py": {"nemoguardrails"},
+    "evals/pytest_plugin.py": {"pytest"},
+    "memory/mem0.py": {"mem0"},
+    "policy/_load.py": {"yaml"},
+    "memory/zep.py": {"zep_cloud"},
+    "memory/graphiti.py": {"graphiti_core"},
+    "retrieval/llamaindex.py": {"llama_index"},
     **{
         f"integrations/{name}": {*own, *_INTEGRATION_COMMON}
         for name, own in INTEGRATION_ROOTS.items()
@@ -386,7 +431,7 @@ def forbidden_roots(rel: str, source: str) -> list[str]:
 
 # R10: packages outside flow/exec reach their internals only through these seams.
 SEAM_OWNERS = {"flow", "exec"}
-SEAM_USERS = {"integrations", "server", "optimiser"}
+SEAM_USERS = {"integrations", "server", "optimiser", "evals"}
 
 
 def private_internals(rel: str, source: str) -> list[str]:

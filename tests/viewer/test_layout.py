@@ -140,7 +140,8 @@ def test_a_dense_random_graph_still_lays_out_fast() -> None:
     rng = random.Random(7)
     edges = [(f"n{i}", f"n{min(199, i + rng.randint(1, 6))}") for i in range(199) for _ in range(2)]
     dense = graph(edges)
-    assert min(_timed(dense) for _ in range(3)) < 0.1
+    # ~0.05 s plain, ~2x under coverage tracing; a quadratic regression takes seconds.
+    assert min(_timed(dense) for _ in range(3)) < 0.5
 
 
 def _timed(source: dict[str, Any]) -> float:

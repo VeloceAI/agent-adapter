@@ -18,7 +18,7 @@ def test_cost_prices_overrides_and_ledger(capsys):
         "1.25",
         "4.0",
         "True None",
-        "2026-10-29+acme-2026-11",
+        "2026-11-05+acme-2026-11",
         "0.0325",
         "['plan', 'rerank'] 0",
         "3 2",

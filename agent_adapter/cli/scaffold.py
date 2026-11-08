@@ -48,6 +48,13 @@ TEMPLATES: dict[str, Template] = {
         "openai_agents", "agent.py", (_adapter("openai-agents"),), "python agent.py"
     ),
     "mcp-server": Template("mcp_server", "server.py", (_adapter("mcp"),), "python server.py"),
+    "pydantic-ai": Template(
+        "pydantic_ai", "agent.py", (_adapter("pydantic-ai"),), "python agent.py"
+    ),
+    "adk": Template("adk", "agent.py", (_adapter("adk"),), "python agent.py"),
+    "agno": Template("agno", "agent.py", (_adapter("agno"),), "python agent.py"),
+    "strands": Template("strands", "agent.py", (_adapter("strands"),), "python agent.py"),
+    "crewai": Template("crewai", "crew.py", (_adapter("crewai"),), "python crew.py"),
 }
 
 
@@ -66,12 +73,13 @@ def write_project(name: str, folder: Path, *, force: bool = False) -> list[Path]
         folder / template.filename: template.text(),
         folder / "requirements.txt": "".join(f"{line}\n" for line in template.requirements),
     }
-    for path in files:
-        if path.resolve(strict=False).parent != folder.resolve(strict=False):
-            raise ConfigError(f"refusing to write {path}: it is outside {folder}")
+    # Links first: resolve() follows a link, so it would report one as "outside" instead.
     links = sorted(str(path) for path in files if path.is_symlink())
     if links:  # even with --force: the link could point anywhere
         raise ConfigError(f"refusing to write through symlink {', '.join(links)}; remove it")
+    for path in files:
+        if path.resolve(strict=False).parent != folder.resolve(strict=False):
+            raise ConfigError(f"refusing to write {path}: it is outside {folder}")
     existing = sorted(str(path) for path in files if path.exists())
     if existing and not force:
         raise ConfigError(f"not overwriting {', '.join(existing)}; pass --force to replace")

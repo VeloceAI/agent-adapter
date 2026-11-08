@@ -164,7 +164,7 @@
         if (ev.type === "state") st.state = ev.state || {};
         draw(turnId);
         if (ev.type === "done" || ev.type === "error") ended(turnId);
-        else if ((ev.type === "state" || ev.type === "usage") && turnId === st.selected) inspect();
+        else if ((ev.type === "state" || ev.type === "usage" || ev.type === "memory") && turnId === st.selected) inspect();
       },
       onStatus: (status) => {
         if (status === "retrying") setError(RECONNECTING);
@@ -229,7 +229,8 @@
     const view = st.views[st.selected];
     if (!view) { inspector.show(null, null); return; }
     const model = view.model;
-    inspector.show(Object.assign({}, model.turn, model.usage, { status: model.status }), model.state);
+    const memory = { live_memories: model.memories || null, memory_result: model.memorySaved || null };
+    inspector.show(Object.assign({}, model.turn, model.usage, { status: model.status }, memory), model.state);
   }
 
   async function action(name, view, button) {

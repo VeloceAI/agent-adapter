@@ -75,7 +75,7 @@ result in the changelog (for 1.0.0 the maintainer ran them):
 | OpenAI usage: `input = prompt − cached − cache_write`, writes billed once at the write rate | cost accuracy on write-priced models |
 | Anthropic structured output: whether the API requires `additionalProperties: false` | requests with an output schema may be refused |
 | Gemini: `google-genai` sends `parameters_json_schema` and `thinking_config` keys in snake_case | proto JSON should accept them; unverified on the wire |
-| Anthropic and Voyage prices | the default table has caps-only Anthropic rows and no Voyage row; add prices with `Prices.load` |
+| Anthropic and Voyage prices | the default table prices the current Claude models; older Claude ids are caps-only and there is no Voyage row; add prices with `Prices.load` |
 
 ## 5. Build
 

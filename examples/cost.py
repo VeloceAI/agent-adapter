@@ -10,7 +10,7 @@ from agent_adapter.cost import JsonlSink, MemorySink, read_jsonl
 
 def prices_demo() -> None:
     # --8<-- [start:prices]
-    prices = Prices.default()  # the packaged table, version "2026-10-29"
+    prices = Prices.default()  # the packaged table, version "2026-11-05"
     usage = Usage(input_tokens=150_000, cached_input_tokens=50_000, output_tokens=2_000)
     print(prices.resolve("gpt-4.1-2025-04-14"))  # alias -> "gpt-4.1"
     cost = prices.cost("gpt-4.1", usage)  # None for an unknown or caps-only model
@@ -47,7 +47,7 @@ def overrides_demo() -> Prices:
             "units": {"voyage:rerank-2.5": {"provider": "voyage", "per_unit": 0.05}},
         }
     )
-    print(house.version)  # "2026-10-29+acme-2026-11"
+    print(house.version)  # "2026-11-05+acme-2026-11"
     # --8<-- [end:override]
     return house
 

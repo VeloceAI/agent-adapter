@@ -21,10 +21,17 @@ def _error_classes() -> set[str]:
     }
 
 
+AFTER_1_0_ERRORS = {
+    "ApprovalStoreCorrupt",
+    "CheckpointConflict",
+    "CheckpointNotFound",
+    "CheckpointStoreCorrupt",
+    "RecoveryNeedsDecision",
+}
 # The top level before 1.0; a name missing from today's __all__ has moved to a home.
 PRE_1_0_TOP_LEVEL = frozenset(
     {
-        *(_error_classes() - {"ApprovalStoreCorrupt"}),  # added after 1.0 split
+        *(_error_classes() - AFTER_1_0_ERRORS),
         "ApprovalDecision",
         "ApprovalRequest",
         "Decision",

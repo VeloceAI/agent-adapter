@@ -19,13 +19,13 @@ from typing import Any
 
 from agent_adapter.core._default import default_registry
 from agent_adapter.core.context import ToolContext
-from agent_adapter.core.errors import ToolUsageError
+from agent_adapter.core.errors import ApprovalNotFound, ToolUsageError
 from agent_adapter.core.ports import ApprovalPort, CachePort, EventSink, LedgerPort, LLMPort
 from agent_adapter.core.registry import Registry
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.core.types import ApprovalDecision, ToolCall, ToolResult
 from agent_adapter.exec._batches import Batches
-from agent_adapter.exec._settings import _Settings
+from agent_adapter.exec._settings import ToolPolicy, _Settings
 from agent_adapter.exec._sugar import (
     ToolRef,
     check_args,
@@ -70,8 +70,13 @@ class Executor(Batches, SyncTwins):
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         rng: Callable[[], float] = random.random,
         max_tracked_runs: int = 10_000,
+        policy: ToolPolicy | None = None,
     ) -> None:
         check_options(registry, approval)
+        if policy is not None and not isinstance(policy, ToolPolicy):
+            raise ToolUsageError(
+                f"policy must be a ToolPolicy (e.g. a Policy), got {type(policy).__name__}"
+            )
         if registry is None:
             # Every @tool of every imported module is then callable, by name, by a model too.
             registry = default_registry
@@ -94,25 +99,30 @@ class Executor(Batches, SyncTwins):
             "sleep": sleep,
             "rng": rng,
             "max_tracked_runs": max_tracked_runs,
+            "policy": policy,
         }
         bad_hooks = [h for h in self._options["hooks"] if not isinstance(h, Hook)]
         if bad_hooks:
             raise ToolUsageError(f"hooks must be Hook instances, got {bad_hooks!r}")
         # Contexts and models capture the hub, so add_sink reaches them later too.
         self._hub = SinkHub(sink)
+        # The policy's hooks and limits are added here, not kept in the options: replace(hooks=,
+        # limits=) changes only the caller's own, never what the policy enforces.
+        enforced = policy.hooks() if policy is not None else ()
         self._settings = _Settings(
-            hooks=self._options["hooks"],
+            hooks=(*enforced, *self._options["hooks"]),
             approval=approval,
             cache=cache,
             ledger=ledger,
             sink=self._hub,
-            limits=limits or RunLimits(),
+            limits=_limits(policy, limits or RunLimits()),
             backoff=backoff or Backoff(),
             namespace=namespace,
             clock=clock,
             sleep=sleep,
             rng=rng,
             runs=_RunTracker(max_tracked_runs),
+            policy=policy,
         )
 
     def __reduce__(self) -> tuple[Any, ...]:
@@ -132,7 +142,8 @@ class Executor(Batches, SyncTwins):
 
     @property
     def hooks(self) -> tuple[Hook, ...]:
-        return self._settings.hooks
+        """The executor's own hooks; a policy's hooks run before them and are not listed."""
+        return self._options["hooks"]  # type: ignore[no-any-return]
 
     @property
     def approval(self) -> ApprovalPort | None:
@@ -162,6 +173,11 @@ class Executor(Batches, SyncTwins):
     @property
     def namespace(self) -> str:
         return self._settings.namespace
+
+    @property
+    def policy(self) -> ToolPolicy | None:
+        """The policy every call's spec passes through (`Policy.apply` sets it), or None."""
+        return self._settings.policy
 
     def replace(self, **changes: Any) -> Executor:
         """A new Executor with some constructor arguments replaced; `self` is unchanged.
@@ -204,7 +220,7 @@ class Executor(Batches, SyncTwins):
         """`model` with this executor's hooks, response cache, ledger and sink around it."""
         return InstrumentedModel(
             model,
-            hooks=self.hooks,
+            hooks=self._settings.hooks,
             ledger=self.ledger,
             cache=self.cache,
             cache_ttl=cache_ttl,
@@ -217,6 +233,7 @@ class Executor(Batches, SyncTwins):
         *,
         run_id: str | None = None,
         thread_id: str = "",
+        user_id: str = "",
         state: Mapping[str, Any] | None = None,
         extras: Mapping[str, Any] | None = None,
     ) -> ToolContext:
@@ -226,6 +243,7 @@ class Executor(Batches, SyncTwins):
             state=state if state is not None else {},
             extras=dict(extras or {}),
             thread_id=thread_id,
+            user_id=user_id,  # the authenticated end user: memory and retrieval scope by it
             ledger=self.ledger,
             cache=self.cache,
             sink=self.sink,
@@ -332,12 +350,24 @@ class Executor(Batches, SyncTwins):
         Raises:
             ToolUsageError: no approval store, a flow-node or HTTP-server approval, a pending
                 record without `decision` or `decided_by`, or `ctx` of another run.
-            ApprovalNotFound: unknown id.
+            ApprovalNotFound: unknown or expired id (an expiry also sends `approval.expired`).
             ApprovalAlreadyDecided: already used, or decided otherwise in the store.
         """
-        call, run_id = await resume_target(
-            self.approval, approval_id, decision, decided_by=decided_by, reason=reason, ctx=ctx
-        )
+        try:
+            call, run_id = await resume_target(
+                self.approval, approval_id, decision, decided_by=decided_by, reason=reason, ctx=ctx
+            )
+        except ApprovalNotFound as exc:
+            if exc.expired:  # a store TTL ran out: nobody decided in time
+                expired = make_event(
+                    EventType.APPROVAL_EXPIRED,
+                    ctx,
+                    tool=exc.tool,
+                    approval_id=approval_id,
+                    outcome="ttl",
+                )
+                emit(ctx.sink if ctx is not None and ctx.sink is not None else self.sink, expired)
+            raise
         owned = ctx is None
         ctx = resume_context(ctx, run_id, lambda: self.context(run_id=run_id))
         try:
@@ -353,6 +383,20 @@ class Executor(Batches, SyncTwins):
         if not ctx.run_id:
             return dataclasses.replace(ctx, run_id=new_id("run_")), True
         return ctx, False
+
+
+def _limits(policy: ToolPolicy | None, limits: RunLimits) -> RunLimits:
+    """`limits` under `policy`; a non-RunLimits result fails closed.
+
+    Raises:
+        ToolUsageError: the policy returned something other than RunLimits.
+    """
+    if policy is None:
+        return limits
+    found = policy.limits(limits)
+    if not isinstance(found, RunLimits):
+        raise ToolUsageError(f"policy.limits must return RunLimits, got {type(found).__name__}")
+    return found
 
 
 def bind_model(executor: Executor, model: LLMPort, ctx: ToolContext) -> InstrumentedModel:

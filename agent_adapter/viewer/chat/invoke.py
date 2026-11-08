@@ -1,4 +1,4 @@
-"""Call a chat agent under the contract and yield its answer as text chunks."""
+"""Call a chat agent under the contract and yield its answer: text chunks and tool-call deltas."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from typing import Any
 
 from agent_adapter.core.callables import is_async
 from agent_adapter.core.errors import ToolUsageError
+from agent_adapter.core.messages import ToolCallDelta
 from agent_adapter.viewer.chat.contract import ChatAgent, ChatMessage, ChatSession
 
 
@@ -21,12 +22,14 @@ def _on_loop(agent: object) -> bool:
 
 async def reply_chunks(
     agent: ChatAgent, message: ChatMessage, session: ChatSession
-) -> AsyncGenerator[str, None]:
+) -> AsyncGenerator[str | ToolCallDelta, None]:
     """The agent's answer chunks; a sync agent runs in a worker thread.
+
+    A streamed `ToolCallDelta` shows its arguments in a draft tool card while they arrive.
 
     Raises:
         ToolUsageError: the agent returned something other than text or an async iterator
-            of text.
+            of text (and tool-call deltas).
         Exception: whatever the agent raised.
     """
     if _on_loop(agent):
@@ -51,7 +54,7 @@ async def reply_chunks(
         yield _text(chunk)
 
 
-def _text(chunk: object) -> str:
-    if not isinstance(chunk, str):
+def _text(chunk: object) -> str | ToolCallDelta:
+    if not isinstance(chunk, str | ToolCallDelta):
         raise ToolUsageError(f"a chat agent must stream str chunks, got {type(chunk).__name__}")
     return chunk

@@ -6,7 +6,7 @@
   const POLL_MS = 1000;
   const THEMES = ["auto", "light", "dark"];
   const TABS = ["timeline", "tools", "events", "state", "compare", "approvals"];
-  const state = { runs: [], key: null, run: null, loaded: null, filter: null, span: null, node: null, tab: "timeline", flow: null, approvalIds: null, locked: false };
+  const state = { runs: [], key: null, run: null, loaded: null, filter: null, span: null, node: null, tab: "timeline", flow: null, approvalIds: null, locked: false, tags: {}, search: null, again: false };
   const busy = { runs: false, run: false, approvals: false }; // one request of each kind at a time
   const timers = [];
   const $ = (id) => document.getElementById(id);
@@ -129,7 +129,7 @@
   }
 
   function renderDetail() {
-    const graph = currentGraph();
+    const graph = (views.graph && views.graph.shown()) || currentGraph(); // an opened sub-flow, else the flow
     const node = state.node && graph ? graph.nodes.find((n) => n.id === state.node) : null;
     const snap = node ? views.graph.snapshot() : null;
     if (node && snap && snap.nodes[node.id]) {
@@ -149,6 +149,15 @@
   function renderRun() {
     const run = state.run;
     AA.renderHead($("run-head"), run);
+    if (run && !AA.embedded) {
+      const key = AA.runKey(run);
+      AA.runSearch.attachTags($("run-head"), key, state.tags[key] || [], (change) => AA.api.setTags(key, change).then((tags) => {
+        state.tags[key] = tags;
+        refreshRuns();
+        return tags;
+      }));
+      if (AA.runCases) AA.runCases.attach($("run-head"), key, run.summary.status);
+    }
     const graph = currentGraph();
     $("graph-card").hidden = !graph;
     renderFlowPicker();
@@ -216,7 +225,7 @@
         console.warn("Agent Adapter viewer: cannot update the address", err);
       }
     }
-    AA.renderRuns($("run-list"), state.runs, state.key, pick);
+    AA.renderRuns($("run-list"), state.runs, state.key, pick, Boolean(state.search && state.search.active()));
     loadRun(key);
   }
 
@@ -239,17 +248,28 @@
   }
 
   async function refreshRuns() {
-    if (busy.runs || state.locked) return;
+    if (state.locked) return;
+    if (busy.runs) {
+      state.again = true; // the search changed mid-request: ask again when it ends
+      return;
+    }
     busy.runs = true;
     try {
-      state.runs = await AA.api.runs();
+      const body = await AA.api.runList(state.search ? state.search.params() : {});
+      state.runs = body.runs || [];
+      state.runs.forEach((r) => { state.tags[r.key] = r.tags || []; });
+      if (state.search) state.search.paint(body);
     } catch (err) {
       if (!unauthorized(err)) console.error("Agent Adapter viewer: listing runs failed", err);
       return;
     } finally {
       busy.runs = false;
+      if (state.again) {
+        state.again = false;
+        setTimeout(refreshRuns, 0);
+      }
     }
-    AA.renderRuns($("run-list"), state.runs, state.key, pick);
+    AA.renderRuns($("run-list"), state.runs, state.key, pick, Boolean(state.search && state.search.active()));
     if (!state.key && state.runs.length) {
       const wanted = hashKey();
       pick(state.runs.some((r) => r.key === wanted) ? wanted : state.runs[0].key);
@@ -303,6 +323,7 @@
       locked("No access token: open the full address agent-adapter ui printed (it ends in #token=...).");
       return;
     }
+    if (!AA.embedded) state.search = AA.runSearch.createSearch($("run-search"), refreshRuns);
     await refreshRuns();
     if (AA.embedded || state.locked) return;
     $("live").hidden = false;

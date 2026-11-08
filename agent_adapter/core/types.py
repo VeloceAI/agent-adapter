@@ -290,4 +290,18 @@ class ModelCaps(BaseModel):
     min_cache_tokens: int = 1024
     structured_output: bool = True
     reasoning: bool = False
-    context_window: int | None = Field(default=None, gt=0)  # tokens; sizes compression
+    context_window: int | None = Field(default=None, gt=0)  # tokens, prompt plus reply
+    max_output_tokens: int | None = Field(default=None, gt=0)  # tokens; one reply's ceiling
+
+    @model_validator(mode="after")
+    def _check_window(self) -> ModelCaps:
+        window, output = self.context_window, self.max_output_tokens
+        if window is not None and output is not None and output >= window:
+            raise ValueError("max_output_tokens must be less than context_window")
+        return self
+
+    def prompt_window(self) -> int | None:
+        """Tokens a prompt may use: `context_window` less `max_output_tokens`; None if unknown."""
+        if self.context_window is None:
+            return None
+        return self.context_window - (self.max_output_tokens or 0)

@@ -11,7 +11,8 @@ from typing import Any, Generic, TypeVar
 from pydantic import BaseModel
 
 from agent_adapter.core.errors import FlowDefinitionError
-from agent_adapter.flow.actions import Call, Join, Map, NodeFn, Route
+from agent_adapter.flow._subcheck import validating
+from agent_adapter.flow.actions import Call, Join, Map, NodeCache, NodeFn, Route, SubFlow
 from agent_adapter.flow.diagram import flow_graph, flow_mermaid
 from agent_adapter.flow.graph import FlowGraph, NodeSpec, RouteSpec, build_graph, node_kind
 
@@ -41,15 +42,16 @@ class Flow(Generic[S]):
     def node(
         self,
         name: str,
-        action: NodeFn[S] | Call | Map | Join,
+        action: NodeFn[S] | Call | Map | Join | SubFlow,
         *,
         concurrency: int | None = None,
         timeout: float | None = None,
         retries: int = 0,
         pause: bool | Callable[[S], Mapping[str, Any]] = False,
         prompt: str | None = None,
+        cache: NodeCache | None = None,
     ) -> Flow[S]:
-        """Add a node: a function `fn(state)` / `fn(state, ctx)`, or a `Call`, `Map` or `Join`."""
+        """Add a node: `fn(state)` / `fn(state, ctx)`, or a `Call`, `Map`, `Join` or `SubFlow`."""
         if any(node.name == name for node in self._nodes):
             self._problems.append(f"duplicate node {name!r}")
         self._nodes.append(
@@ -62,6 +64,7 @@ class Flow(Generic[S]):
                 retries=retries,
                 pause=pause,
                 prompt=prompt,
+                cache=cache,
             )
         )
         return self
@@ -118,18 +121,19 @@ class Flow(Generic[S]):
         """Check the definition and return its graph.
 
         Raises:
-            FlowDefinitionError: every problem found, listed together.
+            FlowDefinitionError: every problem found, listed together (a sub-flow cycle alone).
         """
-        return build_graph(
-            self.name,
-            self.state_model,
-            nodes=self._nodes,
-            edges=self._edges,
-            routes=self._routes,
-            start=self._start,
-            ends=self._ends,
-            problems=self._problems,
-        )
+        with validating(self, self.name):
+            return build_graph(
+                self.name,
+                self.state_model,
+                nodes=self._nodes,
+                edges=self._edges,
+                routes=self._routes,
+                start=self._start,
+                ends=self._ends,
+                problems=self._problems,
+            )
 
     def graph(self) -> dict[str, Any]:
         """The validated graph as JSON-able nodes and edges (fan-out, fan-in, routes, loops, gates).

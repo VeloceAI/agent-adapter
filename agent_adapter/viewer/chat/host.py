@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import dataclasses
 import functools
 import logging
 import threading
@@ -12,7 +13,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from contextlib import aclosing
 from http import HTTPStatus
-from typing import Any
+from typing import Any, cast
 
 from agent_adapter.core.errors import ToolUsageError, log_failure
 from agent_adapter.exec.executor import Executor
@@ -20,12 +21,14 @@ from agent_adapter.hooks.builtin.logging import redact_secrets
 from agent_adapter.runtime.current import use_context
 from agent_adapter.runtime.ids import new_id
 from agent_adapter.runtime.loop_runner import LoopRunner
+from agent_adapter.viewer.chat import memory_turns
 from agent_adapter.viewer.chat.approvals import ChatApprovals
 from agent_adapter.viewer.chat.contract import Attachment, ChatAgent, ChatMessage, ChatSession
 from agent_adapter.viewer.chat.evalcases import EvalCases
 from agent_adapter.viewer.chat.files import FileStore
 from agent_adapter.viewer.chat.invoke import reply_chunks
 from agent_adapter.viewer.chat.live import LiveTurn
+from agent_adapter.viewer.chat.memory import ChatMemory, ChatMemoryWriter
 from agent_adapter.viewer.chat.records import ChatOptions, Refused, Session, Turn
 from agent_adapter.viewer.chat.sessions import SessionStore, new_key
 from agent_adapter.viewer.chat.settle import Settler
@@ -61,8 +64,11 @@ class ChatHost:
         watch: TurnWatch,
         desk: ChatApprovals,
         refusal: Callable[[tuple[Attachment, ...]], str] | None = None,
+        memory: ChatMemory | None = None,
     ) -> None:
         self.agent = agent
+        self.memory = memory
+        self.user_id = store.user_id
         self.executor = executor
         self.options = options
         self.store = store
@@ -84,7 +90,16 @@ class ChatHost:
         return self.options.mode
 
     def info(self) -> dict[str, Any]:
-        return {"enabled": True, "mode": self.mode, "agent_name": self.options.agent_name}
+        info: dict[str, Any] = {
+            "enabled": True,
+            "mode": self.mode,
+            "agent_name": self.options.agent_name,
+        }
+        if self.user_id:
+            info["user"] = self.user_id
+        if self.memory is not None:
+            info["memory"] = self.memory.info()
+        return info
 
     # --- turns (HTTP threads) -------------------------------------------------------------
 
@@ -267,6 +282,7 @@ class ChatHost:
             state=session.state,
             executor=self.executor,
             run_id=turn.run_id,
+            user_id=self.user_id,
         )
         live.push("state", state=redact_secrets(session.saved_state))
         if live.stop_reason:  # stopped before the task ran
@@ -277,13 +293,24 @@ class ChatHost:
         try:
             async with (
                 limit,
-                self.executor.run_scope(run_id=turn.run_id, state=session.state) as ctx,
+                self.executor.run_scope(run_id=turn.run_id, state=session.state) as scope,
             ):
+                ctx = dataclasses.replace(scope, user_id=self.user_id)
                 with use_context(ctx):
+                    if self.memory is not None:
+                        await memory_turns.recall(self.memory, view, turn, live, ctx)
                     message = ChatMessage(turn.text, attachments)
                     async with aclosing(reply_chunks(self.agent, message, view)) as chunks:
                         async for chunk in chunks:
-                            live.text(chunk)
+                            if isinstance(chunk, str):
+                                live.text(chunk)
+                            else:
+                                live.draft(chunk)
+                    if self.memory is not None:
+                        writer = cast(ChatMemoryWriter, self.agent)
+                        await memory_turns.save_if_due(
+                            self.memory, writer, self.store, session, turn, live, view, ctx
+                        )
         except TimeoutError as exc:
             if limit.expired():
                 status, error = (

@@ -98,7 +98,7 @@ def payload(checkpoint: FlowCheckpoint, encoder: Encoder | None) -> dict[str, An
     """
     journal = {node: data for node, data in checkpoint._journal.items()}
     check_plain(journal, "journal")
-    return {
+    data = {
         "flow": checkpoint.flow,
         "graph": checkpoint._graph,
         "state": encode(checkpoint.state, encoder, "state"),
@@ -118,6 +118,9 @@ def payload(checkpoint: FlowCheckpoint, encoder: Encoder | None) -> dict[str, An
         "items": encode({n: dict(v) for n, v in checkpoint._items.items()}, encoder, "items"),
         "journal": journal,
     }
+    if checkpoint._children:  # absent when empty, so checkpoints without sub-flows seal as before
+        data["children"] = {n: payload(c, encoder) for n, c in checkpoint._children.items()}
+    return data
 
 
 def mac(key: bytes, data: Mapping[str, Any]) -> str:
@@ -192,8 +195,11 @@ def dump_json(sealer: Sealer, checkpoint: FlowCheckpoint) -> str:
 
 def _check_loadable(checkpoint: FlowCheckpoint, data: Mapping[str, Any]) -> None:
     """Refuse to dump a class that `load_json` would refuse to build."""
+    for node, child in checkpoint._children.items():
+        _check_loadable(child, data["children"][node])
     allowed = allowed_classes(type(checkpoint.state))
-    parts = {k: v for k, v in data.items() if k != "journal"}  # replays check their own
+    # replays check their own classes; sub-flow runs were checked above with their own model
+    parts = {k: v for k, v in data.items() if k not in ("journal", "children")}
     missing = sorted(tagged_classes(list(parts.values())) - allowed.keys())
     if missing:
         logger.warning(
@@ -259,6 +265,14 @@ def _build(sealer: Sealer, graph: FlowGraph, data: dict[str, Any], given: str) -
     decisions = load("decisions")
     if not all(isinstance(d, ApprovalDecision) for d in decisions.values()):
         raise TypeError("decisions are not ApprovalDecisions")
+    children = {}
+    for node, part in dict(data.get("children", {})).items():
+        spec = graph.nodes.get(node)
+        if spec is None or spec.child is None or not isinstance(part, dict):
+            raise TypeError(f"{node!r} is not a SubFlow node of this graph")
+        children[node] = _build(sealer, spec.child, part, "")
+    if data["flow"] != graph.name:
+        raise TypeError(f"the checkpoint is for flow {data['flow']!r}")
     return FlowCheckpoint(
         flow=data["flow"],
         state=state,
@@ -273,6 +287,7 @@ def _build(sealer: Sealer, graph: FlowGraph, data: dict[str, Any], given: str) -
         _answers=frozen(load("answers")),
         _items=frozen({n: frozen(v) for n, v in load("items").items()}),
         _journal=frozen(data["journal"]),
+        _children=frozen(children),
         _graph=data["graph"],
         _mac=given,
     )

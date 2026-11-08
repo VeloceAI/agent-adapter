@@ -27,7 +27,7 @@ def _parts(*, full: bool) -> list[str]:
         install.render(full=full),
         sections.import_rules(),
         sections.safety(),
-        recipes.render(),
+        recipes.render(full=full),
         sections.errors(full=full),
         sections.cli(),
         api_index.render() if full else sections.full_api_pointer(),

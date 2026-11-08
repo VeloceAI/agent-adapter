@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 from collections import OrderedDict
+from collections.abc import Iterator
 from typing import Unpack
 
 from agent_adapter.approval.store import ApprovalStore, request_digest
@@ -18,7 +20,7 @@ from agent_adapter.core.ports import ApprovalPort
 from agent_adapter.core.types import ApprovalDecision, ApprovalRequest
 from agent_adapter.exec._approve import approval_store, same_decision
 from agent_adapter.flow._nodes import node_call_id
-from agent_adapter.flow._result import FlowCheckpoint, ResumeEntry
+from agent_adapter.flow._result import FlowCheckpoint, ResumeEntry, frozen
 from agent_adapter.flow._seal import TAMPERED
 
 logger = logging.getLogger(__name__)
@@ -28,7 +30,7 @@ def resume_entry(pending: ApprovalRequest, decision: ApprovalDecision) -> Resume
     """The answer for a paused tool approval: exact call id for `Call` / `Map` calls."""
     meta = pending.metadata
     node, visit = str(meta.get("node", "")), int(meta.get("visit", 0))
-    prefix = node_call_id(str(meta.get("flow", "")), node, visit)
+    prefix = node_call_id(str(meta.get("flow", "")), node, visit, str(meta.get("scope", "")))
     return pending, decision, pending.call_id.startswith(f"{prefix}:")
 
 
@@ -40,7 +42,7 @@ async def check_answers(store: ApprovalStore, checkpoint: FlowCheckpoint) -> Non
     Raises:
         FlowError: an answer's record is not consumed or holds another request or decision.
     """
-    for node, entries in checkpoint._answers.items():
+    for node, entries in _all_answers(checkpoint):
         for request, decision, _exact in entries:
             try:
                 record = await store.get(request.approval_id)
@@ -65,6 +67,34 @@ async def check_answers(store: ApprovalStore, checkpoint: FlowCheckpoint) -> Non
                     flow=checkpoint.flow,
                     node=node,
                 )
+
+
+def _all_answers(
+    checkpoint: FlowCheckpoint, where: str = ""
+) -> Iterator[tuple[str, tuple[ResumeEntry, ...]]]:
+    """Every node's answers, sub-flow runs included (named `node/child node`)."""
+    for node, entries in checkpoint._answers.items():
+        yield f"{where}{node}", entries
+    for node, child in checkpoint._children.items():
+        yield from _all_answers(child, f"{where}{node}/")
+
+
+def answer_child(checkpoint: FlowCheckpoint, decision: ApprovalDecision) -> FlowCheckpoint:
+    """A paused child run with `decision` given to its pending request (a gate or a tool)."""
+    pending = checkpoint.pending
+    if pending is None:
+        raise FlowError(f"flow {checkpoint.flow!r}: a paused sub-flow holds no request")
+    node = str(pending.metadata.get("node", ""))
+    inner = checkpoint._children.get(node)
+    if inner is not None:
+        children = {**checkpoint._children, node: answer_child(inner, decision)}
+        return dataclasses.replace(checkpoint, _children=frozen(children))
+    if pending.kind == "node":
+        decisions = {**checkpoint.decisions, node: decision}
+        return dataclasses.replace(checkpoint, decisions=frozen(decisions))
+    answers = dict(checkpoint._answers)
+    answers[node] = (*answers.get(node, ()), resume_entry(pending, decision))
+    return dataclasses.replace(checkpoint, _answers=frozen(answers))
 
 
 async def settle_deferred(

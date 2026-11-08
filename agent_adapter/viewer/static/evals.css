@@ -1,0 +1,29 @@
+/* The Evals view: saved eval reports, their cases, and a report against a baseline. */
+.evl-shell { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 12px; padding: 12px; align-items: start; }
+@media (max-width: 760px) { .evl-shell { grid-template-columns: minmax(0, 1fr); padding: 8px; } }
+.evl-shell .run:disabled { cursor: default; opacity: .7; }
+.evl-shell .run:disabled:hover { background: transparent; }
+.evl-score-line { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+.evl-score { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.evl-score-line meter { flex: 1; max-width: 320px; height: 10px; }
+.evl-pick { margin-top: 10px; margin-bottom: 0; }
+.evl-scroll { overflow-x: auto; }
+.evl-case { border: 1px solid var(--line); border-radius: 6px; margin-bottom: 6px; }
+.evl-case > summary { cursor: pointer; padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.evl-case[open] > summary { border-bottom: 1px solid var(--line); }
+.evl-case > summary strong { overflow-wrap: anywhere; }
+.evl-body { padding: 8px; }
+.evl-body h4 { font-size: 12px; margin: 8px 0 2px; color: var(--muted); }
+.evl-field pre { max-height: 30vh; }
+.evl-reason { white-space: pre-wrap; overflow-wrap: anywhere; }
+.evl-body .actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+tr.evl-bad td:first-child { box-shadow: inset 3px 0 0 var(--error); }
+tr.evl-regressed td { background: color-mix(in srgb, var(--error) 12%, transparent); }
+tr.evl-regressed td:first-child { box-shadow: inset 3px 0 0 var(--error); color: var(--error); font-weight: 600; }
+tr.evl-improved td:first-child { box-shadow: inset 3px 0 0 var(--ok); color: var(--ok); font-weight: 600; }
+tr.evl-added td:first-child, tr.evl-removed td:first-child { box-shadow: inset 3px 0 0 var(--paused); color: var(--paused); }
+tr.evl-same td:first-child { color: var(--muted); }
+.evl-delta.up { color: var(--ok); }
+.evl-delta.down { color: var(--error); }
+.evl-shell .run .status { align-self: start; }
+.run-cases { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }

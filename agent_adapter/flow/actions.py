@@ -1,9 +1,9 @@
-"""Node actions (`Call`, `Map`, `Join`), routes, and what a running node reads from its context."""
+"""Node actions (`Call`, `Map`, `Join`, `SubFlow`), routes, the node cache, node context reads."""
 
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from typing import Any, Generic, Literal, TypeVar, cast
 
 from pydantic import BaseModel
@@ -12,6 +12,7 @@ from agent_adapter.core.context import ToolContext
 from agent_adapter.core.errors import FlowDefinitionError
 from agent_adapter.core.ports import LLMPort
 from agent_adapter.core.tool import ToolSpec
+from agent_adapter.core.types import CacheScope
 
 S = TypeVar("S", bound=BaseModel)
 
@@ -58,6 +59,33 @@ class Join:
 
     sources: Sequence[str]
     fn: NodeFn[Any] | None = None
+
+
+@dataclass(frozen=True)
+class SubFlow:
+    """Run another `Flow` as one node: parent state in through `input`, its result out by `into`.
+
+    `input`: child field -> parent field, or `fn(parent_state)` -> the child's initial values;
+    None copies fields of the same name (additive `append` / `sum` fields start empty).
+    `into`: a parent field for the child's final state, parent field -> child field, or
+    `fn(child_state)` -> the parent update; None writes back same-named fields it changed.
+    """
+
+    flow: Any  # a Flow (typed loosely: the builder module imports this one)
+    _: KW_ONLY
+    input: Mapping[str, str] | Callable[[Any], Mapping[str, Any]] | None = None
+    into: str | Mapping[str, str] | Callable[[Any], Mapping[str, Any]] | None = None
+
+
+@dataclass(frozen=True)
+class NodeCache:
+    """Reuse a node's updates for equal inputs: the state, its `reads` fields, or `key(state)`."""
+
+    ttl: float | None = None  # seconds; None keeps entries as long as the backend does
+    _: KW_ONLY
+    key: Callable[[Any], Any] | None = None
+    reads: Sequence[str] | None = None
+    scope: CacheScope = "run"  # who shares an entry: the run, the thread, or everyone
 
 
 @dataclass(frozen=True)

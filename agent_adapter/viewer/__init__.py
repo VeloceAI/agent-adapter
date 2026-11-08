@@ -1,6 +1,7 @@
 """Run viewer: record runs to JSONL files, browse them and chat locally (`agent-adapter ui`)."""
 
 from agent_adapter.viewer._files import DEFAULT_FOLDER
+from agent_adapter.viewer._otlp_import import import_otlp
 from agent_adapter.viewer.approvals import ApprovalDesk
 from agent_adapter.viewer.chat import Attachment, ChatAgent, ChatMessage, ChatSession
 from agent_adapter.viewer.export import export
@@ -26,6 +27,7 @@ __all__ = [
     "build_spans",
     "check_host",
     "export",
+    "import_otlp",
     "layout",
     "make_server",
     "record",

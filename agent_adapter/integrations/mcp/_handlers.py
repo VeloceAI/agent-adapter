@@ -64,6 +64,12 @@ def require_mcp() -> None:
         ) from exc
 
 
+def listed(executor: ToolRunner | None, spec: ToolSpec) -> ToolSpec:
+    """`spec` as the runner's policy enforces it, so the hints show its approvals."""
+    effective = getattr(getattr(runner_for(executor), "policy", None), "effective", None)
+    return effective(spec) if callable(effective) else spec
+
+
 def mcp_tool(spec: ToolSpec) -> t.Tool:
     """The MCP tool definition for `spec`: schemas, wrapped output schema, annotations."""
     require_mcp()
@@ -132,7 +138,7 @@ class Handlers:
         visible = getattr(runner_for(self.executor), "visible", None)
         if callable(visible):  # a runner may hide tools per caller (the HTTP server's authorize)
             exported = [spec for spec in exported if await visible(spec, ctx) is True]
-        return t.ListToolsResult(tools=[mcp_tool(spec) for spec in exported])
+        return t.ListToolsResult(tools=[mcp_tool(listed(self.executor, spec)) for spec in exported])
 
     def input_schema(self, name: str) -> dict[str, Any] | None:
         spec = self._exported(name)

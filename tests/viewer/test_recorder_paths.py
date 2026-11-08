@@ -102,6 +102,19 @@ async def test_plain_calls_end_their_run_and_rotate(
     }
 
 
+def test_runs_opened_in_one_clock_tick_keep_their_order(tmp_path: Path) -> None:
+    recorder = Recorder(tmp_path)
+    names = [f"run_{n}" for n in (3, 1, 4, 0, 2)]  # file names alone would sort these apart
+    for name in names:
+        recorder.emit(event("run.started", 7.0, run_id=name))  # a coarse clock: one stamp
+        recorder.emit(event("run.finished", 7.0, run_id=name, ok=True))
+    starts = [s.start_ms for s in segments(tmp_path)]
+    assert starts == sorted(set(starts))  # strictly increasing within the process
+    assert [s.key for s in segments(tmp_path)] == names
+    assert [s["key"] for s in refreshed(tmp_path).summaries()] == names[::-1]  # newest first
+    recorder.stop()
+
+
 def test_contexts_and_models_made_before_record_still_reach_it(tmp_path: Path) -> None:
     executor = Executor(adder())
     ctx = executor.context()

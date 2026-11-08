@@ -27,6 +27,8 @@ class _Run(Protocol):
 
     def emit(self, type: str, /, **data: Any) -> None: ...
 
+    def emit_finished(self, value: Any, /, **data: Any) -> None: ...
+
     def latency_ms(self) -> float: ...
 
 
@@ -72,8 +74,8 @@ class CallSteps:
 
     def _finish(self: _Run, result: ToolResult) -> None:
         if result.ok:
-            self.emit(
-                EventType.TOOL_FINISHED,
+            self.emit_finished(
+                result.value,
                 tool=self.name,
                 latency_ms=result.latency_ms,
                 attempts=result.attempts,

@@ -222,8 +222,17 @@ class RedisApprovalStore:
             log_failure(logger, logging.ERROR, exc, "redis approval store get failed")
             raise
         if row is None or row[0] is None:
-            raise ApprovalNotFound(approval_id)
+            raise ApprovalNotFound(approval_id, expired=await self._expired(approval_id))
         return _bytes(row[0]) or b"", _row_record(key(approval_id), row)
+
+    async def _expired(self, approval_id: str) -> bool:
+        """True while the expiry index still lists a vanished record (it leaves it lazily)."""
+        try:
+            score = await self._clients.get().zscore(self._p + b"exp", key(approval_id))
+        except Exception as exc:  # telling "expired" from "unknown" is best effort
+            log_failure(logger, logging.WARNING, exc, "redis approval expiry lookup failed")
+            return False
+        return score is not None  # only a TTL removes a record; its index entry lingers
 
     async def _swap(
         self, op: str, approval_id: str, expected: bytes, record: ApprovalRecord

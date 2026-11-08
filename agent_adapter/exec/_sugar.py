@@ -174,9 +174,10 @@ async def resume_target(
                 "executor.resume(approval_id, True, decided_by='reviewer')"
             )
         await _decide(store, approval_id, _signed(_as_decision(decision, reason), decided_by))
-    elif decision is not None:
-        if not same_decision(record.decision, _as_decision(decision, reason)):
-            raise ApprovalAlreadyDecided(approval_id, status=record.status)
+    elif decision is not None and not same_decision(
+        record.decision, _as_decision(decision, reason)
+    ):
+        raise ApprovalAlreadyDecided(approval_id, status=record.status)
     request = record.request
     logger.info(
         "resuming approval %s for tool %r (run %s, call %s)",

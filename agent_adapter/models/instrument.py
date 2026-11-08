@@ -13,7 +13,7 @@ from agent_adapter.core.errors import ApprovalPending, ModelOutputInvalid
 from agent_adapter.core.messages import LLMRequest, LLMResponse, StreamDone, StreamEvent
 from agent_adapter.core.ports import CachePort, EventSink, LedgerPort, LLMPort
 from agent_adapter.hooks.base import Hook
-from agent_adapter.hooks.dispatch import run_after, run_before, run_on_error
+from agent_adapter.hooks.dispatch import run_after, run_before, run_end, run_on_error
 from agent_adapter.models._llm_call import (
     LLMCall,
     Settings,
@@ -107,12 +107,16 @@ class InstrumentedModel:
         call = LLMCall(self._settings(), request, self.ctx, stream=request.stream)
         call.started()
         try:
-            response, source = await self._produce(call)
-        except BaseException as exc:
-            call.failed(exc)
-            raise
-        call.finished(response, source)
-        return response
+            try:
+                response, source = await self._produce(call)
+            except BaseException as exc:
+                call.failed(exc)
+                raise
+            call.finished(response, source)
+            return response
+        finally:
+            # Every end (a later hook refusing, a cancel, control flow) reaches the hooks.
+            await run_end(self.hooks, call.inv, call.billed)
 
     async def stream(self, request: LLMRequest) -> AsyncIterator[StreamEvent]:
         """The port's stream with the same hooks, ledger entry and events (no response cache).
@@ -139,6 +143,8 @@ class InstrumentedModel:
         except BaseException as exc:
             call.failed(exc)  # a closed stream (GeneratorExit) counts as cancelled
             raise
+        finally:
+            await run_end(self.hooks, call.inv, call.billed)
 
     # --- generate -----------------------------------------------------------------------
 

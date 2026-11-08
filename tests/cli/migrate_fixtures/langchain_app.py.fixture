@@ -1,0 +1,27 @@
+"""A support desk agent built on LangChain."""
+
+import os
+
+from langchain.agents import create_agent
+from langchain_core.tools import tool
+
+
+@tool
+def ticket_status(ticket_id: str) -> str:
+    """Status of a support ticket."""
+    return "open"
+
+
+@tool("refund_ticket")
+def refund(ticket_id: str, amount: float) -> str:
+    """Refund a ticket purchase."""
+    return "refunded"
+
+
+@tool(return_direct=True)
+def escalate(ticket_id: str) -> str:
+    """Escalate a ticket to a person."""
+    return "escalated"
+
+
+agent = create_agent(os.environ["MODEL"], tools=[ticket_status, refund, escalate])

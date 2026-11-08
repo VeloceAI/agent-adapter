@@ -17,16 +17,30 @@ from agent_adapter.hooks.builtin import (
     RateLimitHook,
     redact,
 )
+from agent_adapter.hooks.builtin.guards import (
+    CallableGuard,
+    ContentGuard,
+    GuardVerdict,
+    NemoGuard,
+    PIIGuard,
+    PresidioGuard,
+)
 from agent_adapter.hooks.dispatch import run_after, run_before, run_on_error
 
 __all__ = [
     "DEFAULT_REDACT",
     "BudgetHook",
+    "CallableGuard",
+    "ContentGuard",
+    "GuardVerdict",
     "GuardrailHook",
     "Hook",
     "LLMInvocation",
     "LoggingHook",
+    "NemoGuard",
     "NodeInvocation",
+    "PIIGuard",
+    "PresidioGuard",
     "Rate",
     "RateLimitHook",
     "ShortCircuit",

@@ -7,7 +7,10 @@ import importlib.util
 
 from scripts.agent_guide.recipe_model import MAX_LINES, PRELUDE, Recipe
 from scripts.agent_guide.recipes_core import TOOLS
+from scripts.agent_guide.recipes_data import DATA
 from scripts.agent_guide.recipes_hosts import CHAT, HOSTS, VIEWER
+from scripts.agent_guide.recipes_ops import OPS
+from scripts.agent_guide.recipes_trust import TRUST
 
 __all__ = ["MAX_LINES", "PRELUDE", "Recipe", "has_viewer", "recipes", "render"]
 
@@ -22,13 +25,13 @@ def has_viewer(name: str = "record") -> bool:
 
 def recipes() -> tuple[Recipe, ...]:
     """Every recipe; the viewer and chat rows only when `agent_adapter.viewer` has them."""
-    rows = (*TOOLS, *HOSTS)
+    rows = (*TOOLS, *DATA, *HOSTS, *OPS, *TRUST)
     rows = (*rows, VIEWER) if has_viewer() else rows
     return (*rows, *CHAT) if has_viewer("serve") else rows
 
 
-def render() -> str:
-    """The set-up, then one heading and snippet per recipe."""
+def render(*, full: bool = True) -> str:
+    """The set-up, then a snippet per recipe; the concise tier lists the others by name."""
     out = [
         "## I want to… → use…",
         "",
@@ -41,7 +44,25 @@ def render() -> str:
         "```",
         "",
     ]
-    for i, recipe in enumerate(recipes(), start=1):
-        title = recipe.want[0].upper() + recipe.want[1:]
-        out += [f"### {i}. {title} → {recipe.use}", "", "```python", recipe.code, "```", ""]
+    shown = [recipe for recipe in recipes() if full or recipe.concise]
+    for i, recipe in enumerate(shown, start=1):
+        out += [
+            f"### {i}. {_title(recipe)} → {recipe.use}",
+            "",
+            "```python",
+            recipe.code,
+            "```",
+            "",
+        ]
+    listed = [recipe for recipe in recipes() if not full and recipe.full_only and not recipe.index]
+    if listed:
+        out += ["### More recipes: code in the full guide (`agent-adapter guide --full`)", ""]
+        out += [f"- {_title(recipe)}" for recipe in listed] + [""]  # names only: the cap
+    names = [recipe.index for recipe in recipes() if not full and recipe.index]
+    if names:
+        out += [f"More features (full recipes in llms-full.txt): {', '.join(names)}.", ""]
     return "\n".join(out)
+
+
+def _title(recipe: Recipe) -> str:
+    return recipe.want[0].upper() + recipe.want[1:]

@@ -23,7 +23,7 @@ from agent_adapter.core.ports import CachePort, LedgerPort
 from agent_adapter.core.registry import Registry
 from agent_adapter.exec.control import is_control_flow
 from agent_adapter.exec.executor import Executor
-from agent_adapter.server import _calls, _reads
+from agent_adapter.server import _budget, _calls, _reads
 from agent_adapter.server._approval import ServerApproval
 from agent_adapter.server._idempotency import CacheIdempotency, Replays
 from agent_adapter.server._payloads import Refused, csv, descriptor, refuse, renders, shape_of
@@ -219,6 +219,8 @@ class ToolService:
             ("approvals", "*", "decide"): {"POST": self._decide},
             ("runs", "*", "events"): {"GET": self._events},
             ("runs", "*", "cost"): {"GET": self._cost},
+            ("budget",): {"GET": self._budget},
+            ("budget", "*"): {"GET": self._budget},
             ("openapi.json",): {"GET": self._openapi},
             ("openapi-3.0.json",): {"GET": self._openapi30},
         }
@@ -246,7 +248,7 @@ class ToolService:
             kinds=csv(request.query.get("kinds")) or None,
         )
         items = [
-            descriptor(spec, shape)
+            descriptor(self._state.listed(spec), shape)
             for spec in tools
             if renders(spec, shape) and await self._state.allowed(principal, spec, None)
         ]
@@ -265,7 +267,7 @@ class ToolService:
             refuse("forbidden", "not allowed to see this tool", tool=spec.name)
         if not renders(spec, shape):
             refuse("tool-not-found", f"tool {spec.name!r} is not exported to {shape}")
-        return json_response(200, descriptor(spec, shape))
+        return json_response(200, descriptor(self._state.listed(spec), shape))
 
     async def _invoke(
         self, principal: Principal, request: RequestInfo, body: bytes, params: list[str]
@@ -305,6 +307,11 @@ class ToolService:
         self, principal: Principal, request: RequestInfo, body: bytes, params: list[str]
     ) -> ServiceResponse:
         return await _reads.run_cost(self._state, principal, params[0])
+
+    async def _budget(
+        self, principal: Principal, request: RequestInfo, body: bytes, params: list[str]
+    ) -> ServiceResponse:
+        return await _budget.budgets(self._state, principal, request, params[0] if params else None)
 
     async def _openapi(
         self, principal: Principal, request: RequestInfo, body: bytes, params: list[str]

@@ -21,15 +21,20 @@ EXTRA_OF_MODULE = {
     "haystack": "haystack", "smolagents": "smolagents", "claude_agent_sdk": "claude-agent",
     "autogen_core": "autogen", "autogen_agentchat": "autogen", "semantic_kernel": "semantic-kernel",
     "camel": "camel", "ag2": "ag2", "a2a": "a2a", "ag_ui": "ag-ui", "sqlalchemy": "sqlalchemy",
-    "aioboto3": "dynamodb", "starlette": "server", "uvicorn": "server", "a2wsgi": "server-wsgi",
+    "aioboto3": "dynamodb", "temporalio": "temporal", "dbos": "dbos", "starlette": "server",
+    "uvicorn": "server", "a2wsgi": "server-wsgi",
 }  # fmt: skip
 # Modules that need an extra and a package: the `otel` extra installs only the API.
-BOTH_OF_MODULE = {"opentelemetry.sdk": ({"otel"}, {"opentelemetry-sdk"})}
+BOTH_OF_MODULE = {
+    "opentelemetry.sdk": ({"otel"}, {"opentelemetry-sdk"}),
+    "opentelemetry.exporter.otlp": ({"otel"}, {"opentelemetry-exporter-otlp-proto-http"}),
+}
 # Third-party modules no extra brings: installed by name.
 PACKAGE_OF_MODULE = {
     "fastapi": "fastapi", "flask": "flask", "werkzeug": "flask", "django": "django",
     "celery": "celery", "aiohttp": "aiohttp", "fakeredis": "fakeredis", "pytest": "pytest",
-    "httpx": "httpx", "httpx2": "httpx2",
+    "httpx": "httpx", "httpx2": "httpx2", "boto3": "boto3", "mistralai": "mistralai",
+    "groq": "groq", "traceloop": "traceloop-sdk",
 }  # fmt: skip
 # extra -> extras and packages it already installs, dropped from the line.
 IMPLIES = {
@@ -54,6 +59,11 @@ OPTIONAL = {
     "approval_stores_sql": {"dynamodb"},
     "compression_backend": {"fastapi"},  # the route; the script part runs on the core
     "deploy/app": {"redis"},  # only when REDIS_URL is set
+    # vendor SDKs: main() runs on fakes; each builder imports its SDK on first use
+    "models_bedrock": {"boto3"},
+    "models_mistral": {"mistralai"},
+    "models_openai_compatible": {"openai", "groq"},
+    "traces_otlp": {"opentelemetry-exporter-otlp-proto-http", "traceloop-sdk"},
 }
 # Demos whose every framework is optional: each part needs only the framework it shows.
 OPTIONAL_ALL = {"compression_framework_hooks", "harness_frameworks"}

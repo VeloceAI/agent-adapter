@@ -4,12 +4,255 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-11-05
 
-## [1.0.0] - 2026-11-02
+The first public release: open source under Apache-2.0 and published on PyPI.
 
-First stable release, open source under Apache-2.0 and published on PyPI. Every feature
-listed on the Features page is available.
+### Added
+
+- **Guardrails.** `PIIGuard`: a dependency-free guard hook for emails, phone numbers, cards
+  (Luhn), IBANs (mod-97) and API keys or secrets. It blocks, redacts tool results and model
+  replies, or sends flagged tool calls to one-use approval (`confirm=guard.confirm`). It fails
+  closed and never logs content.
+- `CallableGuard(fn)` for any guard service; `PresidioGuard` (extra `presidio`) and
+  `NemoGuard` (extra `nemo`); `ContentGuard`, `TextGuard` and `GuardVerdict` to write your own.
+- **Multi-agent.** `agent_tool(agent, ...)`: any agent (a `LoopAgent`, a `fn(task, ctx)`, or a
+  chat agent via `chat_agent_task`) becomes a registry tool that runs in the calling run. Cost,
+  budgets, limits, approvals and events roll up, with `parent_id` links. `AgentDepthExceeded`
+  caps nesting (`max_depth`, default 3).
+- `handoff(...)` and `HandoffModel`: hand the conversation to another agent; its answer ends
+  the tool loop.
+- **Sub-flows.** `SubFlow(flow, input=, into=)` runs another flow as one node. Fields map in
+  and out under the parent's merge rules. A pause or approval inside the child pauses the
+  whole run, and resume continues from where it stopped. Sub-flow cycles and field types are
+  checked at `validate()`. Mermaid draws a subgraph, and the run viewer opens a sub-flow node
+  (`⊞ open`, keys `o` / `u`).
+- **Node cache.** `Flow.node(..., cache=NodeCache(ttl=, key=, reads=, scope=))` reuses a
+  node's updates from the executor's cache port. Entries are signed with the runner's
+  checkpoint key. A node with a pause gate or a tool that needs approval is never cached. A
+  hit emits the new `node.cached` event.
+- **Context windows.** Price table `2026-11-05`: `context_window` and `max_output_tokens` caps
+  (with the vendor page in a new `source` field) for every cited OpenAI, Gemini and Claude
+  row, so percent compression policies need no setting for them.
+- Price rows for gpt-5.6-sol/-terra/-luna, gpt-5.5, gpt-5.4-mini, gpt-6-astra, gpt-6.1-sol,
+  gpt-6.1-terra, gpt-6-luna, gemini-3.6-flash, gemini-3.5-flash-lite, gemini-3.1-flash-lite,
+  and Claude Fable 5.1, Opus 5.5, Sonnet 5.5 and Haiku 5.5 (with 5m and 1h cache-write
+  prices).
+- `ModelCaps.max_output_tokens` and `ModelCaps.prompt_window()`; percent compression applies
+  to the window less the reply ceiling.
+- **Model recipes.** Amazon Bedrock (Converse), Azure OpenAI, Mistral, Groq and OpenRouter as
+  `CallableModel`s, with usage, prices and typed errors (docs: Model recipes).
+- **Send traces.** Langfuse, Arize Phoenix and OpenLLMetry over the OTel sink (docs: Send
+  traces).
+- `agent-adapter doctor` checks optional backends from a pluggable list: Presidio and NeMo
+  guards, the OpenTelemetry SDK and OTLP exporters.
+- A spec-drift test keeps the docs, the LLM guide and the public API in agreement.
+- **Evals.** `agent_adapter.evals`: `run_eval(target, cases, graders)` runs each case as its own
+  run on your executor (approvals, budgets, ledger, events, recorder) and returns an
+  `EvalReport` with per-case, per-tag and per-grader totals, cost and timing, `compare()` for
+  regressions, and `to_junit()`, `to_markdown()`, `to_json()`. Targets: any `fn(input)`, a chat
+  agent `fn(message, session)`, `FlowTarget`, `ToolLoopTarget`. Graders: `exact`, `contains`,
+  `regex`, `json_schema`, `tools_called`, `max_cost`, `max_latency`, `code_check`, `all_of`, and
+  `LLMJudge(model, rubric)` on your own model. Cases saved by the chat page load unchanged.
+- `agent-adapter eval TARGET CASES`: `--grader`, `--min-score`, `--junit`, `--markdown`, `--json`,
+  `--baseline`; exits 1 below the score, on any case error, or on a regression.
+- Pytest plugin: `@pytest.mark.eval_cases("cases.jsonl")` runs a test once per case
+  (`eval_case` fixture); `assert_eval` fails with each grader's reason and the run id.
+- **Evals in the viewer.** `agent-adapter ui` has an Evals tab: every saved report with its
+  score, pass/fail, cost and time, per-tag and per-grader totals; each case with its input,
+  expected value, output, every grader's score and reason, and a link to its run; two
+  reports side by side with regressions marked (`EvalReport.compare`). Save reports with
+  `run_eval(..., save_to=)`, `save_report(report, folder)` or `agent-adapter eval --save`;
+  `agent-adapter ui --evals FOLDER` picks the folder (default `.agent_adapter/evals`).
+- Eval case results keep the case's `input` and `expected` text.
+- Grader specs on the command line: `regex=`, `json-schema=`, `tools=`, `max-cost=`,
+  `max-latency=` (`module:attr` is always your own grader). `--min-pass-rate`, `--no-content`
+  (`run_eval(capture_content=False)`) and `LLMJudge(trust_passed=)`.
+- **Memory.** `agent_adapter.memory`: `MemoryPort`, `SQLiteMemory` (one file, FTS5 keyword
+  search with a LIKE fallback, optional vector search through any `EmbeddingPort`),
+  `CallableMemory`, and lazy `Mem0Memory`, `ZepMemory` and `GraphitiMemory` (extras `mem0`,
+  `zep`, `graphiti`). `memory_tools()` adds `remember`, `recall` and `forget` tools whose scope
+  comes from the context, never from the model. Searches never cross users.
+- Memory retention and privacy: `retention_days` and `expires_at` are enforced on read and
+  purged on write; `export(scope)` serves data requests; `delete(scope=MemoryScope(user_id=...))`
+  erases a user.
+- `ToolContext.user_id`: the authenticated end user, set by the host (`Executor.context(user_id=)`).
+- Events `memory.added`, `memory.searched`, `memory.deleted` and `memory.exported` (counts only).
+- **Retrieval (RAG).** `agent_adapter.retrieval`: `RetrieverPort`, `Document` (id, text, score,
+  source), `CallableRetriever`, an in-memory `EmbeddingRetriever` (`scope_key` isolation),
+  `LlamaIndexRetriever` and `LangChainRetriever`, and `retriever_tool`: a registry tool whose
+  results carry sources for citations, with host-set `k` and filters that every result is
+  re-checked against. Events `retrieval.searched` and `retrieval.failed` (counts and ids; texts
+  only with `capture_content`).
+- `agent-adapter doctor` also reports the memory extras and the LlamaIndex and LangChain
+  retrievers.
+- **Chat memory across chats.** `serve(..., memory=, user_id=, memory_save="none"|"summary"|"facts",
+  memory_every=, recall_k=)` and `agent-adapter ui --memory sqlite:PATH --user NAME --memory-save
+  ... --memory-every N --recall K`. Each turn recalls the user's records from other chats as
+  `session.memories` (the built-in loop: a system note). Saving is opt-in: by the model, or by
+  the agent's `save_memories`. `ctx.user_id` is the chat's user, chats are kept per user, and
+  the inspector has a Memory tab to see and delete the user's records.
+- **Approval memory** in `agent_adapter.approval`: `approval_context` shows similar past
+  decisions (counts, deciders, outcomes; never argument values or secret fields) on chat
+  approval cards, in the Runs approvals desk, and in `GET /approvals/{id}` for approvers (the
+  TypeScript `Approval.context`). `propose_rules` suggests `field == value` / `field <= limit`
+  confirm rules; `accept(rule, accepted_by=...)` gives the code and config to commit, and the
+  `confirm=` callable. Nothing is ever approved from memory.
+- Viewer: `memory.*` events show as `memory` spans in the timeline; run summaries carry a
+  `memory` count, and a top-level `retrieval.failed` counts as a failure.
+- `agent_adapter.chat`: the chat agent contract (`ChatMessage`, `ChatSession`, `Attachment`,
+  `ChatAgent`, `ChatReply`) in one place, used by the chat page and evals. `agent_adapter.viewer`
+  and `agent_adapter.viewer.chat` re-export the same classes.
+- Memory scopes: `thread_scope` is opt-in; `scope_from_context` no longer gives anonymous
+  callers memory; SQLite erasure leaves no text in the file.
+- **Crash-safe runs.** `FlowRunner(checkpoints=store, checkpoint_key=KEY)` saves a sealed
+  checkpoint after every superstep and logs every tool call. `runner.recover(flow, run_id)` and
+  `runner.recover_all(flow)` continue a crashed run on any worker, and calls that finished replay
+  instead of running again. A call left in doubt runs again only for an `idempotent=True` tool or
+  with `rerun_in_doubt=True`; otherwise `RecoveryNeedsDecision` is raised. Two workers never both
+  continue a run (`CheckpointConflict`), and a changed graph refuses to recover.
+  `idempotency_key()` gives each call a key that is the same on every worker and recovery.
+- `run_tool_loop(..., run_id=, checkpoints=, checkpoint_key=)` and `recover_tool_loop(...)` do
+  the same for the tool loop.
+- Checkpoint stores in `agent_adapter.exec.checkpoints`: `MemoryCheckpointStore`,
+  `SQLiteCheckpointStore`, `RedisCheckpointStore` (extra `redis`), `SQLAlchemyCheckpointStore`
+  (extra `sqlalchemy`), and the `CheckpointStore` protocol. New errors `CheckpointNotFound`,
+  `CheckpointConflict`, `CheckpointStoreCorrupt`, `RecoveryNeedsDecision`; new events
+  `checkpoint.saved` and `run.recovered`; the viewer's run summary carries `recovered: true`.
+- **Durable engines.** Run a `Flow` on Temporal (extra `temporal`) or DBOS (extra `dbos`). Each
+  superstep is one activity or step through your executor, so approvals, budgets, cache, ledger
+  and events apply; a retried step replays finished tool calls from the checkpoint store, and
+  runs carry a `RunIdentity`. Approvals stay in your approval store: a Temporal update or
+  signal, or a DBOS message (`notify`), only wakes the run to re-check the store, and the stored
+  decision is used once; a timeout records a denial. `agent_adapter.integrations.temporal`
+  (`flow_worker`, `start_flow`, `notify`, `pending`, `result`) and
+  `agent_adapter.integrations.dbos` (`DbosFlows`), over the shared `DurableFlows`.
+  `FlowRunner.inspect()` and `FlowRunner.on_superstep` support them.
+- **Sandboxed code.** `agent_adapter.sandbox`: `SandboxPort` and `SandboxResult`;
+  `DockerSandbox` (the docker CLI, no SDK: `--network none`, read-only root, `--cap-drop ALL`,
+  no-new-privileges, a non-root user, pids/memory/cpu limits, a noexec tmpfs, removed on
+  timeout); `CallableSandbox` for E2B, Modal, Daytona or any service; `LocalSubprocessSandbox`
+  for development only (refuses without `allow_unsafe_local=True`, warns on every run); and
+  `code_tool`, a registry tool that always needs approval (no opt-out), with host-set time,
+  output, network and file limits. Produced file names are checked on the host. New events
+  `sandbox.started`, `sandbox.finished` and `sandbox.failed` (sizes and exit codes; code and
+  output only with `capture_content`). `agent-adapter doctor` reports whether Docker can run.
+- **Team budgets.** `BudgetHook(scope="user"|"principal"|"team", per="day"|"month",
+  scope_key=, store=)` caps spend per user, team or everything, per UTC day or month, shared
+  across processes: it reserves an estimate atomically before each model call, settles the real
+  cost after and releases on failure. Stores: `MemoryBudgetStore`, `SQLiteBudgetStore`,
+  `RedisBudgetStore`, `SQLAlchemyBudgetStore` (`agent_adapter.hooks.builtin.budgets`).
+  `GET /budget` and `/budget/{scope}` on the HTTP server (own scope; approvers any key),
+  `budget.reserved` / `budget.exceeded` events, the viewer marks runs a budget refused, the
+  TypeScript client's `budget()`, and doctor rows.
+- **Streaming.** `PartialOutput` events carry the structured output parsed so far (OpenAI,
+  Gemini, Anthropic, `CallableModel(stream_fn=)`); `run_tool_loop(on_event=)` gets tool-call
+  deltas, partial output and `StreamDone`; stream event types are importable from
+  `agent_adapter.models`. A chat agent or eval target may yield `ToolCallDelta` between text
+  chunks.
+- Chat page: tool arguments appear in a draft tool card while the model streams them (masked,
+  cut to 2 KB).
+- Viewer: search across runs (tool, flow, node, model and error names, run ids, `status:`,
+  `tag:`, captured content) and run tags stored in a `tags.<run key>.json` sidecar per run, set
+  from the run header. `agent-adapter ui --import traces.json` and
+  `agent_adapter.viewer.import_otlp`: OTLP JSON GenAI spans become viewer runs (parsed only,
+  size-limited).
+- **Framework templates.** `agent-adapter init pydantic-ai | adk | agno | strands | crewai`: a
+  starter with registry tools, a `confirm=True` tool behind an approval port, a budget and the
+  run recorder. It runs offline; set `AGENT_MODEL` to run the agent.
+- **`agent-adapter migrate PATH`.** A read-only scan (Python `ast`; it never imports or writes)
+  for LangChain, CrewAI, OpenAI Agents, ADK, Pydantic AI, LlamaIndex, smolagents, Agno and
+  Strands tools and raw OpenAI or Anthropic schemas; `--diff` prints a suggested patch to
+  `@registry.tool` / `registry.wrap` with the matching bridge; `--framework` filters.
+- **Policy file.** `agent_adapter.policy.load_policy(path)` reads one YAML, TOML or JSON file (or
+  a dict) that sets, per tool, team, user and environment (`AA_ENV`): allowed tools
+  (`default: deny`), approvals (`confirm: true` or a safe condition such as `amount > 100`),
+  guards, budgets, rate limits, run limits, memory retention and save rules, and sandbox
+  requirements. `policy.apply(executor)` builds them from the existing hooks and approval path,
+  so the tool loop, every integration, MCP and the HTTP server obey it. A policy only makes
+  things stricter: it never removes an approval, unknown keys fail at load with the file, line
+  and key, and the two relaxations need `allow_relax=True`. `policy.explain(tool, ctx)`, the
+  viewer's Tools tab and `agent-adapter policy check FILE` show the effective rules.
+  `Executor(policy=)` is the new seam; it is enforced whatever `replace(...)` changes, and
+  `Executor.hooks` lists only the hooks you passed.
+- **Audit log.** `agent_adapter.audit`: `audit(executor, folder=, key=)` keeps a signed,
+  hash-chained JSONL log of approvals (requested, decided, consumed, denied, expired), guardrail
+  blocks and redactions, budget stops, memory adds, deletes and exports, sandbox runs, recovered
+  runs and your own `audit.<name>` events (recorded as `app.<name>`), never arguments or
+  content; records are written on a background thread. `verify()` detects edits, deletions,
+  reordering and truncation, and `verify --anchor` catches rollbacks; `export()` and `agent-adapter audit verify|export` give JSONL or
+  CSV; `CallableAuditStore` ships records to a SIEM or bucket. `fail_closed=True` blocks calls
+  before their side effect when a record cannot be written; `verify`, `read_entries` and
+  `export_to` stream. New events `approval.expired` and `guardrail.redacted`;
+  `approval.decided` carries `edited`; memory events carry `scope_kind`. Redis and DynamoDB
+  TTL expiries are recorded at resume.
+- **Adoption pack.** A golden-path FastAPI support desk (`examples/golden_path/`): confirmed
+  refunds with a SQLite approval store, a daily budget per user, PII guards, memory across
+  chats, cited help answers, a crash-safe flow, recorded runs, and eval cases run by
+  `agent-adapter eval` as the CI gate (docs: Tutorial: the golden path).
+- `scripts/bench_overhead.py` measures the executor's per-call overhead over a direct call, per
+  feature; measured numbers are in the Performance guide.
+- A threat model page (assets, trust boundaries, what the adapter enforces and what it does
+  not) and an API stability policy for 1.x (public surface, semver rules, deprecation,
+  experimental markers).
+- **Production → evals loop.** `agent_adapter.evals.cases_from_runs` and
+  `agent-adapter eval cases-from-runs RUNS_DIR --out cases.jsonl` turn recorded runs (captured
+  content only; others are skipped with the reason) into eval cases with `source_run`; the Runs
+  view gets "Save as eval case" and, on failed runs, "Turn into regression case", appending to
+  the chat's `eval_cases.jsonl`.
+- Opt-in content on native events: a sink with `wants_content = True` (the run recorder under
+  `capture_content=True`) gets tool arguments and results, model messages, and a flow's input
+  and final state; other sinks get none, and content is not built for them. Content is taken
+  after guards (arguments on `tool.finished`, messages on `llm.finished`), secret-named keys
+  and secrets and PII inside text are masked, `confirm` tools' arguments are never sent, and
+  their results need `capture_confirm_content=True`.
+- **Cost advisor.** `agent_adapter.evals.advisor.advise(target_factory, cases, graders,
+  candidates=, baseline=)` runs your evals on the baseline model, then tries each cheaper
+  candidate in one flow node or stage at a time, and reports the cheapest model per step that
+  keeps the score (`min_score_ratio`, default 0.98), with cost and latency deltas from the
+  ledger. `max_spend=` caps the candidates' spend and stops early. `report.mapping` holds only
+  verified advice and is never applied for you: `apply_mapping` builds a `StepModels` port for `FlowRunner(model=...)` or
+  `run_tool_loop` (docs: Cut model costs per step). Ledger entries
+  of model calls made inside a flow node carry `metadata["node"]`.
+- Docs: a production checklist (approvals, budgets, guardrails, tracing, evals in CI,
+  caching, logs, viewer and server security).
+
+### Fixed
+
+- The ADK starter template runs offline without `google-genai`; `adk_tools()` imports it only
+  when ADK asks for a tool declaration.
+- The viewer keeps runs started within one clock tick in order (newest first), and rotation
+  deletes the oldest of them.
+- `SQLAlchemyBudgetStore.aclose()` disposes of the running loop's engine, like the approval
+  and checkpoint stores.
+
+### Changed
+
+- Licensed under Apache-2.0 (`LICENSE`, `NOTICE`; PEP 639 `license = "Apache-2.0"`). The
+  package installs from PyPI: the `Private :: Do Not Upload` classifier and the
+  internal-index install steps are gone. The TypeScript client is Apache-2.0 too (still
+  `private`).
+- `agent-adapter doctor`: public PyPI or a mirror as the index is `ok`; an
+  `extra-index-url` or `UV_EXTRA_INDEX_URL` is a warning, no longer an error.
+- Live-provider checks (the OpenAI usage formula, Anthropic structured output, the
+  `google-genai` wire keys) were run by the maintainer before release.
+
+- `Prices.default().version` is now `2026-11-05`; `claude-` stays caps-only for Claude ids
+  without a row.
+- The LangGraph and ADK flow compilers raise `FlowCompileError` for `SubFlow` nodes.
+- The `dev` extra adds `pytest-xdist` and `pytest-testmon`.
+- The optimiser's `EvalCase`, `Score`, `load_cases` and `optimiser.graders` now live in
+  `agent_adapter.evals`; the optimiser names are re-exports, so existing imports keep working.
+- `agent-adapter doctor` help names the optional-backend checks.
+- `graders.all_of` fails closed: `passed=False` when a part errors or does not grade.
+- `agent-adapter ui --chat-dir` also works without chat (it is where Runs-view eval cases go).
+- The eval pytest plugin is opt-in (`-p agent_adapter.evals.pytest_plugin`, or
+  `pytest_plugins` in a `conftest.py`), so installing the package changes no pytest run.
+
+## [1.0.0] - 2026-10-31
+
+First stable release. Every feature listed on the Features page is available.
+The suite runs offline; the points that still need live API keys are listed under Notes.
 
 ### Highlights by area
 
@@ -473,11 +716,6 @@ listed on the Features page is available.
 
 ### Changed
 
-- Licensed under Apache-2.0 (`LICENSE`, `NOTICE`; PEP 639 `license = "Apache-2.0"`). The
-  package installs from PyPI: the `Private :: Do Not Upload` classifier and the
-  internal-index install steps are gone.
-- `agent-adapter doctor`: public PyPI or a mirror as the index is `ok`; an
-  `extra-index-url` or `UV_EXTRA_INDEX_URL` is a warning, no longer an error.
 - `Executor.sink` is a stable `SinkHub` and never `None`: the sink you passed, then every
   sink added later. Contexts and models made from the executor hold the hub, so a sink
   added later reaches them too. To check what it sends to, read `executor.sink.sinks`
@@ -673,8 +911,9 @@ listed on the Features page is available.
 
 ### Notes
 
-- Live-provider checks (the OpenAI usage formula, Anthropic structured output, the
-  `google-genai` wire keys) were run by the maintainer before release.
+- Checked offline only; verify with live keys: the OpenAI usage formula
+  (`input = prompt − cached − cache_write`), whether Anthropic structured output needs
+  `additionalProperties: false`, and the snake_case keys `google-genai` sends to Gemini.
 - The TypeScript client (`clients/typescript`) stays `private: true` until a
   registry is chosen (see the Roadmap).
 

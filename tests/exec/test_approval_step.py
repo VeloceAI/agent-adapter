@@ -63,6 +63,7 @@ async def test_confirm_asks_the_port_and_emits_approval_events():
         "tool": "transfer",
         "approval_id": request.approval_id,
         "approved": True,
+        "edited": False,
     }
 
 

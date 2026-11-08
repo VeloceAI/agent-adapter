@@ -11,6 +11,8 @@ Each error has a stable `kind` id and a `retryable` flag (another attempt may su
 | Approval | ApprovalDenied, ApprovalPending, ApprovalNotFound, ApprovalAlreadyDecided |
 | Approval stores | ApprovalStoreCorrupt (a durable store read a corrupt row; fails closed) |
 | Flows | FlowError > FlowDefinitionError > FlowCompileError; FlowError > FlowLoopExceeded |
+| Durable runs | CheckpointNotFound, CheckpointConflict, CheckpointStoreCorrupt |
+| Durable runs | RecoveryNeedsDecision (a crash left a non-idempotent call in doubt) |
 | Models | ModelError > ModelRateLimited, ModelUnavailable, ModelTimeout, ModelAuthError |
 | Models | ModelError > ModelBadRequest > ModelContextOverflow (too many tokens) |
 | Models | ModelError > ModelContentFiltered, ModelOutputInvalid |
@@ -29,6 +31,9 @@ from agent_adapter.core.errors import (
     ApprovalStoreCorrupt,
     AuthError,
     BudgetExceeded,
+    CheckpointConflict,
+    CheckpointNotFound,
+    CheckpointStoreCorrupt,
     ConfigError,
     DuplicateTool,
     FlowCompileError,
@@ -50,6 +55,7 @@ from agent_adapter.core.errors import (
     ModelUnavailable,
     OptimiserError,
     PlanInvalid,
+    RecoveryNeedsDecision,
     RunLimitExceeded,
     SchemaNotPortable,
     ToolArgsInvalid,
@@ -72,6 +78,9 @@ __all__ = [
     "ApprovalStoreCorrupt",
     "AuthError",
     "BudgetExceeded",
+    "CheckpointConflict",
+    "CheckpointNotFound",
+    "CheckpointStoreCorrupt",
     "ConfigError",
     "DuplicateTool",
     "ErrorInfo",
@@ -94,6 +103,7 @@ __all__ = [
     "ModelUnavailable",
     "OptimiserError",
     "PlanInvalid",
+    "RecoveryNeedsDecision",
     "RunLimitExceeded",
     "SchemaNotPortable",
     "ToolArgsInvalid",

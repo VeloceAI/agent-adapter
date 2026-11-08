@@ -50,6 +50,13 @@ class Recipe:
     requires: tuple[str, ...] = ()  # modules the snippet imports; it runs only when installed
     setup: str = ""  # test-only lines run before the snippet (fakes for its inputs)
     env: tuple[tuple[str, str], ...] = ()  # test-only environment variables
+    full_only: bool = False  # AGENTS.md lists it in one line; llms-full.txt has the snippet
+    index: str = ""  # a short name: AGENTS.md names it in one shared line, nothing more
+
+    @property
+    def concise(self) -> bool:
+        """True when AGENTS.md shows the whole snippet."""
+        return not (self.full_only or self.index)
 
     @property
     def code(self) -> str:

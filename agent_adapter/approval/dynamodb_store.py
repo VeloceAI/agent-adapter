@@ -234,8 +234,10 @@ class DynamoDBApprovalStore:
 
     async def _live_item(self, op: str, approval_id: str) -> Item:
         item = await self._get_item(op, items.rec_pk(approval_id))
-        if item is None or not items.alive(item, time.time()):
+        if item is None:
             raise ApprovalNotFound(approval_id)
+        if not items.alive(item, time.time()):  # past expires_at, before DynamoDB deletes it
+            raise ApprovalNotFound(approval_id, expired=True, tool=_tool_of(item))
         return item
 
     async def _open_record(
@@ -383,3 +385,12 @@ async def _backoff(attempt: int) -> None:
 def _unsettled(approval_id: str) -> ApprovalStoreCorrupt:
     logger.error("approval %s kept changing under a conditional write: failing closed", approval_id)
     return ApprovalStoreCorrupt(f"approval {approval_id!r} kept changing; try again")
+
+
+def _tool_of(item: Item) -> str:
+    """The tool of an expired item, or "" when the item cannot be read."""
+    try:
+        return items.item_record(item).request.tool
+    except Exception as exc:  # an unreadable expired item still counts as expired
+        log_failure(logger, logging.WARNING, exc, "expired approval item unreadable")
+        return ""

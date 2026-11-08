@@ -81,9 +81,12 @@ Rules:
   current span is.
 - A closing event with no open span still makes a span (start = `ts − latency_ms`). A
   malformed closing event still ends its span (then is logged).
-- `tool.retry`, `tool.cached`, `approval.requested` and `approval.decided` become span
-  events on the open tool span, carrying only `attempt`, `delay_s`, `error_kind`,
-  `approval_id` and `approved` (never a reason, a decider or other free text).
+- `tool.retry`, `tool.cached`, `approval.requested`, `approval.decided` and
+  `approval.expired` become span events on the open tool span, carrying only `attempt`,
+  `delay_s`, `error_kind`, `approval_id`, `approved`, `edited` and `outcome` (never a reason,
+  a decider or other free text). `guardrail.redacted` is a span event on the tool or model
+  span with `guard`, `stage` and `count`.
+  `node.cached` (a [node cache](flow-subflows.md#node-cache) hit) is a span event on the node span.
 - Failures set `error.type` to the error kind and the span status to `ERROR`; so does
   `flow.finished` with status `failed`, `error` or `cancelled`. Pending and paused spans end with
   `agent_adapter.approval_id` and no error.
@@ -111,8 +114,11 @@ calls record input tokens and duration too; a call served fully from the cache r
 
 ### Content
 
-Off by default (prompts and arguments may hold PII). With `capture_content=True`, event
-data keys become opt-in attributes:
+Off by default (prompts and arguments may hold PII). The SDK's own tool, model and flow
+events carry content only to a sink with `wants_content = True` (the run recorder under
+`capture_content=True`); `LoggingSink` and `OTelSink` do not set it, so their
+`capture_content=True` applies to content your own events carry. With it, event data keys
+become opt-in attributes:
 
 | Event key | Attribute |
 |---|---|

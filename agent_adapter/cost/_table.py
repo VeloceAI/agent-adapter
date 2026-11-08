@@ -124,6 +124,7 @@ class ModelEntry(Schedule):
     provider: str = Field(min_length=1)
     periods: tuple[Period, ...] | None = None
     caps: ModelCaps = ModelCaps()
+    source: str = ""  # where the row's prices or caps were read, e.g. a vendor URL
     note: str = ""
 
     @field_validator("caps", mode="before")

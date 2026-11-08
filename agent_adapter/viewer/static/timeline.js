@@ -3,7 +3,7 @@
 
 (function () {
   const AA = (window.AA = window.AA || {});
-  const FAMILIES = ["flow", "node", "tool", "llm", "context", "embedding"];
+  const FAMILIES = ["flow", "node", "tool", "llm", "context", "embedding", "memory"];
 
   function matches(span, filter) {
     if (!filter) return true;
@@ -15,6 +15,7 @@
     if (span.retries) out.push(["retry ×" + span.retries, "warn"]);
     if (span.timeout) out.push(["timeout", "bad"]);
     if (span.cached) out.push(["cache hit", ""]);
+    if (span.family === "memory" && typeof span.count === "number") out.push([span.count + " record(s)", ""]);
     if (span.tokens) out.push([span.tokens.before + " → " + span.tokens.after + " tokens", ""]);
     if (span.cost_usd) out.push([AA.fmt.usd(span.cost_usd), ""]);
     if (span.error_kind) out.push([span.error_kind, "bad"]);

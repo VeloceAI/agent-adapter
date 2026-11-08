@@ -659,11 +659,14 @@ class ToolContext:
     ledger: LedgerPort | None = None
     cache: CachePort | None = None
     sink: EventSink | None = None
-    approval: ApprovalDecision | None = None        # pre-approval for the one call run/run_spec/run_call is given (§8.3); never seen by the tool body
+    approval: ApprovalDecision | None = (
+        None  # pre-approval for the one call run/run_spec/run_call is given (§8.3); never seen by the tool body
+    )
 
     def emit(self, type: str, /, **data: Any) -> None: ...
     # no-op without a sink; event type "custom.<type>" unless it already starts with "custom."
     def child(self, *, call_id: str, **changes: Any) -> ToolContext: ...
+
     # dataclasses.replace with a shallow copy of extras; `approval` is NOT inherited unless passed
 ```
 
@@ -827,8 +830,9 @@ across loops use a `threading.Lock` (`MemoryApprovalStore`, `RateLimitHook`).
 def current_context() -> ToolContext | None: ...
 @contextmanager
 def use_context(ctx: ToolContext) -> Iterator[ToolContext]: ...
-def resolve_context(bound: ToolContext | None) -> ToolContext: ...   # bound, else current, else a fresh
-                                                                    # run_/call_ id; an empty run id gets one
+def resolve_context(bound: ToolContext | None) -> ToolContext:
+    ...  # bound, else current, else a fresh
+    # run_/call_ id; an empty run id gets one
 ```
 A `ContextVar`; the executor sets it around each tool call, the flow runner around each
 node. Readers in child tasks see the parent's value; nothing relies on writes propagating up.
@@ -997,6 +1001,7 @@ class ApprovalRecord(BaseModel):  # frozen
     @property
     def approval_id(self) -> str: ...
 
+
 class ApprovalStore(Protocol):  # create and consume are atomic
     async def create(self, request: ApprovalRequest) -> ApprovalRecord: ...
     # stores a pending record; if the (run_id, call_id) pair already has an unconsumed record,
@@ -1017,14 +1022,31 @@ class ApprovalStore(Protocol):  # create and consume are atomic
         ApprovalRecord
     ]: ...  # newest first; `builtins.list`: the method shadows `list`
 
-class MemoryApprovalStore:                      # implements ApprovalStore; threading.Lock-guarded (safe across loops)
-    def __init__(self, *, max_records: int = 10_000) -> None: ...   # evicts oldest consumed first
-class SQLiteApprovalStore:                      # approval/sqlite_store.py; WAL file, BEGIN IMMEDIATE, schema v1
-    def __init__(self, path: str | os.PathLike[str], *, max_records: int = 10_000, timeout: float = 5.0) -> None: ...
-class RedisApprovalStore:                       # approval/redis_store.py; LoopLocal clients, Lua scripts
-    def __init__(self, client_factory: Callable[[], Any], *, prefix: str = "aa:approval:", ttl_s: float | None = 604800.0) -> None: ...
+
+class MemoryApprovalStore:  # implements ApprovalStore; threading.Lock-guarded (safe across loops)
+    def __init__(self, *, max_records: int = 10_000) -> None: ...  # evicts oldest consumed first
+
+
+class SQLiteApprovalStore:  # approval/sqlite_store.py; WAL file, BEGIN IMMEDIATE, schema v1
+    def __init__(
+        self, path: str | os.PathLike[str], *, max_records: int = 10_000, timeout: float = 5.0
+    ) -> None: ...
+
+
+class RedisApprovalStore:  # approval/redis_store.py; LoopLocal clients, Lua scripts
+    def __init__(
+        self,
+        client_factory: Callable[[], Any],
+        *,
+        prefix: str = "aa:approval:",
+        ttl_s: float | None = 604800.0,
+    ) -> None: ...
     async def aclose(self) -> None: ...
-class ApprovalStoreCorrupt(AdapterError): ...   # approval/persist.py; kind internal-error; a row that fails validation or disagrees with its columns
+
+
+class ApprovalStoreCorrupt(
+    AdapterError
+): ...  # approval/persist.py; kind internal-error; a row that fails validation or disagrees with its columns
 ```
 
 Database stores: a partial unique index on `(run_id, call_id) WHERE NOT consumed` and an
@@ -1144,30 +1166,76 @@ class Executor:
     registry: Registry | None
     hooks: tuple[Hook, ...]
 
-    def context(self, *, run_id: str | None = None, thread_id: str = "",
-                state: Mapping[str, Any] | None = None, extras: Mapping[str, Any] | None = None) -> ToolContext: ...
+    def context(
+        self,
+        *,
+        run_id: str | None = None,
+        thread_id: str = "",
+        state: Mapping[str, Any] | None = None,
+        extras: Mapping[str, Any] | None = None,
+    ) -> ToolContext: ...
     def run_scope(self, **context_kwargs: Any) -> AbstractAsyncContextManager[ToolContext]: ...
     def end_run(self, run_id: str) -> None: ...
 
-    async def run(self, name: str, args: Mapping[str, Any] | None = None, ctx: ToolContext | None = None,
-                  *, call_id: str | None = None) -> Any: ...
-    async def run_spec(self, spec: ToolSpec, args: Mapping[str, Any] | None = None, ctx: ToolContext | None = None,
-                       *, call_id: str | None = None) -> Any: ...
-    async def run_call(self, call: ToolCall, ctx: ToolContext | None = None, *,
-                       registry: Registry | None = None) -> ToolResult: ...
-    async def run_many(self, calls: Iterable[ToolCall], ctx: ToolContext | None = None, *,
-                       concurrency: int | None = None, on_error: OnError = "collect",
-                       registry: Registry | None = None) -> list[ToolResult]: ...
-    def as_completed(self, calls: Iterable[ToolCall], ctx: ToolContext | None = None, *,
-                     concurrency: int | None = None, registry: Registry | None = None) -> AsyncGenerator[ToolResult, None]: ...
-    async def run_plan(self, steps: Sequence[Step], ctx: ToolContext | None = None, *,
-                       concurrency: int | None = None, on_error: OnError = "collect",
-                       registry: Registry | None = None) -> dict[str, ToolResult]: ...
-    async def parallel(self, *work: Callable[[], Awaitable[T]] | Awaitable[T], concurrency: int | None = None,
-                       timeout: float | None = None, retries: int = 0,
-                       on_error: OnError = "fail_fast") -> list[T] | list[T | Exception]: ...   # overloads by on_error
-    def model(self, model: LLMPort, *, cache_ttl: float | None = None) -> LLMPort: ...         # WP08: InstrumentedModel with this executor's hooks/cache/ledger/sink
-    def replace(self, **changes: Any) -> Executor: ...   # new Executor sharing registry and config, with constructor args replaced; never mutates self
+    async def run(
+        self,
+        name: str,
+        args: Mapping[str, Any] | None = None,
+        ctx: ToolContext | None = None,
+        *,
+        call_id: str | None = None,
+    ) -> Any: ...
+    async def run_spec(
+        self,
+        spec: ToolSpec,
+        args: Mapping[str, Any] | None = None,
+        ctx: ToolContext | None = None,
+        *,
+        call_id: str | None = None,
+    ) -> Any: ...
+    async def run_call(
+        self, call: ToolCall, ctx: ToolContext | None = None, *, registry: Registry | None = None
+    ) -> ToolResult: ...
+    async def run_many(
+        self,
+        calls: Iterable[ToolCall],
+        ctx: ToolContext | None = None,
+        *,
+        concurrency: int | None = None,
+        on_error: OnError = "collect",
+        registry: Registry | None = None,
+    ) -> list[ToolResult]: ...
+    def as_completed(
+        self,
+        calls: Iterable[ToolCall],
+        ctx: ToolContext | None = None,
+        *,
+        concurrency: int | None = None,
+        registry: Registry | None = None,
+    ) -> AsyncGenerator[ToolResult, None]: ...
+    async def run_plan(
+        self,
+        steps: Sequence[Step],
+        ctx: ToolContext | None = None,
+        *,
+        concurrency: int | None = None,
+        on_error: OnError = "collect",
+        registry: Registry | None = None,
+    ) -> dict[str, ToolResult]: ...
+    async def parallel(
+        self,
+        *work: Callable[[], Awaitable[T]] | Awaitable[T],
+        concurrency: int | None = None,
+        timeout: float | None = None,
+        retries: int = 0,
+        on_error: OnError = "fail_fast",
+    ) -> list[T] | list[T | Exception]: ...  # overloads by on_error
+    def model(
+        self, model: LLMPort, *, cache_ttl: float | None = None
+    ) -> LLMPort: ...  # WP08: InstrumentedModel with this executor's hooks/cache/ledger/sink
+    def replace(
+        self, **changes: Any
+    ) -> Executor: ...  # new Executor sharing registry and config, with constructor args replaced; never mutates self
 ```
 
 - `context()` → `ToolContext(run_id=run_id or new_id("run_"), thread_id, state, extras, ledger, cache, sink)`.
@@ -1383,39 +1451,66 @@ Anthropic or Voyage prices without a cited source, §23). `gemini-3-pro-preview`
 ```python
 @dataclass(frozen=True)
 class ResolvedPrice:
-    model: str; provider: str; input: float; cached_input: float; cache_write: float
-    cache_write_by_ttl: Mapping[str, float]; output: float; version: str
-    per_call: float = 0.0; per_second: float = 0.0; free: bool = False
+    model: str
+    provider: str
+    input: float
+    cached_input: float
+    cache_write: float
+    cache_write_by_ttl: Mapping[str, float]
+    output: float
+    version: str
+    per_call: float = 0.0
+    per_second: float = 0.0
+    free: bool = False
+
 
 class Prices:
-    version: str                                                          # read-only property
+    version: str  # read-only property
+
     @classmethod
-    def default(cls) -> Prices: ...                                       # packaged table, cached
+    def default(cls) -> Prices: ...  # packaged table, cached
     @classmethod
-    def empty(cls, version: str = "empty") -> Prices: ...                 # no models; ConfigError on ""
+    def empty(cls, version: str = "empty") -> Prices: ...  # no models; ConfigError on ""
     @classmethod
-    def load(cls, source: Mapping[str, Any] | str | os.PathLike[str]) -> Prices: ...   # ConfigError on invalid
-    def merged(self, overrides: Mapping[str, Any] | Prices) -> Prices: ...           # per-model replace
-    def resolve(self, model: str) -> str | None: ...                      # exact, alias, then longest prefix whose remainder
-                                                                          # is a snapshot suffix (-YYYY-MM-DD, -\d{3,} e.g. -001,
-                                                                          # -0613, -20250514, or -latest), or whose key is a
-                                                                          # caps-only family ending in "-" (e.g. "claude-");
-                                                                          # anything else (gpt-5.6-luna, gpt-5-pro, gpt-4.1-nano,
-                                                                          # gpt-5-1, claude-opus-4-5 vs claude-opus-4) does not
-                                                                          # match that row: unknown -> cost None, no caps;
-                                                                          # then patterns (`key*`, `*`); the longest matched
-                                                                          # prefix wins, tie: row > pattern > family; exact
-                                                                          # name and alias always first
-    def price(self, model: str, *, at: date | None = None, prompt_tokens: int = 0) -> ResolvedPrice | None: ...
-    def cost(self, model: str, usage: Usage, *, at: date | None = None,
-             seconds: float = 0.0, attempts: int = 1) -> float | None: ...   # one call; per_call × attempts;
-                                                                          # ConfigError on a bad seconds (per-second model)
-                                                                          # or attempts < 1 (per-call model)
-    def unit_cost(self, item: str, units: float, *, at: date | None = None) -> float | None: ...
-                                                                          # item "provider:model"; also "<provider>:<model>:cache_storage"
-                                                                          # resolves a model entry's cache_storage_per_hour (units = 1M token-hours),
-                                                                          # per period when the entry has periods; `at` default today, UTC
-    def caps(self, model: str) -> ModelCaps: ...                          # unknown model -> ModelCaps()
+    def load(
+        cls, source: Mapping[str, Any] | str | os.PathLike[str]
+    ) -> Prices: ...  # ConfigError on invalid
+    def merged(self, overrides: Mapping[str, Any] | Prices) -> Prices: ...  # per-model replace
+    def resolve(self, model: str) -> str | None:
+        ...  # exact, alias, then longest prefix whose remainder
+        # is a snapshot suffix (-YYYY-MM-DD, -\d{3,} e.g. -001,
+        # -0613, -20250514, or -latest), or whose key is a
+        # caps-only family ending in "-" (e.g. "claude-");
+        # anything else (gpt-5.6-luna, gpt-5-pro, gpt-4.1-nano,
+        # gpt-5-1, claude-opus-4-5 vs claude-opus-4) does not
+        # match that row: unknown -> cost None, no caps;
+        # then patterns (`key*`, `*`); the longest matched
+        # prefix wins, tie: row > pattern > family; exact
+        # name and alias always first
+
+    def price(
+        self, model: str, *, at: date | None = None, prompt_tokens: int = 0
+    ) -> ResolvedPrice | None: ...
+    def cost(
+        self,
+        model: str,
+        usage: Usage,
+        *,
+        at: date | None = None,
+        seconds: float = 0.0,
+        attempts: int = 1,
+    ) -> float | None:
+        ...  # one call; per_call × attempts;
+        # ConfigError on a bad seconds (per-second model)
+        # or attempts < 1 (per-call model)
+
+    def unit_cost(self, item: str, units: float, *, at: date | None = None) -> float | None:
+        ...
+        # item "provider:model"; also "<provider>:<model>:cache_storage"
+        # resolves a model entry's cache_storage_per_hour (units = 1M token-hours),
+        # per period when the entry has periods; `at` default today, UTC
+
+    def caps(self, model: str) -> ModelCaps: ...  # unknown model -> ModelCaps()
 ```
 
 `kind="api"` entries are priced with `unit_cost(f"{provider}:{model}", units)`.
@@ -1554,7 +1649,11 @@ class Envelope:
     kind: Literal["tool", "llm", "gcache", "embedding"]
     stored_at: float
     payload: Any
-def encode(kind: Literal["tool", "llm", "gcache", "embedding"], payload: Any) -> bytes: ...   # TypeError if not JSON-able
+
+
+def encode(
+    kind: Literal["tool", "llm", "gcache", "embedding"], payload: Any
+) -> bytes: ...  # TypeError if not JSON-able
 def decode(data: bytes, kind: Literal["tool", "llm", "gcache", "embedding"]) -> Envelope | None: ...
 ```
 Wire: UTF-8 JSON `{"v": 1, "kind": …, "stored_at": …, "payload": …}`. `decode` returns
@@ -1637,48 +1736,101 @@ never raises for an unsupported model (it logs `DEBUG` and returns `kwargs` unch
 
 ```python
 # models/openai.py (ODM)
-class OpenAIModel:                         # LLMPort, provider = "openai"
-    def __init__(self, model: str, *, api: Literal["responses", "chat"] = "responses",
-                 client: Any | None = None, client_kwargs: Mapping[str, Any] | None = None,
-                 cache_plugin: PromptCachePlugin | None = None, strict_tools: bool = True,
-                 defaults: Mapping[str, Any] | None = None) -> None: ...
-def build_chat_request(request: LLMRequest, *, model: str, strict_tools: bool = True) -> dict[str, Any]: ...
-def build_responses_request(request: LLMRequest, *, model: str, strict_tools: bool = True) -> dict[str, Any]: ...
+class OpenAIModel:  # LLMPort, provider = "openai"
+    def __init__(
+        self,
+        model: str,
+        *,
+        api: Literal["responses", "chat"] = "responses",
+        client: Any | None = None,
+        client_kwargs: Mapping[str, Any] | None = None,
+        cache_plugin: PromptCachePlugin | None = None,
+        strict_tools: bool = True,
+        defaults: Mapping[str, Any] | None = None,
+    ) -> None: ...
+
+
+def build_chat_request(
+    request: LLMRequest, *, model: str, strict_tools: bool = True
+) -> dict[str, Any]: ...
+def build_responses_request(
+    request: LLMRequest, *, model: str, strict_tools: bool = True
+) -> dict[str, Any]: ...
 def parse_chat_completion(raw: Any) -> LLMResponse: ...
 def parse_response(raw: Any) -> LLMResponse: ...
 def map_openai_error(exc: BaseException, *, model: str) -> ModelError | None: ...
 
+
 # models/gemini.py (ODM)
-class GeminiModel:                         # provider = "gemini"
-    def __init__(self, model: str, *, client: Any | None = None, client_kwargs: Mapping[str, Any] | None = None,
-                 cache_plugin: PromptCachePlugin | None = None, thinking: Mapping[str, Any] | None = None,
-                 defaults: Mapping[str, Any] | None = None) -> None: ...
-def build_gemini_request(request: LLMRequest, *, model: str) -> dict[str, Any]: ...   # {"model", "contents", "config"}
+class GeminiModel:  # provider = "gemini"
+    def __init__(
+        self,
+        model: str,
+        *,
+        client: Any | None = None,
+        client_kwargs: Mapping[str, Any] | None = None,
+        cache_plugin: PromptCachePlugin | None = None,
+        thinking: Mapping[str, Any] | None = None,
+        defaults: Mapping[str, Any] | None = None,
+    ) -> None: ...
+
+
+def build_gemini_request(
+    request: LLMRequest, *, model: str
+) -> dict[str, Any]: ...  # {"model", "contents", "config"}
 def parse_gemini_response(raw: Any) -> LLMResponse: ...
 def map_gemini_error(exc: BaseException, *, model: str) -> ModelError | None: ...
 
+
 # models/anthropic.py (ODM)
-class AnthropicModel:                      # provider = "anthropic"
-    def __init__(self, model: str, *, client: Any | None = None, client_kwargs: Mapping[str, Any] | None = None,
-                 cache_plugin: PromptCachePlugin | None = None, max_tokens: int = 4096,
-                 defaults: Mapping[str, Any] | None = None) -> None: ...
-def build_anthropic_request(request: LLMRequest, *, model: str, max_tokens: int) -> dict[str, Any]: ...
+class AnthropicModel:  # provider = "anthropic"
+    def __init__(
+        self,
+        model: str,
+        *,
+        client: Any | None = None,
+        client_kwargs: Mapping[str, Any] | None = None,
+        cache_plugin: PromptCachePlugin | None = None,
+        max_tokens: int = 4096,
+        defaults: Mapping[str, Any] | None = None,
+    ) -> None: ...
+
+
+def build_anthropic_request(
+    request: LLMRequest, *, model: str, max_tokens: int
+) -> dict[str, Any]: ...
 def parse_anthropic_message(raw: Any) -> LLMResponse: ...
 def map_anthropic_error(exc: BaseException, *, model: str) -> ModelError | None: ...
 
+
 # models/callable.py
 HostResult = LLMResponse | str | Mapping[str, Any]
-class CallableModel:                       # provider default "callable"
+
+
+class CallableModel:  # provider default "callable"
     # sync fn → asyncio.to_thread (contextvars copied); usage mapping keys must be Usage fields
-    def __init__(self, fn: Callable[[LLMRequest], Awaitable[HostResult] | HostResult], *,
-                 provider: str = "callable", model: str = "host",
-                 stream_fn: Callable[[LLMRequest], AsyncIterator[StreamEvent]] | None = None) -> None: ...
+    def __init__(
+        self,
+        fn: Callable[[LLMRequest], Awaitable[HostResult] | HostResult],
+        *,
+        provider: str = "callable",
+        model: str = "host",
+        stream_fn: Callable[[LLMRequest], AsyncIterator[StreamEvent]] | None = None,
+    ) -> None: ...
+
 
 # models/fallback.py
 DEFAULT_FALL_ON: tuple[type[ModelError], ...] = (ModelRateLimited, ModelUnavailable, ModelTimeout)
-class FallbackModel:                       # provider "fallback"; model = first port's model
-    def __init__(self, models: Sequence[LLMPort], *, fall_on: tuple[type[ModelError], ...] = DEFAULT_FALL_ON,
-                 sink: EventSink | None = None) -> None: ...
+
+
+class FallbackModel:  # provider "fallback"; model = first port's model
+    def __init__(
+        self,
+        models: Sequence[LLMPort],
+        *,
+        fall_on: tuple[type[ModelError], ...] = DEFAULT_FALL_ON,
+        sink: EventSink | None = None,
+    ) -> None: ...
 ```
 
 Rules for every provider port:
@@ -1900,6 +2052,7 @@ lists required `data` keys (tests check every emitter against it).
 | `flow.started`, `flow.finished` | flow runner | `flow` / `flow`, `status`, `steps` |
 | `node.started`, `node.finished`, `node.failed` | flow runner | `flow`, `node`, `visit` (+ `error_kind` on failed; `node.finished` adds `changed`, the state field names set, and `updates`, their values, only with `FlowRunner(trace_state=True)`) |
 | `node.paused` | flow runner | `flow`, `node`, `approval_id` |
+| `node.cached` | flow runner (`NodeCache` hit) | `flow`, `node`, `visit` |
 | `budget.warning` | `BudgetHook` | `limit_usd`, `spent_usd` |
 | `custom.*` | `ToolContext.emit` | — |
 

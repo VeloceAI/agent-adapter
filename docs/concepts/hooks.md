@@ -12,6 +12,8 @@ flowchart LR
 ```
 
 The same three phases exist for `llm` (`before_llm`, …) and `node` (`before_node`, …).
+`on_llm_end(inv, billed)` runs once when a model call ends, however it ends, with the
+ledger entry the call recorded (or None).
 Hooks run in registration order; the first `ShortCircuit` wins. A hook that raises is
 logged and the error propagates unchanged: a hook bug at `ERROR` (type only), control
 flow not at all. A policy outcome (`BudgetExceeded`, `GuardrailBlocked`, an approval or
@@ -47,7 +49,7 @@ books a second slot, and a custom counter counts twice. Dispatch details:
 | Hook | Phases | Does |
 |---|---|---|
 | `LoggingHook(*, logger=None, level=INFO, redact=DEFAULT_REDACT)` | all nine | one structured line per start, finish and error |
-| `BudgetHook(max_usd, *, on_exceed="stop", scope="run")` | `before_tool`, `before_llm` | stops (or warns) once spend reaches `max_usd` |
+| `BudgetHook(max_usd, *, on_exceed="stop", scope="run")` | `before_tool`, `before_llm`, `on_llm_end` | stops (or warns) once spend reaches `max_usd` |
 | `GuardrailHook(check, *, on=("args",))` | tool and LLM phases | blocks payloads `check` rejects |
 | `RateLimitHook(per_kind, *, clock, sleep)` | `before_tool`, `before_llm` | waits for a token; never fails |
 

@@ -90,6 +90,8 @@ def _route(live: LiveTurn, event: Event) -> None:
             error_kind=str(data["error_kind"]) if "error_kind" in data else None,
             cached=bool(data["cached"]) if "cached" in data else None,
         )
+    elif event.type == EventType.LLM_STARTED:
+        live.close_drafts()
     elif event.type == EventType.LLM_FINISHED:
         usage = data.get("usage") or {}
         cost = data.get("cost_usd")

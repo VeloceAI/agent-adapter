@@ -8,7 +8,7 @@ from collections.abc import Callable
 from typing import Any
 
 from agent_adapter.core.tool import ToolSpec
-from agent_adapter.flow.actions import Call, Join, Map
+from agent_adapter.flow.actions import Call, Join, Map, NodeCache
 from agent_adapter.flow.graph import FlowGraph, NodeSpec
 
 _SHAPES: dict[str, tuple[str, str]] = {
@@ -71,19 +71,33 @@ def flow_graph(graph: FlowGraph) -> dict[str, Any]:
 
 
 def flow_mermaid(graph: FlowGraph) -> str:
-    """`graph` as a mermaid `flowchart TD`; fan-out, fan-in, loops and pause gates are marked."""
+    """`graph` as a mermaid `flowchart TD`; fan-out, fan-in, loops, gates and sub-flows marked."""
     data = flow_graph(graph)
     lines = ["flowchart TD", f"  aa_start((start)) --> {_id(graph.start)}"]
-    for node in data["nodes"]:
-        opening, closing = _SHAPES[node["kind"]]
-        text = _quote("<br/>".join(_node_lines(node)))
-        style = ":::pause" if node["pause"] else ""
-        lines.append(f"  {_id(node['id'])}{opening}{text}{closing}{style}")
-    for edge in data["edges"]:
-        lines.append(f"  {_id(edge['source'])} {_arrow(edge)} {_id(edge['target'])}")
+    lines.extend(_body(data, (), "  "))
     lines.extend(f"  {_id(name)} --> aa_end((end))" for name in graph.nodes if name in graph.ends)
     lines.append("  classDef pause stroke-dasharray: 5 5")
     return "\n".join(lines) + "\n"
+
+
+def _body(data: dict[str, Any], path: tuple[int, ...], indent: str) -> list[str]:
+    """Node and edge lines; a sub-flow node is a `subgraph` holding its child's lines."""
+    lines = []
+    for index, node in enumerate(data["nodes"]):
+        text = _quote("<br/>".join(_node_lines(node)))
+        child = node.get("subflow")
+        if child is not None:
+            lines.append(f"{indent}subgraph {_id(node['id'], path)}[{text}]")
+            lines.extend(_body(child, (*path, index), indent + "  "))
+            lines.append(f"{indent}end")
+            continue
+        opening, closing = _SHAPES[node["kind"]]
+        style = ":::pause" if node["pause"] else ""
+        lines.append(f"{indent}{_id(node['id'], path)}{opening}{text}{closing}{style}")
+    for edge in data["edges"]:
+        source, target = _id(edge["source"], path), _id(edge["target"], path)
+        lines.append(f"{indent}{source} {_arrow(edge)} {target}")
+    return lines
 
 
 def back_edges(graph: FlowGraph) -> set[tuple[str, str]]:
@@ -127,7 +141,7 @@ def _edge(source: str, target: str, kind: str, label: str, **flags: bool) -> dic
 def _node(graph: FlowGraph, spec: NodeSpec) -> dict[str, Any]:
     action = spec.action
     pause = spec.pause
-    return {
+    data = {
         "id": spec.name,
         "kind": spec.kind,
         "start": spec.name == graph.start,
@@ -143,6 +157,11 @@ def _node(graph: FlowGraph, spec: NodeSpec) -> dict[str, Any]:
         "retries": spec.retries,
         "has_prompt": spec.prompt is not None,
     }
+    if spec.child is not None:  # extra keys only where used: other nodes keep their shape
+        data["subflow"] = flow_graph(spec.child)
+    if isinstance(spec.cache, NodeCache):
+        data["cache"] = {"ttl": spec.cache.ttl, "scope": spec.cache.scope}
+    return data
 
 
 def _tool(action: Any) -> str | None:
@@ -173,6 +192,8 @@ def _node_lines(node: dict[str, Any]) -> list[str]:
         lines.append(f"fan-in: {', '.join(node['sources'])}")
     if node["tool"] and node["kind"] in ("call", "map"):
         lines.append(f"tool: {node['tool']}")
+    if node.get("subflow"):
+        lines.append(f"sub-flow: {node['subflow']['flow']}")
     if node["pause"]:
         lines.append("pause gate")
     return lines
@@ -191,9 +212,12 @@ def _arrow(edge: dict[str, Any]) -> str:
     return f"{arrow}|{_quote(text)}|" if text else arrow
 
 
-def _id(name: str) -> str:
-    # Prefixed so a node named `end` or `graph` never clashes with mermaid keywords.
-    return f"n_{name}"
+def _id(name: str, path: tuple[int, ...] = ()) -> str:
+    # Prefixed so a node named `end` or `graph` never clashes with mermaid keywords; a sub-flow's
+    # nodes get `s<index path>__`, which no top-level `n_` id can equal.
+    if not path:
+        return f"n_{name}"
+    return f"s{'_'.join(str(i) for i in path)}__{name}"
 
 
 def _quote(text: str) -> str:

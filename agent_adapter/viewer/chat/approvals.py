@@ -13,6 +13,9 @@ from typing import Any
 from agent_adapter.approval.builtin import CallbackApproval
 from agent_adapter.core.errors import ApprovalAlreadyDecided, ApprovalNotFound, log_failure
 from agent_adapter.core.types import ApprovalDecision, ApprovalRequest
+from agent_adapter.runtime.current import current_context
+from agent_adapter.tracing.events import EventType, emit, make_event
+from agent_adapter.viewer.chat.approval_history import History, arguments_of, context_view
 from agent_adapter.viewer.chat.live import LiveTurn, preview
 from agent_adapter.viewer.chat.watch import TurnWatch
 
@@ -42,6 +45,8 @@ class _Pending:
     decided_by: str = ""
     decision: ApprovalDecision | None = None
     created_at: float = field(default_factory=time.time)
+    decided_at: float = 0.0
+    context: dict[str, Any] | None = None  # similar earlier decisions: shown, never applied
 
     def view(self) -> dict[str, Any]:
         return {
@@ -56,16 +61,26 @@ class _Pending:
             "reason": self.reason,
             "decided_by": self.decided_by,
             "created_at": self.created_at,
+            "decided_at": self.decided_at,
+            "context": self.context,
         }
 
 
 class ChatApprovals:
     """One-use decisions bound to the turn and call that asked; every failure denies."""
 
-    def __init__(self, watch: TurnWatch, *, reviewer: str, timeout: float) -> None:
+    def __init__(
+        self,
+        watch: TurnWatch,
+        *,
+        reviewer: str,
+        timeout: float,
+        history: History | None = None,
+    ) -> None:
         self.watch = watch
         self.reviewer = reviewer
         self.timeout = timeout
+        self.history = history  # stored approval views of ended turns, for approval memory
         self._lock = threading.Lock()
         self._items: OrderedDict[str, _Pending] = OrderedDict()
 
@@ -91,15 +106,17 @@ class ChatApprovals:
             logger.warning("chat: approval for run %s outside a chat turn; denied", request.run_id)
             return _deny("not asked in a chat turn")
         loop = asyncio.get_running_loop()
+        arguments = preview(request.arguments)
         item = _Pending(
             approval_id=request.approval_id,
             live=live,
             call_id=request.call_id,
             tool=request.tool,
-            arguments=preview(request.arguments),
+            arguments=arguments,
             hint=request.hint,
             future=loop.create_future(),
             loop=loop,
+            context=self._context(request, arguments),
         )
         with self._lock:
             if request.approval_id in self._items:
@@ -112,9 +129,12 @@ class ChatApprovals:
             "chat: approval %s for %s waits (turn %s)", item.approval_id, item.tool, live.turn_id
         )
         try:
-            return await asyncio.wait_for(item.future, self.timeout)
+            decision = await asyncio.wait_for(item.future, self.timeout)
         except TimeoutError:
-            return self._expired(item)
+            decision = self._expired(item)
+        if item.status in ("timed-out", "stopped"):
+            _announce_expired(request, item.status)
+        return decision
 
     def _expired(self, item: _Pending) -> ApprovalDecision:
         with self._lock:
@@ -142,8 +162,9 @@ class ChatApprovals:
                 raise ApprovalAlreadyDecided(approval_id, status=item.status)
             item.status = "approved" if approved else "denied"
             item.reason, item.decided_by = text, self.reviewer
+            item.decided_at = time.time()
             item.decision = ApprovalDecision(
-                approved=approved, reason=text, decided_by=self.reviewer, decided_at=time.time()
+                approved=approved, reason=text, decided_by=self.reviewer, decided_at=item.decided_at
             )
         logger.info("chat: approval %s %s by %s", approval_id, item.status, self.reviewer)
         _resolve_soon(item, item.decision)
@@ -166,6 +187,18 @@ class ChatApprovals:
             live.push("approval", **item.view())
         return [item.view() for item in items]
 
+    def _context(self, request: ApprovalRequest, arguments: str) -> dict[str, Any] | None:
+        """Similar earlier decisions, compared on the masked preview; None when that fails."""
+        try:
+            with self._lock:
+                views = [item.view() for item in reversed(self._items.values())]
+            stored = list(self.history()) if self.history is not None else []
+            shown = request.model_copy(update={"arguments": arguments_of(arguments)})
+            return context_view(shown, [*views, *stored])
+        except Exception as exc:  # advice only: the request is asked without it
+            log_failure(logger, logging.WARNING, exc, "chat: approval memory failed")
+            return None
+
     def _prune(self) -> None:
         """Forget the oldest decided requests past `MAX_KEPT`. Caller holds the lock."""
         while len(self._items) > MAX_KEPT:
@@ -173,6 +206,21 @@ class ChatApprovals:
             if oldest.status == "pending":
                 break
             self._items.popitem(last=False)
+
+
+def _announce_expired(request: ApprovalRequest, outcome: str) -> None:
+    """Send `approval.expired` on the waiting call's sink: nobody decided in time."""
+    ctx = current_context()
+    if ctx is None or ctx.sink is None:
+        return
+    event = make_event(
+        EventType.APPROVAL_EXPIRED,
+        ctx,
+        tool=request.tool,
+        approval_id=request.approval_id,
+        outcome=outcome,
+    )
+    emit(ctx.sink, event)
 
 
 def _deny(reason: str) -> ApprovalDecision:

@@ -121,6 +121,7 @@ The last line prints only when the `openai` SDK is installed.
 | Response cache key | provider, model, the request and the function's qualified name; give each model its own `model=` |
 | Cancellation | a cancelled call stops waiting; a sync `fn` already in its thread runs to the end |
 | Fallback | `FallbackModel([own, other])` works with any ports ([Models](../concepts/models.md)) |
+| Vendor SDKs | Bedrock, Azure OpenAI, Mistral, Groq and OpenRouter, each as a `CallableModel`: [Model recipes](model-recipes.md) |
 
 ## Files
 

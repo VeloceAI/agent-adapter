@@ -24,9 +24,29 @@ END_TYPES = {
     "node.paused": "paused",
     "flow.finished": "ok",
 }
-# Events that end at their own timestamp and carry their duration.
-_POINT_SPANS = {"context.compressed": "ok", "context.compress_failed": "error"}
-_MARKS = {"tool.retry", "approval.requested", "approval.decided", "llm.fallback"}
+# Events that end at their own timestamp and carry their duration: (family, status).
+_POINT_SPANS = {
+    "context.compressed": ("context", "ok"),
+    "context.compress_failed": ("context", "error"),
+    "memory.added": ("memory", "ok"),
+    "memory.searched": ("memory", "ok"),
+    "memory.deleted": ("memory", "ok"),
+    "memory.exported": ("memory", "ok"),
+}
+_MEMORY_VERBS = {
+    "memory.added": "remember",
+    "memory.searched": "recall",
+    "memory.deleted": "forget",
+    "memory.exported": "export",
+}
+_MARKS = {
+    "tool.retry",
+    "approval.requested",
+    "approval.decided",
+    "approval.expired",
+    "guardrail.redacted",
+    "llm.fallback",
+}
 
 
 def build_spans(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -39,9 +59,15 @@ def build_spans(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
         ts = float(event.get("ts") or 0.0)
         family, key = span_identity(kind, str(event.get("call_id") or ""), data)
         if kind in _POINT_SPANS:
+            point, status = _POINT_SPANS[kind]
             latency = _number(data.get("latency_ms")) or 0.0
-            span = _new(key, "context", ts - latency / 1000.0, event, index)
-            _close(span, _POINT_SPANS[kind], ts, data, index)
+            if point == "memory":  # several per call: each is its own span
+                key = f"memory:{index}"
+            span = _new(key, point, ts - latency / 1000.0, event, index)
+            _close(span, status, ts, data, index)
+            if point == "memory":
+                span["name"] = f"{_MEMORY_VERBS[kind]} ({data.get('backend', '')})"
+                span["count"] = _number(data.get("count"))
             spans[key] = span
             order.append(key)
             continue

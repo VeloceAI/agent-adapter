@@ -183,6 +183,8 @@ def cli() -> str:
     """Every command as one line."""
     lines = [f"- {line}" for line in command_lines()]
     lines += [
+        "- `agent-adapter eval app:agent cases.jsonl --save`: also save the report; "
+        "`agent-adapter ui` shows it under Evals (`--evals FOLDER`)",
         "- `agent-adapter guide --full`: the guide plus every public signature",
         "- `python -m agent_adapter guide --section recipes`: the same CLI without the script",
         "- `python -m agent_adapter.server --registry mypkg.tools:registry`: serve a registry"

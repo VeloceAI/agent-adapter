@@ -135,12 +135,17 @@ async def test_a_lost_table_creation_race_is_rechecked(tmp_path: Path, monkeypat
         await store.aclose()
 
 
-async def test_prune_deletes_old_records_and_warns_for_unused_ones(store, caplog) -> None:
+async def test_prune_deletes_old_records_and_warns_for_unused_ones(
+    store, caplog, monkeypatch
+) -> None:
     used = await store.create(req("a"))
     await store.decide(used.approval_id, YES)
     await store.consume(used.approval_id)
     await store.create(req("b"))
     assert await store.prune(older_than_s=3600) == 0
+    # Windows clocks tick every ~15 ms: move "now" past the records so the cutoff is strict.
+    later = sqlalchemy_store.time.time() + 1
+    monkeypatch.setattr(sqlalchemy_store, "time", SimpleNamespace(time=lambda: later))
     with caplog.at_level(logging.WARNING):
         assert await store.prune(older_than_s=0) == 2
     assert "pruned 1 approval(s) that were never used" in caplog.text

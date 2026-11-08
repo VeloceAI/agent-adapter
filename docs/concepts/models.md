@@ -65,11 +65,11 @@ is not JSON raises `ModelOutputInvalid`. Truncated or filtered replies keep `par
 
 ## Streaming
 
-`stream()` yields `TextDelta` and `ToolCallDelta`, then one `StreamDone` with the full
-response. `ToolCallDelta.index` is the call's position in `response.tool_calls`.
+`stream()` yields `TextDelta` and `ToolCallDelta`, `PartialOutput` (the structured output
+parsed so far, with `output_schema`), then one `StreamDone` with the full response.
 `generate()` with `request.stream=True` streams and returns the assembled response.
-Argument fragments are keyed by the call `index` (OpenAI Chat), by `item_id` (Responses)
-or per `tool_use` block (Anthropic `input_json_delta`); Gemini sends each call whole.
+`run_tool_loop(on_text=, on_event=)` passes them on. Details:
+[Streaming](streaming.md).
 
 ## Fallback and retries
 

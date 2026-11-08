@@ -97,7 +97,12 @@ def test_result_schema_and_the_fixed_routes():
         "/approvals/{approval_id}/decide",
         "/runs/{run_id}/events",
         "/runs/{run_id}/cost",
+        "/budget",
+        "/budget/{scope}",
     } <= set(doc["paths"])
+    scoped = doc["paths"]["/budget/{scope}"]["get"]
+    assert "400" in scoped["responses"] and "400" in doc["paths"]["/budget"]["get"]["responses"]
+    assert scoped["parameters"][0]["schema"]["enum"] == ["principal", "user", "team", "global"]
     assert doc["paths"]["/healthz"]["get"]["security"] == []
     assert doc["paths"]["/readyz"]["get"]["security"] == []
     ready = doc["paths"]["/readyz"]["get"]["responses"]

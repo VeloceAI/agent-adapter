@@ -82,6 +82,7 @@ async def test_broken_backend_is_a_miss_and_a_warning(caplog):
         encode("embedding", []),
         json.dumps({"v": 1, "kind": "embedding", "stored_at": 0, "payload": [None]}).encode(),
     ],
+    ids=["not-json", "llm-kind", "text-payload", "empty-payload", "null-vector"],  # stable ids
 )
 async def test_malformed_entries_are_misses(stored):
     cache = MemoryCache()

@@ -118,6 +118,7 @@ def _paced(steps: list[_Step]) -> list[dict[str, Any]]:
 def _fix_times(turn: dict[str, Any], steps: list[dict[str, Any]], start: float) -> None:
     """Times of a turn and of its stream as the replay shows them, from a fixed start."""
     first: dict[str, int] = {}
+    decided: dict[str, int] = {}
     took: dict[str, float] = {}
     for step in steps:
         event = step.get("sse")
@@ -132,12 +133,19 @@ def _fix_times(turn: dict[str, Any], steps: list[dict[str, Any]], start: float) 
             event["created_at"] = round(
                 start + first.setdefault(event["approval_id"], step["at"]) / 1000, 3
             )
+            if event.get("decided_at"):
+                decided[event["approval_id"]] = step["at"]
+                event["decided_at"] = round(start + step["at"] / 1000, 3)
     turn["started"] = start
     turn["ended"] = round(start + (steps[-1]["at"] if steps else 0) / 1000, 3)
     for tool in turn["tools"]:
         tool["ms"] = took.get(tool["call_id"], tool["ms"])
     for approval in turn["approvals"]:
         approval["created_at"] = round(start + first.get(approval["approval_id"], 0) / 1000, 3)
+        if approval.get("decided_at"):
+            approval["decided_at"] = round(
+                start + decided.get(approval["approval_id"], 0) / 1000, 3
+            )
     for step in steps:
         event = step.get("sse")
         if event and event["type"] in ("done", "error"):

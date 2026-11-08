@@ -1,6 +1,16 @@
-"""Portable graph flows: a builder, merge rules, a validated graph and a local runner."""
+"""Portable graph flows: a builder, merge rules, sub-flows, a node cache, a graph, a runner."""
 
-from agent_adapter.flow.actions import Call, Join, Map, NodeFn, Route, node_model, node_prompt
+from agent_adapter.flow.actions import (
+    Call,
+    Join,
+    Map,
+    NodeCache,
+    NodeFn,
+    Route,
+    SubFlow,
+    node_model,
+    node_prompt,
+)
 from agent_adapter.flow.graph import FlowGraph, NodeSpec, RouteSpec
 from agent_adapter.flow.runner import FlowCheckpoint, FlowResult, FlowRunner
 from agent_adapter.flow.spec import Flow
@@ -17,10 +27,12 @@ __all__ = [
     "Map",
     "Merge",
     "MergeRule",
+    "NodeCache",
     "NodeFn",
     "NodeSpec",
     "Route",
     "RouteSpec",
+    "SubFlow",
     "apply_updates",
     "keyed",
     "merge_rules",

@@ -16,6 +16,8 @@ EPILOG = """examples:
   agent-adapter ui                                         # browse recorded runs
   agent-adapter ui --model app:model --tools app:registry  # chat via the built-in loop
   agent-adapter ui --agent app:chat                        # chat with any agent
+  agent-adapter ui --import traces.json                    # OTLP JSON traces as runs
+  agent-adapter ui --model app:model --memory sqlite:memory.db --user ann --memory-save facts
 
 Targets are module.path:attribute, imported from the current folder. With chat on, this
 process runs the agent and its tools; anyone with the printed link can chat and decide
@@ -29,12 +31,17 @@ _CHAT_DEFAULTS: dict[str, Any] = {
     "max_steps": 8,
     "turn_timeout": 300.0,
     "approval_timeout": 600.0,
-    "chat_dir": None,
+    "memory": None,
+    "user": "",
+    "memory_save": "none",
+    "memory_every": 1,
+    "recall": 5,
 }
 
 
 def add_ui_parser(commands: Any) -> None:
     """Register the `ui` subcommand on an argparse subparsers object."""
+    from agent_adapter.evals import DEFAULT_EVALS_FOLDER
     from agent_adapter.viewer import DEFAULT_FOLDER, LOOPBACK
     from agent_adapter.viewer.chat.setup import DEFAULT_CHAT_DIR
     from agent_adapter.viewer.server import DEFAULT_PORT
@@ -58,8 +65,20 @@ def add_ui_parser(commands: Any) -> None:
         metavar="NAME",
         help="name stored as decided_by (needed with --approvals; chat default: local)",
     )
+    ui.add_argument(
+        "--evals",
+        default=DEFAULT_EVALS_FOLDER,
+        metavar="FOLDER",
+        help=f"saved eval reports for the Evals view ({DEFAULT_EVALS_FOLDER})",
+    )
     ui.add_argument("--export", metavar="report.html", help="write one offline HTML file and exit")
     ui.add_argument("--run", metavar="KEY", help="with --export: only this run")
+    ui.add_argument(
+        "--import",
+        dest="import_otlp",
+        metavar="traces.json",
+        help="first add the GenAI spans of an OTLP JSON trace file as runs (never run)",
+    )
     chat = ui.add_argument_group("chat (off unless --model or --agent is given)")
     chat.add_argument("--model", metavar="MOD:ATTR", help="an LLMPort: chat via the built-in loop")
     chat.add_argument(
@@ -85,7 +104,35 @@ def add_ui_parser(commands: Any) -> None:
     chat.add_argument(
         "--chat-dir",
         metavar="DIR",
-        help=f"sessions, uploads and eval_cases.jsonl ({DEFAULT_CHAT_DIR})",
+        help=f"sessions, uploads and eval_cases.jsonl, also without chat ({DEFAULT_CHAT_DIR})",
+    )
+    chat.add_argument(
+        "--memory",
+        metavar="sqlite:PATH|MOD:ATTR",
+        help="memory recalled across this user's chats: a SQLite file or a memory backend",
+    )
+    chat.add_argument(
+        "--user", default="", metavar="NAME", help="the user who owns these chats (ctx.user_id)"
+    )
+    chat.add_argument(
+        "--memory-save",
+        choices=("none", "summary", "facts"),
+        default="none",
+        help="with --memory: what to save from chats (none)",
+    )
+    chat.add_argument(
+        "--memory-every",
+        type=_positive_int,
+        default=1,
+        metavar="N",
+        help="with --memory-save: save every N finished turns (1)",
+    )
+    chat.add_argument(
+        "--recall",
+        type=_positive_int,
+        default=5,
+        metavar="K",
+        help="with --memory: records recalled per turn (5)",
     )
 
 
@@ -129,7 +176,9 @@ def run_ui(args: argparse.Namespace, out: TextIO) -> int:
         ConfigError: a bad host, target, approvals database, reviewer or chat option.
         OSError: the port is taken or a file cannot be read or written.
     """
+    from agent_adapter.evals import DEFAULT_EVALS_FOLDER
     from agent_adapter.viewer import export, make_server
+    from agent_adapter.viewer.chat.setup import DEFAULT_CHAT_DIR
 
     chat_on = bool(args.model or args.agent)
     if not chat_on:
@@ -139,6 +188,10 @@ def run_ui(args: argparse.Namespace, out: TextIO) -> int:
             raise ConfigError("--export writes a read-only file: drop --approvals")
         if chat_on:
             raise ConfigError("--export writes a read-only file: drop --model/--agent")
+        if args.evals != DEFAULT_EVALS_FOLDER:
+            raise ConfigError("--export holds runs only: drop --evals")
+        if args.import_otlp:
+            _import_traces(args.import_otlp, args.target, out)
         path = export(args.target, args.export, run=args.run)
         out.write(f"wrote {path}\n")
         return 0
@@ -155,11 +208,36 @@ def run_ui(args: argparse.Namespace, out: TextIO) -> int:
             port=args.port,
             approvals=args.approvals,
             reviewer=args.reviewer,
+            evals=args.evals,
+            cases_dir=args.chat_dir or DEFAULT_CHAT_DIR,
         )
+    if args.import_otlp:  # every option was checked and the server is bound: now write runs
+        try:
+            _import_traces(args.import_otlp, args.target, out)
+        except BaseException:
+            server.server_close()
+            raise
     from agent_adapter.viewer.serving import run_server
 
     run_server(server, out)
     return 0
+
+
+def _import_traces(source: str, target: str, out: TextIO) -> None:
+    """Write the runs of an OTLP JSON file into the runs folder `target`.
+
+    Raises:
+        ConfigError: `target` is a run file, or `source` is not a usable OTLP JSON file.
+        OSError: a file cannot be read or written.
+    """
+    from pathlib import Path
+
+    from agent_adapter.viewer import import_otlp
+
+    if Path(target).is_file():
+        raise ConfigError("--import writes into a runs folder: give a folder, not a run file")
+    keys = import_otlp(source, target)
+    out.write(f"imported {len(keys)} run(s) from {source} into {target}\n")
 
 
 def _refuse_chat_options(args: argparse.Namespace) -> None:
@@ -179,6 +257,7 @@ def _import_from_here() -> None:
 
 def _chat_server(args: argparse.Namespace) -> Any:
     """The viewer with chat on, from the `module:attribute` targets on the command line."""
+    from agent_adapter.viewer.chat.memory import open_memory
     from agent_adapter.viewer.chat.setup import DEFAULT_CHAT_DIR
     from agent_adapter.viewer.chat.targets import load_target
     from agent_adapter.viewer.serving import make_chat_server
@@ -210,4 +289,10 @@ def _chat_server(args: argparse.Namespace) -> Any:
         approvals=args.approvals,
         approvals_reviewer=args.reviewer,
         agent_name=args.agent or args.model,
+        evals=args.evals,
+        user_id=args.user,
+        memory=open_memory(args.memory) if args.memory else None,
+        memory_save=args.memory_save,
+        memory_every=args.memory_every,
+        recall_k=args.recall,
     )

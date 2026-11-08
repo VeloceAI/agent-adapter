@@ -25,7 +25,7 @@ from agent_adapter.exec._resume import record_pending, resumed_answer
 from agent_adapter.exec.args import dump_args
 from agent_adapter.hooks.base import ToolInvocation
 from agent_adapter.runtime.ids import new_id
-from agent_adapter.tracing.events import EventType
+from agent_adapter.tracing.events import EventType, require_recorded
 
 logger = logging.getLogger(__name__)
 
@@ -70,13 +70,16 @@ async def approve(
         ToolUsageError: the confirm rule returned a non-bool, or the port refused the request
             (e.g. a reused call id with other arguments); the tool does not run.
         ToolArgsInvalid: edited arguments fail validation.
+        AdapterError: a fail-closed sink (`require_recorded`) could not record; nothing ran.
     """
     spec, ctx = inv.spec, inv.ctx
     decision = pre_approval
     if decision is None:
         if not await evaluate_confirm(spec.confirm, inv.call, ctx):
+            await require_recorded(ctx.sink)  # a fail-closed audit log that failed stops the call
             return validated, inv
         decision = await _ask(inv, port, emit, approval_id)
+    await require_recorded(ctx.sink)
     if not decision.approved:
         logger.info("tool %s denied (run %s, call %s)", spec.name, ctx.run_id, ctx.call_id)
         raise ApprovalDenied(spec.name, call_id=ctx.call_id, reason=decision.reason)
@@ -113,6 +116,7 @@ async def _ask(
         raise denied
     if not resumed:  # a resumed call was announced when it first went pending
         emit(EventType.APPROVAL_REQUESTED, tool=spec.name, approval_id=request.approval_id)
+        await require_recorded(ctx.sink)  # never ask a person for a decision the log cannot keep
     if decision is None:
         try:
             decision = await cast(ApprovalPort, port).request(request)  # not None: checked above
@@ -127,6 +131,7 @@ async def _ask(
         tool=spec.name,
         approval_id=request.approval_id,
         approved=decision.approved,
+        edited=decision.edited_args is not None,
     )
     return decision
 

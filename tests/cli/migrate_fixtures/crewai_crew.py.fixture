@@ -1,0 +1,17 @@
+"""A museum guide crew."""
+
+from crewai.tools import BaseTool, tool
+
+
+class OpeningHours(BaseTool):
+    name: str = "opening_hours"
+    description: str = "Opening hours of a museum."
+
+    def _run(self, museum: str) -> str:
+        return "9-17"
+
+
+@tool("Ticket price")
+def ticket_price(museum: str) -> float:
+    """Ticket price for a museum."""
+    return 12.0

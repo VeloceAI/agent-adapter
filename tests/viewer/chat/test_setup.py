@@ -7,6 +7,7 @@ import io
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -64,7 +65,7 @@ def test_a_bad_target_is_a_config_error_naming_it(target: str, why: str) -> None
         ({"model": model, "reviewer": " "}, "reviewer"),
     ],
 )
-def test_build_host_refuses_bad_options(tmp_path: Path, options: dict, why: str) -> None:
+def test_build_host_refuses_bad_options(tmp_path: Path, options: dict[str, Any], why: str) -> None:
     with pytest.raises(ConfigError, match=why):
         build_host(runs=tmp_path / "runs", chat_dir=tmp_path / "chats", **options)
 
@@ -92,7 +93,12 @@ def test_serve_prints_the_link_opens_the_browser_and_warns(
 ) -> None:
     served = no_serving(monkeypatch)
     opened: list[str] = []
-    monkeypatch.setattr("webbrowser.open", lambda url: opened.append(url) or False)
+
+    def fake_open(url: str) -> bool:
+        opened.append(url)
+        return False
+
+    monkeypatch.setattr("webbrowser.open", fake_open)
     out = io.StringIO()
     with caplog.at_level(logging.WARNING):
         serve(
@@ -162,6 +168,17 @@ def test_ui_chat_flags_start_chat_from_targets(
     assert (tmp_path / "chats").is_dir()
 
 
+def test_ui_without_chat_saves_run_cases_in_chat_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    served = no_serving(monkeypatch)
+    code, _ = run_cli(
+        "ui", str(tmp_path / "runs"), "--port", "0", "--chat-dir", str(tmp_path / "c")
+    )
+    assert code == 0 and served[0].chat is None
+    assert served[0].cases.path == tmp_path / "c" / "eval_cases.jsonl"
+
+
 def test_ui_agent_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     served = no_serving(monkeypatch)
     monkeypatch.chdir(tmp_path)
@@ -179,7 +196,6 @@ def test_ui_agent_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     [
         (["--system", "x"], "--system is a chat option"),
         (["--tools", f"{HERE}:registry"], "--tools is a chat option"),
-        (["--chat-dir", "d"], "--chat-dir is a chat option"),
         (["--model", f"{HERE}:model", "--agent", f"{HERE}:model"], "not both"),
         (
             ["--agent", "tests.viewer.chat.test_contract:async_text", "--max-steps", "2"],

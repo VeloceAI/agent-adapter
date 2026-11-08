@@ -170,6 +170,9 @@ class TrackedHook(Hook):
     async def on_llm_error(self, inv: LLMInvocation, error: BaseException) -> Any:
         return await self._track("on_llm_error", inv, error)
 
+    async def on_llm_end(self, inv: LLMInvocation, billed: Any) -> None:
+        await self.inner.on_llm_end(inv, billed)  # bookkeeping, not an act
+
     async def before_node(self, inv: NodeInvocation) -> Any:
         return await self._track("before_node", inv)
 

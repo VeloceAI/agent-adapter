@@ -97,8 +97,15 @@ def style_problems(code: str) -> list[str]:
     return found
 
 
+def _installed(name: str) -> bool:
+    try:
+        return importlib.util.find_spec(name) is not None
+    except ModuleNotFoundError:  # a dotted name whose parent package is missing
+        return False
+
+
 def _missing(recipe: Recipe) -> list[str]:
-    return [name for name in recipe.requires if importlib.util.find_spec(name) is None]
+    return [name for name in recipe.requires if not _installed(name)]
 
 
 def _run(recipe: Recipe) -> dict[str, Any]:

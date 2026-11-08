@@ -15,6 +15,7 @@ from typing import Any
 from agent_adapter.core.errors import ConfigError
 from agent_adapter.viewer._files import RunFile, group_runs, list_segments, parse_name
 from agent_adapter.viewer._fold import Fold, summarise, valid_event
+from agent_adapter.viewer._search import SearchFold
 from agent_adapter.viewer.lanes import build_spans
 from agent_adapter.viewer.layout import layout
 
@@ -36,6 +37,7 @@ class _Tail:
     bad_lines: int = 0
     mtime: float = 0.0
     fold: Fold = field(default_factory=Fold)
+    search: SearchFold = field(default_factory=SearchFold)
 
 
 @dataclass
@@ -86,6 +88,7 @@ class RunFolder:
                 tail = self._tails.setdefault(segment.path, _Tail())
                 for record in _read(segment.path, tail):
                     tail.fold.add(record)
+                    tail.search.add(record)
             self._segments = segments
 
     def summaries(self) -> list[dict[str, Any]]:
@@ -93,7 +96,7 @@ class RunFolder:
         bucket = int(time.time() // 10)  # "running" turns "unfinished" with time alone
         with self._lock:
             found = []
-            for key, files in group_runs(self._segments).items():
+            for key, files in group_runs(self._segments).items():  # oldest first
                 tails = [self._tails[f.path] for f in files if f.path in self._tails]
                 signature = (tuple(t.offset for t in tails), bucket)
                 cached = self._cache.get(key)
@@ -104,7 +107,22 @@ class RunFolder:
                 found.append(cached[1])
             for key in set(self._cache) - {s["key"] for s in found}:
                 del self._cache[key]
-        return sorted(found, key=lambda s: s["started"], reverse=True)
+        # Equal start stamps (a coarse clock) keep file order: the later file is newer.
+        order = {id(s): n for n, s in enumerate(found)}
+        return sorted(found, key=lambda s: (s["started"], order[id(s)]), reverse=True)
+
+    @property
+    def tags_folder(self) -> Path:
+        """Where the run tag sidecars live: the runs folder, or the run file's folder."""
+        return self.target.parent if self._single else self.target
+
+    def search_folds(self) -> dict[str, list[SearchFold]]:
+        """Copies of the search folds of each run's segments, by run key (safe to read later)."""
+        with self._lock:
+            return {
+                key: [self._tails[f.path].search.copy() for f in files if f.path in self._tails]
+                for key, files in group_runs(self._segments).items()
+            }
 
     def detail(self, key: str, since: int = 0, *, paged: bool = True) -> dict[str, Any] | None:
         """One run: summary, graphs, tools, spans with lanes, and events `since` (paged).

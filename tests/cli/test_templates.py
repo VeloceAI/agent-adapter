@@ -71,7 +71,7 @@ def test_init_writes_the_file_and_pinned_requirements(tmp_path):
     project = tmp_path / "proj"
     assert (project / "graph.py").read_text(encoding="utf-8") == TEMPLATES["langgraph"].text()
     assert (project / "requirements.txt").read_text(encoding="utf-8") == (
-        "agent-adapter[langgraph]~=1.0\n"
+        "agent-adapter[langgraph]~=1.1\n"
     )
     assert "pip install -r requirements.txt\n  python graph.py" in out.getvalue()
 

@@ -1,9 +1,9 @@
-// Chat inspector: Graph, Timeline, Events, State and Cost of the selected turn's run, live.
+// Chat inspector: Graph, Timeline, Events, State, Cost and Memory of the selected turn, live.
 "use strict";
 
 (function () {
   const AA = (window.AA = window.AA || {});
-  const TABS = [["graph", "Graph"], ["timeline", "Timeline"], ["events", "Events"], ["state", "State"], ["cost", "Cost"]];
+  const TABS = [["graph", "Graph"], ["timeline", "Timeline"], ["events", "Events"], ["state", "State"], ["cost", "Cost"], ["memory", "Memory"]];
   const POLL_MS = 1000;
   const SETTLE_POLLS = 5; // polls after the turn ended, until the recorder wrote the run's end
 
@@ -97,6 +97,7 @@
     const graph = AA.createGraph(graphBox, { onOpen: openNode, onEscape: closeNode });
     const events = AA.createEvents(bodies.events);
     const steps = AA.createStatePanel(stepsBox);
+    const memory = AA.createMemoryPanel ? AA.createMemoryPanel(bodies.memory) : null;
 
     function showTab(name) {
       st.tab = name;
@@ -116,7 +117,7 @@
 
     function renderNode() {
       AA.clear(nodeBox);
-      const g = currentGraph();
+      const g = graph.shown() || currentGraph(); // an opened sub-flow, else the flow
       const node = st.node && g ? g.nodes.find((n) => n.id === st.node) : null;
       const snap = node ? graph.snapshot() : null;
       if (!node || !snap || !snap.nodes[node.id]) return;
@@ -170,6 +171,8 @@
           stateBox.appendChild(AA.el("h3", { text: "Flow steps" }));
         }
         steps.update(run);
+      } else if (st.tab === "memory") {
+        if (memory) memory.show(st.turn);
       } else renderCost(bodies.cost, run, st.turn);
     }
 

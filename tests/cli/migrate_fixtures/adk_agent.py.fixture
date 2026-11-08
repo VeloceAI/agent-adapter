@@ -1,0 +1,24 @@
+"""A ticket desk agent on Google ADK."""
+
+from google.adk.agents import LlmAgent
+from google.adk.tools import FunctionTool
+
+
+def seats_left(show_id: str) -> int:
+    """Seats left for a show."""
+    return 12
+
+
+async def book_seat(show_id: str, seat: str) -> str:
+    """Book one seat."""
+    return "booked"
+
+
+agent = LlmAgent(
+    name="tickets",
+    model="a-model",
+    tools=[
+        FunctionTool(func=book_seat),
+        seats_left,
+    ],
+)

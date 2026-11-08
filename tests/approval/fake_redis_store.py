@@ -66,6 +66,11 @@ class FakeApprovalRedis:
         with self._lock:
             return self._hmget(name, [_b(k) for k in keys])
 
+    async def zscore(self, name: bytes, member: bytes) -> float | None:
+        self._check()
+        with self._lock:
+            return self.zsets.get(_b(name), {}).get(_b(member))
+
     async def eval(self, script: str, numkeys: int, *args: Any) -> Any:
         self._check()
         self.evals += 1

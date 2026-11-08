@@ -15,6 +15,7 @@ from agent_adapter.core.types import ApprovalDecision, Event
 logger = logging.getLogger(__name__)
 
 CUSTOM_PREFIX = "custom."
+NODE_KEY = "aa.node"  # ctx.extras: the flow node this context runs in
 
 
 @dataclass
@@ -30,6 +31,7 @@ class ToolContext:
     cache: CachePort | None = None
     sink: EventSink | None = None
     approval: ApprovalDecision | None = None  # pre-approval granted by a host framework
+    user_id: str = ""  # the authenticated end user, set by the host; never by the model
 
     def emit(self, type: str, /, **data: Any) -> None:
         """Send a `custom.<type>` event to the sink; a no-op without one."""

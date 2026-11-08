@@ -1,4 +1,4 @@
-"""Recipes for tools, running, approvals, budgets, cache, tracing and your own models."""
+"""Recipes for tools, running, agents, guards, approvals, budgets, cache, tracing, models."""
 
 from __future__ import annotations
 
@@ -68,6 +68,40 @@ TOOLS: tuple[Recipe, ...] = (
             "result = await aa.run_tool_loop(model, registry, ask, executor=executor)",
             "print(result.final.text)",
         ),
+    ),
+    Recipe(
+        "make an agent a tool of another agent",
+        "`agent_tool(LoopAgent(...), executor=)` (`agent_adapter.exec`)",
+        (
+            "from agent_adapter.exec import LoopAgent, agent_tool",
+            "",
+            'desk = LoopAgent(model, registry.subset(names=["get_weather"]), '
+            'instructions="Weather only.")',
+            "team = aa.Registry()",
+            "boss = aa.Executor(team)  # the desk's calls share its hooks, budget, approvals and "
+            "run",
+            'team.add(agent_tool(desk, name="weather_desk", description="Weather.", '
+            "executor=boss))",
+            'ask = [aa.Message(role="user", content="Oslo?")]',
+            "result = await aa.run_tool_loop(model, team, ask, executor=boss)  # nesting: "
+            "max_depth=3",
+        ),
+    ),
+    Recipe(
+        "hand the conversation to another agent",
+        "`handoff(...)` + `HandoffModel(model, registry)`",
+        (
+            "from agent_adapter.exec import HandoffModel, LoopAgent, handoff",
+            "",
+            'desk = LoopAgent(model, registry.subset(names=["get_weather"]))',
+            "front = aa.Registry()",
+            'front.add(handoff(desk, name="to_weather", description="Weather desk.", '
+            "executor=executor))",
+            'ask = [aa.Message(role="user", content="Oslo?")]',
+            "front_desk = HandoffModel(model, front)  # the desk's answer ends the loop",
+            "result = await aa.run_tool_loop(front_desk, front, ask, executor=executor)",
+        ),
+        full_only=True,
     ),
     Recipe(
         "get structured output (JSON matching a schema)",
@@ -168,6 +202,26 @@ TOOLS: tuple[Recipe, ...] = (
         ),
     ),
     Recipe(
+        "block, redact or approve personal data and secrets",
+        "`PIIGuard`, `CallableGuard(fn)` hooks (`agent_adapter.hooks`)",
+        (
+            "from agent_adapter.hooks import CallableGuard, PIIGuard",
+            "",
+            "",
+            "def moderate(stage: str, payload: object) -> bool | str:  # or call your guard "
+            "service",
+            '    return "off topic" if "lottery" in str(payload) else True',
+            "",
+            "",
+            'redact = PIIGuard(on=("result", "llm_response"), action="redact")  # emails, cards, '
+            "keys",
+            'no_secrets = PIIGuard(kinds=["secret", "card"], on="args")  # or action="approve"',
+            'guards = [no_secrets, redact, CallableGuard(moderate, on=("args", "llm_request"))]',
+            "executor = aa.Executor(registry, hooks=guards)",
+            'print(executor.run_sync("get_weather", {"city": "Oslo"}))',
+        ),
+    ),
+    Recipe(
         "cache tool results",
         "`cache_ttl=` / `cache_scope=` on the tool, `cache=` on the executor",
         (
@@ -199,6 +253,24 @@ TOOLS: tuple[Recipe, ...] = (
         ),
     ),
     Recipe(
+        "send spans to Langfuse, Phoenix or any OTLP backend",
+        "`OTelSink(tracer_provider=)` with an OTLP exporter",
+        (
+            "from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter",
+            "from opentelemetry.sdk.trace import TracerProvider",
+            "from opentelemetry.sdk.trace.export import BatchSpanProcessor",
+            "from agent_adapter.tracing import OTelSink",
+            "",
+            'endpoint = "http://localhost:6006/v1/traces"  # Phoenix; Langfuse: its URL and auth '
+            "headers",
+            "provider = TracerProvider()",
+            "provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))",
+            "executor = aa.Executor(registry, sink=OTelSink(tracer_provider=provider))",
+        ),
+        requires=("opentelemetry.sdk", "opentelemetry.exporter.otlp"),
+        full_only=True,
+    ),
+    Recipe(
         "bring your own model",
         "`aa.CallableModel` (sync or async function)",
         (
@@ -208,6 +280,34 @@ TOOLS: tuple[Recipe, ...] = (
             "",
             'model = aa.CallableModel(house_llm, provider="house", model="house-13b")',
         ),
+    ),
+    Recipe(
+        "wrap a vendor SDK (Bedrock, Azure OpenAI, Mistral, Groq, OpenRouter)",
+        "`CallableModel` + `build_chat_request` / `parse_chat_completion`",
+        (
+            "from agent_adapter.models.openai import build_chat_request, parse_chat_completion",
+            "",
+            "",
+            "def vendor_llm(request: aa.LLMRequest) -> dict:  # any OpenAI-shaped SDK",
+            '    kwargs = build_chat_request(request, model="llama-3.3-70b", strict_tools=False)',
+            "    reply = parse_chat_completion(client.chat.completions.create(**kwargs))",
+            '    return {"text": reply.text, "tool_calls": reply.tool_calls, "usage": reply.usage}',
+            "",
+            "",
+            'model = aa.CallableModel(vendor_llm, provider="groq", model="llama-3.3-70b")',
+            'answer = await model.generate(aa.LLMRequest(messages=(aa.Message(role="user", '
+            'content="hi"),)))',
+        ),
+        setup=(
+            "from types import SimpleNamespace\n"
+            'done = {"id": "c1", "model": "llama-3.3-70b", "choices": [{"index": 0, '
+            '"message": {"role": "assistant", "content": "hi"}, "finish_reason": "stop"}], '
+            '"usage": {"prompt_tokens": 3, "completion_tokens": 1, "total_tokens": 4}}\n'
+            "create = lambda **kwargs: done\n"
+            "client = "
+            "SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))"
+        ),
+        full_only=True,
     ),
     Recipe(
         "use a hosted provider or a local OpenAI-compatible server",
@@ -250,5 +350,15 @@ TOOLS: tuple[Recipe, ...] = (
             "}  # also per_call",
             'prices = aa.Prices.default().merged({"version": "mine", "models": mine})',
         ),
+    ),
+    Recipe(
+        "use a known model's context window",
+        "`aa.Prices.default().caps(model)`",
+        (
+            'caps = aa.Prices.default().caps("gpt-5.4")',
+            "print(caps.context_window, caps.prompt_window())  # percent compression needs no "
+            "setting",
+        ),
+        full_only=True,
     ),
 )

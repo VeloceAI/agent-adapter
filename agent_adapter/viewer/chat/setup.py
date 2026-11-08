@@ -13,11 +13,14 @@ from agent_adapter.core.ports import LLMPort
 from agent_adapter.core.registry import Registry
 from agent_adapter.exec.executor import Executor
 from agent_adapter.exec.guards import RunLimits
+from agent_adapter.memory import GuardedMemory
+from agent_adapter.memory.records import MAX_ID_CHARS
 from agent_adapter.tracing.sinks import members
 from agent_adapter.viewer.chat.approvals import ChatApprovals
 from agent_adapter.viewer.chat.builtin import BuiltinAgent
 from agent_adapter.viewer.chat.contract import ChatAgent
 from agent_adapter.viewer.chat.host import ChatHost
+from agent_adapter.viewer.chat.memory import ChatMemory, SavePolicy
 from agent_adapter.viewer.chat.records import ChatOptions
 from agent_adapter.viewer.chat.sessions import SessionStore
 from agent_adapter.viewer.chat.watch import TurnWatch
@@ -45,12 +48,20 @@ def build_host(
     chat_dir: str | os.PathLike[str] = DEFAULT_CHAT_DIR,
     agent_name: str = "",
     stream: bool = True,
+    user_id: str = "",
+    memory: GuardedMemory | None = None,
+    memory_save: str = "none",
+    memory_every: int = 1,
+    recall_k: int = 5,
 ) -> ChatHost:
     """A chat host for `agent`, or for the built-in loop over `model` and `registry`.
 
     Turns are recorded into the runs folder `runs`, so the Runs view shows them too. With
     `registry` and `executor` both given, the executor runs that registry's tools. The
-    built-in loop streams (`stream=True`), which skips an LLM response cache.
+    built-in loop streams (`stream=True`), which skips an LLM response cache. `user_id`
+    owns the chats (`ctx.user_id` in tools); with `memory`, each turn recalls that user's
+    records and, unless `memory_save="none"`, saves a summary or facts every
+    `memory_every` turns (through the model, or the agent's `save_memories`).
 
     Raises:
         ConfigError: both or neither of `agent` and `model`, a bad option, a runs target that
@@ -67,11 +78,22 @@ def build_host(
     if registry is not None and not isinstance(registry, Registry):
         raise ConfigError(f"tools must be a Registry, got {type(registry).__name__}")
     _check_options(max_steps, turn_timeout, approval_timeout, reviewer)
+    user = _check_user(user_id)
+    chat_memory = _memory(memory, user, memory_save, memory_every, recall_k)
+    saves = chat_memory is not None and chat_memory.save != "none"
+    if saves and agent is not None and not callable(getattr(agent, "save_memories", None)):
+        raise ConfigError(
+            f"memory_save={memory_save!r} needs an agent with save_memories(transcript, "
+            "session, policy), or use the built-in loop (model=)"
+        )
     folder = Path(runs)
     if folder.is_file():
         raise ConfigError(f"chat records turns into a runs folder; {folder} is a file")
+    store = SessionStore(chat_dir, user_id=user)
     watch = TurnWatch()
-    desk = ChatApprovals(watch, reviewer=reviewer.strip(), timeout=approval_timeout)
+    desk = ChatApprovals(
+        watch, reviewer=reviewer.strip(), timeout=approval_timeout, history=store.approval_views
+    )
     host_executor = _executor(executor, registry, watch, desk)
     builtin = None
     if model is not None:
@@ -93,10 +115,11 @@ def build_host(
         chat_agent,
         host_executor,
         options=options,
-        store=SessionStore(chat_dir),
+        store=store,
         watch=watch,
         desk=desk,
         refusal=builtin.refusal if builtin is not None else None,
+        memory=chat_memory,
     )
     recorder = _recorder(host_executor, folder)
     if recorder is not None:
@@ -137,6 +160,26 @@ def _recorder(executor: Executor, folder: Path) -> Recorder | None:
             logger.info("chat: turns go to the recorder the executor already has")
             return None
     return record(executor, folder=folder, source="chat")
+
+
+def _check_user(user_id: str) -> str:
+    """The stripped user id: printable, at most `MAX_ID_CHARS` characters ("" = no user)."""
+    user = user_id.strip() if isinstance(user_id, str) else None
+    if user is None or len(user) > MAX_ID_CHARS or not user.isprintable():
+        raise ConfigError(f"user_id must be printable text of at most {MAX_ID_CHARS} characters")
+    return user
+
+
+def _memory(
+    memory: GuardedMemory | None, user: str, save: str, every: int, k: int
+) -> ChatMemory | None:
+    if memory is None:
+        if save != "none":
+            raise ConfigError(f"memory_save={save!r} needs memory=")
+        return None
+    if not user:
+        raise ConfigError("memory= needs user_id=: memory is kept per user")
+    return ChatMemory(memory, user, cast(SavePolicy, save), every, k)
 
 
 def _check_options(max_steps: int, turn: float, approval: float, reviewer: str) -> None:

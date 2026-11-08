@@ -1,6 +1,6 @@
 # Agent Adapter: guide for AI coding agents
 
-Version 1.0.0. Generated from the package's own code, so it matches
+Version 1.1.0. Generated from the package's own code, so it matches
 this install. Print it with `agent-adapter guide`. This is the full guide: the concise one plus the API index.
 
 ## What it is
@@ -57,10 +57,17 @@ the newest release inside each pinned range is tested. An extra marked
 | AG-UI event stream (CopilotKit and other UIs) | `pip install "agent-adapter[ag-ui]"` | `ag-ui-protocol>=1.0,<2`; checked at use: 1.0 to below 2.0 |
 | Postgres or any SQLAlchemy database as the approval store | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
 | DynamoDB approval store (AWS serverless) | `pip install "agent-adapter[dynamodb]"` | `aioboto3>=13,<16` |
+| flows as Temporal workflows (`agent_adapter.integrations.temporal`) | `pip install "agent-adapter[temporal]"` | `temporalio>=1.35,<2` |
+| flows as DBOS workflows (`DbosFlows`) | `pip install "agent-adapter[dbos]"` | `dbos>=3.4,<4` |
 | HTTP tool server (ASGI) with MCP mounted | `pip install "agent-adapter[server]"` | `starlette>=1.0,<2`, `uvicorn>=0.30,<1`, `h11>=0.16,<1`, extra `mcp` |
 | HTTP tool server under WSGI (Flask, Django) | `pip install "agent-adapter[server-wsgi]"` | `a2wsgi>=1.10,<2`, extra `server` |
-| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dspy`, `semantic-kernel`, `strands` |
-| running this repository's tests and linters | `pip install -e ".[dev]"` (in a checkout) | `pytest>=8`, `pytest-asyncio>=0.24`, `pytest-cov>=5`, `ruff>=0.6`, `mypy>=1.11`, `nox>=2024.10`, `hatchling>=1.27`, `tzdata>=2024.1`, `fakeredis>=2.26`, `lupa>=2.2`, `sqlalchemy[asyncio]>=2.0.30,<3`, `aiosqlite>=0.20,<1`, `moto[dynamodb]>=5,<6` |
+| Presidio PII guard (`PresidioGuard`; also needs a spaCy model) | `pip install "agent-adapter[presidio]"` | `presidio-analyzer>=2.2,<3`, `presidio-anonymizer>=2.2,<3` |
+| NeMo Guardrails guard (`NemoGuard`) | `pip install "agent-adapter[nemo]"` | `nemoguardrails>=0.24,<1` |
+| Mem0 memory backend (`Mem0Memory`) | `pip install "agent-adapter[mem0]"` | `mem0ai>=2.2,<3` |
+| Zep memory backend (`ZepMemory`) | `pip install "agent-adapter[zep]"` | `zep-cloud>=4.1,<5` |
+| Graphiti knowledge-graph memory (`GraphitiMemory`) | `pip install "agent-adapter[graphiti]"` | `graphiti-core>=0.31,<1` |
+| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `mem0`, `nemo`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `zep` |
+| running this repository's tests and linters | `pip install -e ".[dev]"` (in a checkout) | `pytest>=8`, `pytest-asyncio>=0.24`, `pytest-cov>=5`, `pytest-xdist>=3.8,<4`, `pytest-testmon>=2.3,<3`, `ruff>=0.6`, `mypy>=1.11`, `nox>=2024.10`, `hatchling>=1.27`, `tzdata>=2024.1`, `fakeredis>=2.26`, `lupa>=2.2`, `sqlalchemy[asyncio]>=2.0.30,<3`, `aiosqlite>=0.20,<1`, `moto[dynamodb]>=5,<6` |
 | building this repository's docs site | `pip install -e ".[docs]"` (in a checkout) | `mkdocs-material>=9.5`, `mkdocstrings[python]>=0.26` |
 
 ## Import rules
@@ -199,7 +206,33 @@ result = await aa.run_tool_loop(model, registry, ask, executor=executor)
 print(result.final.text)
 ```
 
-### 7. Get structured output (JSON matching a schema) → `output_schema=OutputSchema(...)`, then `.final.parsed`
+### 7. Make an agent a tool of another agent → `agent_tool(LoopAgent(...), executor=)` (`agent_adapter.exec`)
+
+```python
+from agent_adapter.exec import LoopAgent, agent_tool
+
+desk = LoopAgent(model, registry.subset(names=["get_weather"]), instructions="Weather only.")
+team = aa.Registry()
+boss = aa.Executor(team)  # the desk's calls share its hooks, budget, approvals and run
+team.add(agent_tool(desk, name="weather_desk", description="Weather.", executor=boss))
+ask = [aa.Message(role="user", content="Oslo?")]
+result = await aa.run_tool_loop(model, team, ask, executor=boss)  # nesting: max_depth=3
+```
+
+### 8. Hand the conversation to another agent → `handoff(...)` + `HandoffModel(model, registry)`
+
+```python
+from agent_adapter.exec import HandoffModel, LoopAgent, handoff
+
+desk = LoopAgent(model, registry.subset(names=["get_weather"]))
+front = aa.Registry()
+front.add(handoff(desk, name="to_weather", description="Weather desk.", executor=executor))
+ask = [aa.Message(role="user", content="Oslo?")]
+front_desk = HandoffModel(model, front)  # the desk's answer ends the loop
+result = await aa.run_tool_loop(front_desk, front, ask, executor=executor)
+```
+
+### 9. Get structured output (JSON matching a schema) → `output_schema=OutputSchema(...)`, then `.final.parsed`
 
 ```python
 from agent_adapter.models import OutputSchema
@@ -210,7 +243,7 @@ result = await aa.run_tool_loop(model, registry, ask, executor=executor, output_
 print(result.final.parsed["city"])
 ```
 
-### 8. Fan out many calls in parallel → `executor.run_many()`
+### 10. Fan out many calls in parallel → `executor.run_many()`
 
 ```python
 cities = ("Oslo", "Rome", "Lima")
@@ -218,7 +251,7 @@ calls = [aa.ToolCall(name="get_weather", arguments={"city": c}) for c in cities]
 results = await executor.run_many(calls, concurrency=4)  # one ToolResult per call
 ```
 
-### 9. Fan in: steps that need earlier results → `executor.run_plan()` with `aa.Step(depends_on=)`
+### 11. Fan in: steps that need earlier results → `executor.run_plan()` with `aa.Step(depends_on=)`
 
 ```python
 first = aa.Step(id="a", tool="get_weather", args={"city": "Oslo"})
@@ -226,7 +259,7 @@ then = aa.Step(id="b", tool="get_weather", depends_on=["a"], args=lambda d: {"ci
 by_id = await executor.run_plan([first, then])
 ```
 
-### 10. Run any async work in parallel with a deadline → `executor.parallel()`
+### 12. Run any async work in parallel with a deadline → `executor.parallel()`
 
 ```python
 async def fetch(url: str) -> str:  # your own async work
@@ -236,7 +269,7 @@ async def fetch(url: str) -> str:  # your own async work
 pages = await executor.parallel(lambda: fetch("a"), lambda: fetch("b"), timeout=30)
 ```
 
-### 11. Ask a person before a side effect → `confirm=True` on the tool plus an approval port on the executor
+### 13. Ask a person before a side effect → `confirm=True` on the tool plus an approval port on the executor
 
 ```python
 def review(request: aa.ApprovalRequest) -> bool:  # ask in your UI, chat or CLI
@@ -247,7 +280,7 @@ executor = aa.Executor(registry, approval=aa.CallbackApproval(review))
 print(executor.run_sync("cancel_order", {"order_id": "o-1"}))
 ```
 
-### 12. Park an approval and resume it later (any process) → `DeferredApproval`, `ApprovalPending`, `resume_sync()`
+### 14. Park an approval and resume it later (any process) → `DeferredApproval`, `ApprovalPending`, `resume_sync()`
 
 ```python
 executor = aa.Executor(registry, approval=aa.DeferredApproval.sqlite("approvals.db"))
@@ -259,7 +292,7 @@ except aa.ApprovalPending as pending:  # store pending.approval_id for a reviewe
     print(done.value)  # the call runs once; a second resume is refused
 ```
 
-### 13. Share approvals across processes and hosts → `SQLAlchemyApprovalStore` (or `aa.RedisApprovalStore`)
+### 15. Share approvals across processes and hosts → `SQLAlchemyApprovalStore` (or `aa.RedisApprovalStore`)
 
 ```python
 from agent_adapter.approval import SQLAlchemyApprovalStore
@@ -270,7 +303,7 @@ store = SQLAlchemyApprovalStore("sqlite+aiosqlite:///approvals.db")
 executor = aa.Executor(registry, approval=aa.DeferredApproval(store))
 ```
 
-### 14. Cap spend and tool calls per run → `aa.Ledger`, `aa.Prices`, `aa.BudgetHook`, `aa.RunLimits`
+### 16. Cap spend and tool calls per run → `aa.Ledger`, `aa.Prices`, `aa.BudgetHook`, `aa.RunLimits`
 
 ```python
 mine = {"my-llm": {"provider": "local", "input": 1.0, "output": 4.0}}  # USD per 1M
@@ -280,7 +313,24 @@ executor = aa.Executor(
 )  # once_per_run=True too
 ```
 
-### 15. Cache tool results → `cache_ttl=` / `cache_scope=` on the tool, `cache=` on the executor
+### 17. Block, redact or approve personal data and secrets → `PIIGuard`, `CallableGuard(fn)` hooks (`agent_adapter.hooks`)
+
+```python
+from agent_adapter.hooks import CallableGuard, PIIGuard
+
+
+def moderate(stage: str, payload: object) -> bool | str:  # or call your guard service
+    return "off topic" if "lottery" in str(payload) else True
+
+
+redact = PIIGuard(on=("result", "llm_response"), action="redact")  # emails, cards, keys
+no_secrets = PIIGuard(kinds=["secret", "card"], on="args")  # or action="approve"
+guards = [no_secrets, redact, CallableGuard(moderate, on=("args", "llm_request"))]
+executor = aa.Executor(registry, hooks=guards)
+print(executor.run_sync("get_weather", {"city": "Oslo"}))
+```
+
+### 18. Cache tool results → `cache_ttl=` / `cache_scope=` on the tool, `cache=` on the executor
 
 ```python
 # global: every caller shares one entry; public data only, never per-user data
@@ -289,7 +339,7 @@ executor = aa.Executor(registry, cache=aa.MemoryCache())
 # many processes: cache=agent_adapter.cache.RedisCache(url) (extra `redis`)
 ```
 
-### 16. Cache model replies → `executor.model(model, cache_ttl=)`
+### 19. Cache model replies → `executor.model(model, cache_ttl=)`
 
 ```python
 executor = aa.Executor(registry, cache=aa.MemoryCache())
@@ -298,7 +348,7 @@ ask = aa.LLMRequest(messages=(aa.Message(role="user", content="hi"),))
 first, again = await llm.generate(ask), await llm.generate(ask)  # again.cached
 ```
 
-### 17. Log and trace every call → `aa.LoggingHook` and an event sink
+### 20. Log and trace every call → `aa.LoggingHook` and an event sink
 
 ```python
 from agent_adapter.tracing import EventLog  # or OTelSink() (extra `otel`)
@@ -308,7 +358,21 @@ executor = aa.Executor(registry, hooks=[aa.LoggingHook()], sink=events)
 executor.run_sync("get_weather", {"city": "Oslo"})  # secret-named keys are redacted
 ```
 
-### 18. Bring your own model → `aa.CallableModel` (sync or async function)
+### 21. Send spans to Langfuse, Phoenix or any OTLP backend → `OTelSink(tracer_provider=)` with an OTLP exporter
+
+```python
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from agent_adapter.tracing import OTelSink
+
+endpoint = "http://localhost:6006/v1/traces"  # Phoenix; Langfuse: its URL and auth headers
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)))
+executor = aa.Executor(registry, sink=OTelSink(tracer_provider=provider))
+```
+
+### 22. Bring your own model → `aa.CallableModel` (sync or async function)
 
 ```python
 def house_llm(request: aa.LLMRequest) -> dict:  # call your SDK or HTTP API here
@@ -318,7 +382,23 @@ def house_llm(request: aa.LLMRequest) -> dict:  # call your SDK or HTTP API here
 model = aa.CallableModel(house_llm, provider="house", model="house-13b")
 ```
 
-### 19. Use a hosted provider or a local OpenAI-compatible server → `OpenAIModel` / `AnthropicModel` / `GeminiModel`
+### 23. Wrap a vendor SDK (Bedrock, Azure OpenAI, Mistral, Groq, OpenRouter) → `CallableModel` + `build_chat_request` / `parse_chat_completion`
+
+```python
+from agent_adapter.models.openai import build_chat_request, parse_chat_completion
+
+
+def vendor_llm(request: aa.LLMRequest) -> dict:  # any OpenAI-shaped SDK
+    kwargs = build_chat_request(request, model="llama-3.3-70b", strict_tools=False)
+    reply = parse_chat_completion(client.chat.completions.create(**kwargs))
+    return {"text": reply.text, "tool_calls": reply.tool_calls, "usage": reply.usage}
+
+
+model = aa.CallableModel(vendor_llm, provider="groq", model="llama-3.3-70b")
+answer = await model.generate(aa.LLMRequest(messages=(aa.Message(role="user", content="hi"),)))
+```
+
+### 24. Use a hosted provider or a local OpenAI-compatible server → `OpenAIModel` / `AnthropicModel` / `GeminiModel`
 
 ```python
 from agent_adapter.models import AnthropicModel, OpenAIModel
@@ -329,14 +409,14 @@ ollama = {"base_url": "http://localhost:11434/v1", "api_key": "unused"}  # or vL
 llama = OpenAIModel("llama3.1", api="chat", strict_tools=False, client_kwargs=ollama)
 ```
 
-### 20. Fall back to a second model → `aa.FallbackModel`
+### 25. Fall back to a second model → `aa.FallbackModel`
 
 ```python
 backup = aa.CallableModel(lambda request: "Try again later.", model="backup")
 model = aa.FallbackModel([model, backup])  # on rate limit, outage or timeout
 ```
 
-### 21. Bring your own embedder → `CallableEmbedder`
+### 26. Bring your own embedder → `CallableEmbedder`
 
 ```python
 from agent_adapter.embeddings import CallableEmbedder
@@ -345,7 +425,7 @@ embedder = CallableEmbedder(lambda texts: [[1.0, 0.5] for _ in texts], model="mi
 vectors = (await embedder.embed(["hello", "world"])).vectors
 ```
 
-### 22. Price your own models → `aa.Prices.default().merged()` (or `aa.Prices.empty()`)
+### 27. Price your own models → `aa.Prices.default().merged()` (or `aa.Prices.empty()`)
 
 ```python
 mine = {
@@ -355,7 +435,64 @@ mine = {
 prices = aa.Prices.default().merged({"version": "mine", "models": mine})
 ```
 
-### 23. Compress a long context for one call → `CompressionPolicy`, `LLMRequest(compression=)`
+### 28. Use a known model's context window → `aa.Prices.default().caps(model)`
+
+```python
+caps = aa.Prices.default().caps("gpt-5.4")
+print(caps.context_window, caps.prompt_window())  # percent compression needs no setting
+```
+
+### 29. Remember facts per user across chats (recall, forget, export, erase) → `SQLiteMemory` + `memory_tools` (`agent_adapter.memory`); the scope comes from `ctx.user_id`
+
+```python
+from agent_adapter.memory import MemoryScope, SQLiteMemory, memory_tools
+
+memory = SQLiteMemory("memory.db", retention_days=90)  # embedder= adds vector search
+registry.add_many(memory_tools(memory))  # remember, recall, forget: scope from the ctx
+ctx = executor.context(thread_id="chat-1", user_id="ann")  # the signed-in user
+await executor.run("remember", {"text": "Ann prefers aisle seats"}, ctx)
+print(await memory.export(MemoryScope(user_id="ann")))  # a data request
+await memory.delete(scope=MemoryScope(user_id="ann"))  # erase the user
+```
+
+### 30. Let the model search your documents and cite sources (RAG) → `retriever_tool` over any `RetrieverPort` (`agent_adapter.retrieval`)
+
+```python
+from agent_adapter.embeddings import CallableEmbedder
+from agent_adapter.retrieval import Document, EmbeddingRetriever, retriever_tool
+
+pages = [Document(id="hours", text="Open 9 to 17.", metadata={"shop": "north"})]
+retriever = EmbeddingRetriever(CallableEmbedder(my_embed), pages, scope_key="shop")
+# the host sets the scope (here from ctx.state), never the model
+registry.add(retriever_tool(retriever, filters=lambda ctx: {"shop": ctx.state["shop"]}))
+# a vector DB or search API: CallableRetriever(fn); or LlamaIndexRetriever, LangChainRetriever
+```
+
+### 31. Remember a chat user across chats (recall each turn, save facts or a summary) → `serve(memory=SQLiteMemory(...), user_id=..., memory_save=...)` or `ui --memory sqlite:PATH --user NAME`
+
+```python
+from agent_adapter.memory import SQLiteMemory
+from agent_adapter.viewer import serve
+
+if __name__ == "__main__":
+    serve(model=model, memory=SQLiteMemory("memory.db"), user_id="ann", memory_save="facts")
+# session.memories holds the recalled records; tools see ctx.user_id
+# CLI: agent-adapter ui --model app:model --memory sqlite:memory.db --user ann
+```
+
+### 32. Show reviewers similar past approvals; propose confirm rules a person accepts → `approval_context` / `propose_rules` / `accept` from `agent_adapter.approval`; advice only
+
+```python
+from agent_adapter.approval import accept, propose_rules
+
+store = aa.MemoryApprovalStore()  # the store your DeferredApproval uses
+for rule in propose_rules(await store.list(), min_count=5):  # data: changes nothing
+    print(rule.describe())
+# accepted = accept(rule, accepted_by="ann"); commit accepted.code (confirm= rule)
+# approval_context(record.request, records): counts and deciders; the call still waits
+```
+
+### 33. Compress a long context for one call → `CompressionPolicy`, `LLMRequest(compression=)`
 
 ```python
 from agent_adapter.context import CompressionPolicy, RemoveOldMessages
@@ -366,7 +503,7 @@ policy = CompressionPolicy(
 reply = await model.generate(aa.LLMRequest(messages=history, compression=policy))
 ```
 
-### 24. Compress messages in a LangGraph node → `langgraph_compressor`
+### 34. Compress messages in a LangGraph node → `langgraph_compressor`
 
 ```python
 from agent_adapter.integrations.langgraph import langgraph_compressor
@@ -375,7 +512,7 @@ compressor = langgraph_compressor(policy)  # `policy` as in the recipe above
 messages = await compressor(state["messages"])  # in your node, before the model
 ```
 
-### 25. Compress any framework's message list → `compress_for()` / `compress_for_sync()`
+### 35. Compress any framework's message list → `compress_for()` / `compress_for_sync()`
 
 ```python
 from agent_adapter.context import compress_for_sync
@@ -384,14 +521,14 @@ smaller, report = compress_for_sync(chat_dicts, policy, format="openai")
 print(report.tokens_before, report.tokens_after)  # `smaller` is still chat dicts
 ```
 
-### 26. Attach tools to any framework → `aa.attach()` (by name or by framework object)
+### 36. Attach tools to any framework → `aa.attach()` (by name or by framework object)
 
 ```python
 tools = aa.attach("openai", registry, executor=executor)  # Chat Completions tools
 # aa.attach(agent_or_graph, registry, executor=executor): LangGraph, Agents SDK...
 ```
 
-### 27. Import tools from an OpenAPI document (or an MCP server) → `import_openapi` (or `import_mcp`)
+### 37. Import tools from an OpenAPI document (or an MCP server) → `import_openapi` (or `import_mcp`)
 
 ```python
 from agent_adapter.integrations.openapi import import_openapi
@@ -402,7 +539,7 @@ import_openapi(registry, **api, operations=["getForecast"])  # reads: no approva
 import_openapi(registry, **api, operations=["cancelBooking"], confirm=True)
 ```
 
-### 28. Serve tools from FastAPI → `await executor.run()` in an async route
+### 38. Serve tools from FastAPI → `await executor.run()` in an async route
 
 ```python
 from fastapi import FastAPI
@@ -415,7 +552,7 @@ async def weather(city: str) -> str:
     return await executor.run("get_weather", {"city": city})
 ```
 
-### 29. Serve tools from Flask → `executor.run_sync()` in a view
+### 39. Serve tools from Flask → `executor.run_sync()` in a view
 
 ```python
 from flask import Flask
@@ -428,7 +565,7 @@ def weather(city: str) -> str:
     return executor.run_sync("get_weather", {"city": city}, timeout=30)
 ```
 
-### 30. Serve tools from Django → `await executor.run()` in an async view (`run_sync` in a sync one)
+### 40. Serve tools from Django → `await executor.run()` in an async view (`run_sync` in a sync one)
 
 ```python
 from django.http import JsonResponse
@@ -438,7 +575,7 @@ async def weather(request, city: str) -> JsonResponse:
     return JsonResponse({"text": await executor.run("get_weather", {"city": city})})
 ```
 
-### 31. Run tools in a Celery task → `executor.run_sync()` in the task
+### 41. Run tools in a Celery task → `executor.run_sync()` in the task
 
 ```python
 from celery import Celery
@@ -451,7 +588,7 @@ def weather(city: str) -> str:
     return executor.run_sync("get_weather", {"city": city}, timeout=30)
 ```
 
-### 32. Run tools in AWS Lambda (SQS, EventBridge, direct) → `tool_handler`
+### 42. Run tools in AWS Lambda (SQS, EventBridge, direct) → `tool_handler`
 
 ```python
 from agent_adapter.handlers import tool_handler
@@ -459,7 +596,7 @@ from agent_adapter.handlers import tool_handler
 handler = tool_handler(executor, tools={"get_weather"}, timeout=30)  # entry point
 ```
 
-### 33. Run tools from any queue (RabbitMQ, Kafka, Pub/Sub) → `handle_envelope`
+### 43. Run tools from any queue (RabbitMQ, Kafka, Pub/Sub) → `handle_envelope`
 
 ```python
 from agent_adapter.handlers import handle_envelope
@@ -468,7 +605,7 @@ body = {"tool": "get_weather", "arguments": {"city": "Oslo"}}  # the message bod
 reply = await handle_envelope(executor, body, tools={"get_weather"}, message_id="m1")
 ```
 
-### 34. Build a flow (steps, branches, fan-out, pauses) → `aa.Flow`, `aa.FlowRunner`, `Call` / `Route` / `Map` / `Join`
+### 44. Build a flow (steps, branches, fan-out, pauses) → `aa.Flow`, `aa.FlowRunner`, `Call` / `Route` / `Map` / `Join`
 
 ```python
 from pydantic import BaseModel
@@ -485,7 +622,26 @@ flow = aa.Flow("trip", state=Trip).node("look", look).end("look")
 result = await aa.FlowRunner(executor).run(flow, {"city": "Oslo"})
 ```
 
-### 35. Serve tools over MCP → `streamable_http_app`
+### 45. Run a flow inside a flow, or cache a node → `SubFlow(flow, input=, into=)`, `Flow.node(cache=NodeCache(...))`
+
+```python
+from pydantic import BaseModel
+from agent_adapter.flow import NodeCache, SubFlow
+
+
+class Trip(BaseModel):
+    city: str
+    weather: str = ""
+
+
+check = aa.Flow("check", state=Trip).node("look", lambda t: {"weather": "sun"}).end("look")
+cached = NodeCache(ttl=600, reads=["city"])  # needs a cache port on the executor
+flow = aa.Flow("trip", state=Trip).node("plan", SubFlow(check), cache=cached).end("plan")
+executor = aa.Executor(registry, cache=aa.MemoryCache())
+result = await aa.FlowRunner(executor).run(flow, {"city": "Oslo"})
+```
+
+### 46. Serve tools over MCP → `streamable_http_app`
 
 ```python
 from agent_adapter.integrations.mcp import streamable_http_app
@@ -494,7 +650,7 @@ app = streamable_http_app(registry, executor=executor)  # ASGI app at /mcp
 # no auth= + token_verifier=: anonymous, so it serves loopback clients only
 ```
 
-### 36. Serve tools over HTTP for other languages → `create_app`
+### 47. Serve tools over HTTP for other languages → `create_app`
 
 ```python
 from agent_adapter.server import Principal, bearer_auth, create_app
@@ -503,7 +659,7 @@ auth = bearer_auth({"s3cret": Principal(id="web-app")})  # tokens from a vault
 app = create_app(registry, executor=executor, authenticate=auth)  # uvicorn mod:app
 ```
 
-### 37. Serve tools as an A2A agent → `a2a_app`
+### 48. Serve tools as an A2A agent → `a2a_app`
 
 ```python
 from agent_adapter.integrations.a2a import a2a_app, static_bearer
@@ -519,7 +675,19 @@ app = a2a_app(
 )
 ```
 
-### 38. Improve tool descriptions and prompts against eval cases → `CallableHost`, `optimise` (or the optimiser CLI)
+### 49. Evaluate an agent on eval cases (scores, JUnit for CI, regressions) → `run_eval_sync` with graders (or `agent-adapter eval TARGET CASES`)
+
+```python
+from agent_adapter.evals import load_cases, run_eval_sync
+from agent_adapter.evals.graders import contains, max_cost
+
+cases, graders = load_cases("cases.jsonl"), [contains(), max_cost(0.05)]
+report = run_eval_sync(answer, cases, graders, save_to=".agent_adapter/evals")
+print(report.mean_score, report.n_passed)  # then: agent-adapter ui, Evals tab
+Path("evals.xml").write_text(report.to_junit(), "utf-8")  # for CI test reports
+```
+
+### 50. Improve tool descriptions and prompts against eval cases → `CallableHost`, `optimise` (or the optimiser CLI)
 
 ```python
 from agent_adapter.optimiser import CallableHost, OptimiserConfig, load_cases, optimise
@@ -530,7 +698,146 @@ result = await optimise(host, OptimiserConfig(), proposer=model, model=model)
 print(result.patch)  # a reviewable diff; nothing is applied
 ```
 
-### 39. See runs in a browser (timeline, flow graph, approvals) → `agent_adapter.viewer.record()`, then `agent-adapter ui`
+### 51. Make a flow survive a crash (checkpoints, recover) → `FlowRunner(checkpoints=SQLiteCheckpointStore(path), checkpoint_key=KEY)`, `recover_all`
+
+```python
+from agent_adapter.exec.checkpoints import SQLiteCheckpointStore
+
+store = SQLiteCheckpointStore("runs.db")  # Redis or SQLAlchemy for many hosts
+runner = aa.FlowRunner(executor, checkpoints=store, checkpoint_key=KEY)
+result = await runner.run(flow, state, executor.context(run_id="order-7"))
+# on a new worker after a crash: finished tool calls replay, never run twice
+results = await runner.recover_all(flow)
+```
+
+### 52. Run a flow on Temporal or DBOS (durable engine) → `DurableFlows(runner, [flow])`, `flow_worker`, `start_flow`, `notify`; DBOS: `DbosFlows`
+
+```python
+from agent_adapter.integrations.temporal import DurableFlows, flow_worker, notify, start_flow
+
+runner = aa.FlowRunner(executor, checkpoints=store, checkpoint_key=KEY)
+flows = DurableFlows(runner, [flow])
+async with flow_worker(client, flows, task_queue="refunds"):
+    handle = await start_flow(client, "refunds", state, run_id="t-17", task_queue="refunds")
+    # a reviewer decides in the approval store; the notice only wakes the run
+    await approvals.decide(pending_id, aa.ApprovalDecision(approved=True))
+    await notify(handle, pending_id)
+```
+
+### 53. Let the model write and run code safely (sandbox, always approved) → `code_tool` over a `SandboxPort` (`agent_adapter.sandbox`)
+
+```python
+from agent_adapter.sandbox import DockerSandbox, code_tool
+
+sandbox = DockerSandbox("python:3.12-slim")  # no network, read-only, non-root
+registry.add(code_tool(sandbox, timeout_s=20))  # confirm=True, always
+# hosted (E2B, Modal): CallableSandbox(fn); dev only: LocalSubprocessSandbox(allow_unsafe_local=True)
+```
+
+### 54. Cap spend per user or team, per day or month, across workers → `BudgetHook(scope=, per=, store=)` (`agent_adapter.hooks.builtin.budgets`)
+
+```python
+from agent_adapter.hooks.builtin.budgets import SQLiteBudgetStore
+
+store = SQLiteBudgetStore("budgets.db")  # RedisBudgetStore, SQLAlchemyBudgetStore
+per_user = aa.BudgetHook(0.50, scope="user", per="day", store=store)  # ctx.user_id
+
+
+def team_of(ctx: aa.ToolContext) -> str:  # your user -> team lookup
+    return "support"
+
+
+per_team = aa.BudgetHook(0.80, scope="team", per="day", scope_key=team_of, store=store)
+executor = aa.Executor(registry, hooks=[per_user, per_team])  # reserve, settle, release
+```
+
+### 55. Show tool arguments and partial structured answers while the model streams → `run_tool_loop(on_event=)`; `ToolCallDelta`, `PartialOutput` (`agent_adapter.models`)
+
+```python
+from agent_adapter.models import PartialOutput, ToolCallDelta
+
+
+def show(event):  # every stream event but text; validate only the final reply
+    if isinstance(event, ToolCallDelta | PartialOutput):
+        print(event)
+
+
+messages = [aa.Message(role="user", content="Weather in Oslo?")]
+result = await aa.run_tool_loop(model, registry, messages, on_event=show)
+```
+
+### 56. Browse OTLP traces from another app in the run viewer; search and tag runs → `agent-adapter ui --import traces.json`, or `import_otlp` (`agent_adapter.viewer`)
+
+```python
+from pathlib import Path
+from agent_adapter.viewer import import_otlp
+
+Path("traces.json").write_text('{"resourceSpans": []}')  # your OTLP JSON export
+import_otlp("traces.json", ".agent_adapter/runs")  # parsed only, never run
+# then `agent-adapter ui`: search box (tool names, status:failed, tag:vip), tags
+```
+
+### 57. Start a framework project, or move existing framework tools to the registry → `agent-adapter init <framework>`, `agent-adapter migrate PATH --diff`
+
+```python
+# agent-adapter init pydantic-ai my-agent  (also adk, agno, strands, crewai)
+# agent-adapter migrate src/ --diff > migrate.patch  (read-only; review, then git apply)
+```
+
+### 58. Set access, approvals, guards and budgets per tool, team and env in one file → `load_policy(path).apply(executor)` (`agent_adapter.policy`)
+
+```python
+from agent_adapter.policy import load_policy
+
+rules = [{"tools": "get_*", "allow": True, "confirm": "city == 'Oslo'"}]
+policy = load_policy({"default": "deny", "rules": rules})  # or a .yaml/.toml/.json path
+executor = policy.apply(executor)  # the tool loop, frameworks, MCP and HTTP obey it
+print(policy.explain("cancel_order"))  # denied; set AA_ENV for per-env rules
+```
+
+### 59. Keep a signed, tamper-evident audit log of approvals, blocks and erasures → `audit(executor, folder=, key=)`, `verify`, `export` (`agent_adapter.audit`)
+
+```python
+from agent_adapter.audit import audit, export, verify
+
+key = "from-your-secret-manager-16+"  # or set AA_AUDIT_KEY
+log = audit(executor, folder=".agent_adapter/audit", key=key)  # never args or content
+try:
+    executor.run_sync("cancel_order", {"order_id": "o-1"})  # no approval port here
+except aa.ApprovalDenied as denied:  # the denial is in the log
+    print(denied.kind)
+log.stop()  # seals the last segment
+print(verify(".agent_adapter/audit", key).summary())  # edits, gaps, reordering
+csv_text = export(".agent_adapter/audit", format="csv", key=key)
+```
+
+### 60. Turn recorded production runs into eval cases → `cases_from_runs` + `write_cases` (`agent_adapter.evals`)
+
+```python
+from agent_adapter.evals import cases_from_runs, write_cases
+
+# record with viewer.record(executor, capture_content=True); runs without content skip
+found = cases_from_runs(".agent_adapter/runs", status="failed")
+write_cases("eval_cases.jsonl", found.cases)  # fill `expected` for failed runs
+print(found.skipped)  # each skipped run with the reason
+# CI: agent-adapter eval app:agent eval_cases.jsonl
+```
+
+### 61. Pick a cheaper model per flow node or stage that keeps the eval score → `agent_adapter.evals.advisor.advise_sync`, then `apply_mapping` yourself
+
+```python
+from agent_adapter.evals import ToolLoopTarget, load_cases
+from agent_adapter.evals.advisor import advise_sync, apply_mapping
+from agent_adapter.evals.graders import contains
+
+models = {"big": model, "small": small}
+target, cases = (lambda m: ToolLoopTarget(m, registry)), load_cases("cases.jsonl")
+report = advise_sync(target, cases, [contains()], candidates=models, baseline="big", prices=prices)
+print(report.to_markdown())  # per step (flow node or stage): advice, score, cost, latency
+cheaper = apply_mapping(model, report.mapping, models)  # you apply it: FlowRunner(model=)
+```
+
+### 62. See runs in a browser (timeline, flow graph, approvals) → `agent_adapter.viewer.record()`, then `agent-adapter ui`
 
 ```python
 from agent_adapter.viewer import record
@@ -539,7 +846,7 @@ record(executor)  # every run goes to .agent_adapter/runs
 # then, in a terminal: agent-adapter ui
 ```
 
-### 40. Chat with any agent or model in a local page → `viewer.serve(...)` or `agent-adapter ui --agent`
+### 63. Chat with any agent or model in a local page → `viewer.serve(...)` or `agent-adapter ui --agent`
 
 ```python
 from agent_adapter.viewer import ChatMessage, ChatSession, serve
@@ -584,6 +891,10 @@ Every error subclasses `AdapterError` and carries a stable `kind`.
 | `FlowDefinitionError` | `flow-definition-invalid` | no | Fix each item in `.problems` |
 | `FlowCompileError` | `flow-compile-failed` | no | Drop what `.target` does not support, or run the flow with `FlowRunner` |
 | `FlowLoopExceeded` | `flow-loop-exceeded` | no | Fix the route that loops, or raise the node's loop limit |
+| `CheckpointNotFound` | `checkpoint-not-found` | no | Check the run id and that the runner uses the store the run was saved in |
+| `CheckpointConflict` | `checkpoint-conflict` | no | Leave the run to the worker that holds it; a run that ended needs no recovery ([Durable runs](https://agent-adapter.veloceai.in/concepts/durable-runs/)) |
+| `CheckpointStoreCorrupt` | `checkpoint-store-corrupt` | no | Check `checkpoint_key` is the one the run was saved with; else treat it as tampering and delete the run |
+| `RecoveryNeedsDecision` | `recovery-needs-decision` | no | Check each call in `.calls` at its system, then recover with `rerun_in_doubt=True`, or mark the tool `idempotent=True` |
 | `ConfigError` | `config-invalid` | no | Fix the setting the message names |
 | `IntegrationError` | `integration-error` | no | Check the integration name and the framework version |
 | `AuthError` | `auth-error` | no | Catch it to handle both subclasses below |
@@ -643,9 +954,14 @@ Every error subclasses `AdapterError` and carries a stable `kind`.
 ## CLI commands
 
 - `agent-adapter init fastapi my-service`: write a starter project from a tested template
-- `agent-adapter doctor`: check Python, extras, integrations and the pip index
+- `agent-adapter doctor`: check Python, extras, optional backends, integrations and the pip index
 - `agent-adapter guide --out docs/agent-adapter.md`: print the guide for AI coding agents (AGENTS.md)
 - `agent-adapter ui`: browse recorded runs, or chat with an agent, in a local web page
+- `agent-adapter eval app.chat:agent eval_cases.jsonl --min-score 0.9 --junit evals.xml`: run eval cases on an agent, grade them, and fail below a score
+- `agent-adapter migrate src/ --diff`: list framework tool definitions and suggest registry code (read-only)
+- `agent-adapter policy check policy.yaml --env prod`: validate a policy file and print the rules it sets
+- `agent-adapter audit verify .agent_adapter/audit`: verify a signed audit log, or export it as JSONL or CSV
+- `agent-adapter eval app:agent cases.jsonl --save`: also save the report; `agent-adapter ui` shows it under Evals (`--evals FOLDER`)
 - `agent-adapter guide --full`: the guide plus every public signature
 - `python -m agent_adapter guide --section recipes`: the same CLI without the script
 - `python -m agent_adapter.server --registry mypkg.tools:registry`: serve a registry over HTTP (tokens from `AGENT_ADAPTER_TOKENS`)
@@ -667,16 +983,16 @@ Agent Adapter: framework-independent tools, parallel execution and flows for LLM
 - `ApprovalRequest(*, approval_id: str, run_id: str, call_id: str, tool: str, arguments: dict[str, Any] = {}, kind: Literal['tool', 'node'] = 'tool', hint: str = '', metadata: dict[str, Any] = {}, created_at: float = 0.0) -> None`: A call (or flow node) waiting for a human decision.
 - `AutoApprove(*, reason: str = 'auto') -> None`: ApprovalPort that approves every request.
 - `AutoDeny(*, reason: str = 'denied by policy') -> None`: ApprovalPort that denies every request.
-- `BudgetHook(max_usd: float, *, on_exceed: OnExceed = 'stop', scope: BudgetScope = 'run') -> None`: Reads the ledger total for `scope` before each tool and LLM call.
+- `BudgetHook(max_usd: float, *, on_exceed: OnExceed = 'stop', scope: BudgetScope = 'run', per: Per | None = None, scope_key: ScopeKey | None = None, store: BudgetStore | None = None, budget: str = 'budget', estimate_usd: Estimate | None = None, prices: PriceTable | None = None, hold_s: float = 900.0, clock: Callable[[], float] = time) -> None`: Caps spend per run, thread, user, team or everything, optionally per UTC day or month.
 - `CallableModel(fn: Callable[[LLMRequest], Awaitable[HostResult] | HostResult], *, provider: str = 'callable', model: str = 'host', stream_fn: Callable[[LLMRequest], AsyncIterator[StreamEvent]] | None = None) -> None`: Wraps `fn(request)`; it returns an `LLMResponse`, the reply text, or a response mapping.
 - `CallbackApproval(fn: ApprovalCallback) -> None`: ApprovalPort over a sync or async function returning a decision or a bool.
 - `Decision`: alias of `ApprovalDecision`
 - `DeferredApproval(store: ApprovalStore) -> None`: ApprovalPort for out-of-band review (HTTP server, queues); emits no events itself.
 - `Event(type: str, run_id: str = '', call_id: str = '', parent_id: str = '', ts: float = <factory>, data: Mapping[str, Any] = <factory>) -> None`: A trace event (see `tracing.events` for the catalogue).
-- `Executor(registry: Registry | None = None, *, hooks: Sequence[Hook] = (), approval: ApprovalPort | None = None, cache: CachePort | None = None, ledger: LedgerPort | None = None, sink: EventSink | None = None, limits: RunLimits | None = None, backoff: Backoff | None = None, namespace: str = 'aa', clock: Callable[[], float] = monotonic, sleep: Callable[[float], Awaitable[None]] = sleep, rng: Callable[[], float] = random, max_tracked_runs: int = 10000) -> None`: Runs tools with run guards, hooks, approval, cache, retries, ledger and events.
+- `Executor(registry: Registry | None = None, *, hooks: Sequence[Hook] = (), approval: ApprovalPort | None = None, cache: CachePort | None = None, ledger: LedgerPort | None = None, sink: EventSink | None = None, limits: RunLimits | None = None, backoff: Backoff | None = None, namespace: str = 'aa', clock: Callable[[], float] = monotonic, sleep: Callable[[float], Awaitable[None]] = sleep, rng: Callable[[], float] = random, max_tracked_runs: int = 10000, policy: ToolPolicy | None = None) -> None`: Runs tools with run guards, hooks, approval, cache, retries, ledger and events.
 - `FallbackModel(models: Sequence[LLMPort], *, fall_on: tuple[type[ModelError], ...] = ..., sink: EventSink | None = None) -> None`: An `LLMPort` over `models`: the next one answers after a `fall_on` error.
 - `Flow(name: str, *, state: type[S], description: str = '') -> None`: A portable graph flow over a pydantic state model; every builder method returns `self`.
-- `FlowRunner(executor: Executor, *, approval: ApprovalPort | None = None, hooks: Sequence[Hook] = (), sink: EventSink | None = None, max_steps: int = 100, concurrency: int | None = None, model: LLMPort | None = None, checkpoint_key: bytes | None = None, seal_encoder: Callable[[object], object] | None = None, seal_decoder: Callable[[str, object], object] | None = None, trace_state: bool = False) -> None`: Runs a `Flow` locally: nodes on the executor, supersteps, merges, routes and pauses.
+- `FlowRunner(executor: Executor, *, approval: ApprovalPort | None = None, hooks: Sequence[Hook] = (), sink: EventSink | None = None, max_steps: int = 100, concurrency: int | None = None, model: LLMPort | None = None, checkpoint_key: bytes | None = None, seal_encoder: Callable[[object], object] | None = None, seal_decoder: Callable[[str, object], object] | None = None, trace_state: bool = False, checkpoints: CheckpointStore | None = None) -> None`: Runs a `Flow` locally: nodes on the executor, supersteps, merges, routes and pauses.
 - `GuardrailHook(check: GuardrailCheck, *, on: Iterable[Stage] | Stage = ('args',)) -> None`: `check(stage, payload)`: True passes; False or a reason string raises GuardrailBlocked.
 - `Hook()`: Override any phase; the defaults do nothing (return None).
 - `LLMRequest(*, messages: tuple[Message, ...], model: str | None = None, tools: tuple[ToolDef, ...] = (), tool_choice: Literal['auto', 'none', 'required'] | str = 'auto', parallel_tool_calls: bool | None = None, output_schema: OutputSchema | None = None, temperature: float | None = None, top_p: float | None = None, max_output_tokens: int | None = None, seed: int | None = None, stop: tuple[str, ...] = (), reasoning: Literal['minimal', 'low', 'medium', 'high'] | None = None, stream: bool = False, stage: str = '', response_cache: bool = True, extra: dict[str, Any] = {}, metadata: dict[str, str] = {}, compression: Any = None) -> None`: One provider-neutral model call.
@@ -696,7 +1012,7 @@ Agent Adapter: framework-independent tools, parallel execution and flows for LLM
 - `SQLiteApprovalStore(path: str | PathLike[str], *, max_records: int = 10000, timeout: float = 5.0) -> None`: ApprovalStore in a SQLite file (WAL), safe across threads, loops and processes.
 - `Step(id: str, tool: str, args: StepArgs = <factory>, depends_on: Sequence[str] = ()) -> None`: One tool call of a plan; callable `args` receive the results of `depends_on`.
 - `ToolCall(*, name: str, arguments: dict[str, Any] = {}, id: str = '') -> None`: One tool call requested by a model or a host.
-- `ToolContext(run_id: str = '', call_id: str = '', state: Mapping[str, Any] = <factory>, extras: dict[str, Any] = <factory>, thread_id: str = '', ledger: LedgerPort | None = None, cache: CachePort | None = None, sink: EventSink | None = None, approval: ApprovalDecision | None = None) -> None`: Run-scoped data a tool may read; never part of the tool's schema.
+- `ToolContext(run_id: str = '', call_id: str = '', state: Mapping[str, Any] = <factory>, extras: dict[str, Any] = <factory>, thread_id: str = '', ledger: LedgerPort | None = None, cache: CachePort | None = None, sink: EventSink | None = None, approval: ApprovalDecision | None = None, user_id: str = '') -> None`: Run-scoped data a tool may read; never part of the tool's schema.
 - `ToolDef(*, name: str, description: str, parameters: dict[str, Any], strict: bool = True) -> None`: A tool as model ports receive it.
 - `ToolError` (error): Raised by tool code to report a failure; the message is shown to the model.
 - `ToolResult(call_id: str, name: str, status: ToolStatus, value: Any = None, error: ErrorInfo | None = None, exception: BaseException | None = None, attempts: int = 0, cached: bool = False, latency_ms: float = 0.0) -> None`: Outcome of one tool call.
@@ -709,7 +1025,7 @@ Agent Adapter: framework-independent tools, parallel execution and flows for LLM
 - `configure(registry: Registry | None = None, **options: Any) -> Executor`: Make `Executor(registry, **options)` the default (`call`, integrations) and return it.
 - `default_registry`: `Registry` instance
 - `run_sync(work: Awaitable[T] | Callable[[], Awaitable[T]], *, timeout: float | None = None) -> T`: Run `work` to completion on a fresh event loop and return its result.
-- `async run_tool_loop(model: LLMPort, registry: Registry, messages: Sequence[Message], *, max_steps: int = 8, executor: Executor | None = None, ctx: ToolContext | None = None, output_schema: OutputSchema | None = None, tool_choice: Literal['auto', 'none', 'required'] | str = 'auto', concurrency: int | None = None, stage: str = 'tool_loop', request_options: Mapping[str, Any] | None = None, compression: CompressionPolicy | None = None, on_text: TextCallback | None = None) -> ToolLoopResult`: Call the model, run its tool calls, feed the results back, until it answers.
+- `async run_tool_loop(model: LLMPort, registry: Registry, messages: Sequence[Message], *, max_steps: int = 8, executor: Executor | None = None, ctx: ToolContext | None = None, output_schema: OutputSchema | None = None, tool_choice: Literal['auto', 'none', 'required'] | str = 'auto', concurrency: int | None = None, stage: str = 'tool_loop', request_options: Mapping[str, Any] | None = None, compression: CompressionPolicy | None = None, on_text: TextCallback | None = None, on_event: EventCallback | None = None, run_id: str | None = None, checkpoints: CheckpointStore | None = None, checkpoint_key: bytes | None = None) -> ToolLoopResult`: Call the model, run its tool calls, feed the results back, until it answers.
 - `set_default_executor(executor: Executor) -> None`: Make `executor` the default for every integration that is not given one.
 - `spec_from_schema(name: str, description: str, input_schema: Mapping[str, Any], func: Callable[..., Any], *, output_schema: Mapping[str, Any] | None = None, portable: bool | None = None, context_param: str | None = None, **policy: Any) -> ToolSpec`: A tool whose arguments are described by `input_schema` instead of a signature.
 - `tool(func: F | None = None, /, **options: Any) -> F | Callable[[F], F]`: Decorator: register a function as a tool and return it unchanged.
@@ -727,6 +1043,9 @@ Every error Agent Adapter raises; all subclass `AdapterError`.
 - `ApprovalStoreCorrupt` (error): A stored approval row is unreadable or disagrees with itself; the store fails closed.
 - `AuthError` (error): Authentication or authorisation failed.
 - `BudgetExceeded` (error): Spend reached the configured limit.
+- `CheckpointConflict` (error): Another worker saved this run's checkpoint first, or the run is not in a state to go on.
+- `CheckpointNotFound` (error): No checkpoint is stored for this run id.
+- `CheckpointStoreCorrupt` (error): A stored checkpoint is unreadable, wrongly signed or disagrees with itself; fails closed.
 - `ConfigError` (error): Invalid configuration.
 - `DuplicateTool` (error): A tool with this name is already registered.
 - `ErrorInfo(*, kind: str, message: str, exception: str = '', retryable: bool = False, details: dict[str, Any] = {}) -> None`: JSON-safe description of a failure; never holds input values.
@@ -749,6 +1068,7 @@ Every error Agent Adapter raises; all subclass `AdapterError`.
 - `ModelUnavailable` (error): 5xx, overload or a connection error.
 - `OptimiserError` (error): The optimiser could not complete.
 - `PlanInvalid` (error): A plan of steps cannot run (unknown tools, cycles, bad references).
+- `RecoveryNeedsDecision` (error): A crashed run left calls of tools not marked idempotent in doubt; a person must decide.
 - `RunLimitExceeded` (error): A run guard refused the call (`limit` is "once_per_run" or "max_calls").
 - `SchemaNotPortable` (error): A schema uses features that some providers reject.
 - `ToolArgsInvalid` (error): Arguments supplied for a tool failed validation.
@@ -762,9 +1082,11 @@ Every error Agent Adapter raises; all subclass `AdapterError`.
 
 ### `agent_adapter.approval`
 
-Approval (HITL): confirm rules, approval ports and the approval store.
+Approval (HITL): confirm rules, approval ports, the approval store and approval memory.
 
+- `AcceptedRule(rule: ProposedRule, accepted_by: str, accepted_at: float, config: dict[str, Any], code: str, confirm: RuleConfirm) -> None`: A rule a person accepted: commit `code` (or `config`) and pass `confirm` as `confirm=`.
 - `ApprovalCallback = Callable[[ApprovalRequest], ApprovalDecision | bool | Awaitable[ApprovalDecision | bool]]`
+- `ApprovalContext(*, tool: str, similar: int = 0, approved: int = 0, denied: int = 0, deciders: tuple[str, ...] = (), last_decided_at: float | None = None, examples: tuple[SimilarDecision, ...] = ()) -> None`: What reviewers decided before on requests like this one: advice, never a decision.
 - `ApprovalDecision`: see `agent_adapter`
 - `ApprovalPort` (protocol: request): Decides whether a tool call may run; may raise ApprovalPending.
 - `ApprovalRecord(*, request: ApprovalRequest, status: Literal['pending', 'approved', 'denied'], decision: ApprovalDecision | None = None, consumed: bool = False, args_digest: str = '') -> None`: One approval request, its status, its decision and whether a resume used it.
@@ -775,18 +1097,47 @@ Approval (HITL): confirm rules, approval ports and the approval store.
 - `AutoApprove`: see `agent_adapter`
 - `AutoDeny`: see `agent_adapter`
 - `CallbackApproval`: see `agent_adapter`
+- `Condition(*, field: str, op: Literal['==', 'in', 'between'], values: tuple[str | int | float | bool, ...]) -> None`: One argument bounded to the evidence: `==` one value, `in` a set, `between` lo..hi.
 - `ConfirmRule = bool | Callable[[ToolCall, ToolContext], bool | Awaitable[bool]]`
 - `Decision`: alias of `ApprovalDecision` in `agent_adapter`
 - `DeferredApproval`: see `agent_adapter`
 - `DynamoDBApprovalStore(client_factory: Callable[[], Any], *, table: str, ttl_s: float | None = 604800.0) -> None`: ApprovalStore on one DynamoDB table (aioboto3 or aiobotocore), shared by every host.
 - `MemoryApprovalStore`: see `agent_adapter`
 - `PreparedApproval` (protocol: consume, prepare): A port that can find-or-create a record without consuming it (`DeferredApproval`).
+- `ProposedRule(*, tool: str, conditions: tuple[Condition, ...], evidence: RuleEvidence, review_days: float) -> None`: Data only: skip asking for `tool` when every condition holds; inert until `accept`.
 - `RedisApprovalStore`: see `agent_adapter`
+- `RuleConfirm(tool: str, conditions: tuple[Condition, ...], review_by: float, clock: Callable[[], float] = time) -> None`: A `confirm=` callable: False (no ask) only for `tool`, every field covered and in bounds, before `review_by`; True (ask) for anything else.
+- `RuleEvidence(*, approved: int, denied: int, denied_outside: int, deciders: tuple[str, ...], first_decided_at: float, last_decided_at: float, sample: tuple[str, ...]) -> None`: The decisions a proposal rests on, and those against it.
 - `SQLAlchemyApprovalStore(engine: str | Callable[[], AsyncEngine], *, table: str = 'aa_approvals', create_schema: bool = True) -> None`: ApprovalStore on a SQLAlchemy async engine (`agent-adapter[sqlalchemy]`), every host.
 - `SQLiteApprovalStore`: see `agent_adapter`
+- `SimilarDecision(*, approval_id: str, approved: bool, edited: bool = False, decided_by: str = '', decided_at: float = 0.0, similarity: float, matched: tuple[str, ...] = ()) -> None`: One earlier decision on a similar request; `matched` names equal fields (nested: `a.*`).
+- `accept(rule: ProposedRule, *, accepted_by: str) -> AcceptedRule`: A person's explicit acceptance: config and code to commit, and the `confirm=` callable.
+- `approval_context(request: ApprovalRequest, records: Iterable[ApprovalRecord], *, min_similarity: float = 0.5, shown: int = 5) -> ApprovalContext`: Earlier decisions on the same tool with similar non-secret arguments, best first.
 - `async ask_each(port: ApprovalPort, requests: Sequence[ApprovalRequest], *, vet: _Vet | None = None) -> list[ApprovalDecision]`: The port's decision for each request, in order; `vet` sees each before any is used.
+- `confirm_from_config(config: Mapping[str, Any]) -> RuleConfirm`: The `confirm=` callable of a committed rule config (`AcceptedRule.config`).
 - `async evaluate_confirm(rule: ConfirmRule, call: ToolCall, ctx: ToolContext) -> bool`: Whether `call` needs approval under a `ToolSpec.confirm` rule; the one implementation.
+- `propose_rules(records: Iterable[ApprovalRecord], *, min_count: int = 5, min_deciders: int = 2, max_denied: int = 0, review_days: float = 90.0, tools: Iterable[str] | None = None) -> list[ProposedRule]`: Rules the approvals support: one per tool and argument shape, bounded to the seen values.
 - `request_digest(request: ApprovalRequest) -> str`: SHA-256 hex of the canonical JSON of a request's kind, tool and original arguments.
+
+### `agent_adapter.audit`
+
+Audit export: a signed, tamper-evident log of approvals, budgets, guards, memory and more.
+
+- `AuditEntry(action: str, ts: float, run_id: str = '', call_id: str = '', data: Mapping[str, Any] = <factory>, source: str = 'sdk') -> None`: One security-relevant fact, before it is signed: what, when, which run and call.
+- `AuditRecord = dict[str, Any]`
+- `AuditSink(store: AuditStore, *, fail_closed: bool = False, max_queue: int = 10000) -> None`: Queues security-relevant events for `store` on a writer thread; ignores all others.
+- `AuditStore` (protocol: close, digest, write): Keeps audit entries signed and in order.
+- `AuditUnavailable` (error): A fail-closed audit log lost a record (or could not store it in time); no call runs.
+- `AuditVerification(ok: bool, segments: int, records: int, events: int, sealed: bool, problems: tuple[str, ...] = (), log_id: str = '', last_seq: int = -1, last_hash: str = '') -> None`: The result of `verify`: `ok` only when nothing at all is wrong.
+- `CallableAuditStore(fn: Callable[[AuditRecord], None], *, key: str | bytes | None = None) -> None`: Signs and chains entries into one stream, then calls `fn(record)` for each.
+- `FileAuditStore(folder: str | PathLike[str], *, key: str | bytes | None = None, max_bytes: int = 10000000, rotate_daily: bool = True, fsync: bool = True) -> None`: Append-only, chained, signed JSONL segments in `folder`; one writer per folder.
+- `KEY_ENV = 'AA_AUDIT_KEY'`
+- `audit(executor: Executor | None = None, *, folder: str | PathLike[str] = WindowsPath('.agent_adapter/audit'), key: str | bytes | None = None, store: AuditStore | None = None, max_bytes: int = 10000000, fsync: bool = True, fail_closed: bool = False) -> AuditSink`: Attach a signed audit log of `executor` (or the default one) under `folder` or `store`.
+- `export(path: str | PathLike[str], *, since: Moment = None, until: Moment = None, format: Format = 'jsonl', key: str | bytes | None = None) -> str`: Verified event records with `since <= ts < until` as text (large logs: `export_to`).
+- `export_to(out: TextIO, path: str | PathLike[str], *, since: Moment = None, until: Moment = None, format: Format = 'jsonl', key: str | bytes | None = None) -> int`: Stream `export`'s records to `out` after a full check; the count written.
+- `read_entries(path: str | PathLike[str], key: str | bytes | None = None) -> Iterator[dict[str, Any]]`: The event records of a verified log, oldest first, one at a time.
+- `verify(path: str | PathLike[str], key: str | bytes | None = None, *, anchor: str | None = None) -> AuditVerification`: Check the audit folder `path` line by line; `anchor` (an earlier one) catches rollbacks.
+- `verify_records(records: Iterable[Mapping[str, Any]], key: str | bytes | None = None) -> AuditVerification`: Check shipped records in the order received; interleaved streams are checked apart.
 
 ### `agent_adapter.cache`
 
@@ -807,6 +1158,16 @@ Caching: backends, keys, envelopes, the tool and LLM caches, and the prompt layo
 - `gcache_key(namespace: str, model: str, prefix_digest: str) -> str`: Name under which a Gemini explicit cache for one static prompt prefix is stored.
 - `llm_key(namespace: str, request: LLMRequest, *, provider: str, model: str, fields: Mapping[str, Any]) -> str`: Key for an LLM response; `fields` is extra key material from the port and plug-ins.
 - `tool_key(namespace: str, tool: str, args: Mapping[str, Any], *, scope: CacheScope, run_id: str, thread_id: str) -> str`: Key for a tool result; "" when the call cannot be cached (no run or thread id).
+
+### `agent_adapter.chat`
+
+The chat agent contract, shared by the chat page (`agent_adapter.viewer`) and evals.
+
+- `Attachment(name: str, media_type: str, size: int, path: Path, id: str = '') -> None`: A file the user attached; `path` is a local copy the server stored.
+- `ChatAgent` (protocol): `agent(message, session)`: async or sync; returns text or an async iterator of chunks.
+- `ChatMessage(text: str, attachments: tuple[Attachment, ...] = ()) -> None`: The user's message of one turn.
+- `ChatReply = str | AsyncIterator[str | ToolCallDelta]`
+- `ChatSession(id: str, history: tuple[Message, ...], state: dict[str, Any], executor: Executor, run_id: str, user_id: str = '', memories: tuple[MemoryHit, ...] = ()) -> None`: One conversation as the agent sees it during a turn; `state` is live and mutable.
 
 ### `agent_adapter.context`
 
@@ -877,22 +1238,67 @@ Embeddings: the `EmbeddingPort`, `CallableEmbedder` for any host function, and i
 - `EmbeddingResult(*, vectors: tuple[tuple[float, ...], ...], model: str = '', usage: Usage = ..., cache_hits: int = 0) -> None`: Vectors in input order, the model that made them, its usage and the cache hits.
 - `embed_key(namespace: str, text: str, *, provider: str, model: str) -> str`: Key for one text's vector; the text appears only as a digest.
 
+### `agent_adapter.evals`
+
+Evals: run cases on any agent, grade the runs, and report for people and CI.
+
+- `CASE_EVENT = 'custom.eval.case'`
+- `CallableTarget(fn: Callable[..., Any], *, name: str = '') -> None`: `fn(input)` or `fn(input, ctx=ctx)`, sync or async; take `ctx` so tool calls join the run.
+- `CaseChange(*, case_id: str, before_passed: bool, after_passed: bool, before_score: float, after_score: float) -> None`: One case that got worse or better between two reports.
+- `CaseResult(*, case_id: str, tags: tuple[str, ...] = (), run_id: str = '', passed: bool, score: float | None, grades: tuple[GradeResult, ...] = (), input: str = '', expected: str = '', output: str = '', error: str = '', cost_usd: float = 0.0, latency_s: float = 0.0, tool_calls: tuple[str, ...] = (), measured: bool = True) -> None`: One case: its run id (open it in the viewer), verdict, grades, cost and time.
+- `ChatTarget(agent: Callable[..., Any], *, name: str = '') -> None`: A chat-page agent `fn(message, session)`; each case is a new one-turn conversation.
+- `DEFAULT_EVALS_FOLDER = '.agent_adapter/evals'`
+- `EvalCase(*, id: str, input: Any, tags: tuple[str, ...] = (), expected: Any = None) -> None`: One evaluation input; `expected` is for the graders only.
+- `EvalComparison(*, score_delta: float, regressions: tuple[CaseChange, ...], improvements: tuple[CaseChange, ...], added: tuple[str, ...], removed: tuple[str, ...]) -> None`: How a report differs from a baseline: regressions, improvements, added and removed cases.
+- `EvalReport(*, name: str, started_at: str, wall_s: float, cases: tuple[CaseResult, ...]) -> None`: Every case result of one eval, with totals; render it as JUnit, Markdown or JSON.
+- `EvalRun(case_id: str, output: Any, run_id: str = '', events: tuple[Event, ...] = (), tool_calls: tuple[str, ...] | None = (), cost_usd: float | None = 0.0, latency_s: float = 0.0, metrics: Mapping[str, float] = <factory>) -> None`: What graders see of one case run; `tool_calls` and `cost_usd` are None when unobserved.
+- `FlowTarget(flow: Flow[Any], *, initial_state: Callable[[EvalCase], BaseModel | Mapping[str, Any]], output: Callable[[Any], Any] | None = None, model: LLMPort | None = None, name: str = '') -> None`: A `Flow` run by `FlowRunner`; `initial_state(case)` builds the state, `output` reads it.
+- `GradeResult(*, grader: str, score: float | None, passed: bool, notes: str = '') -> None`: One grader's verdict on one case; `score` None means it did not grade.
+- `Grader = Callable[[EvalCase, Any], Awaitable[Score | None]]`
+- `GroupSummary(*, n: int, n_passed: int, mean_score: float) -> None`: Totals of a group of cases (one tag, or one grader).
+- `LLMJudge(model: LLMPort, rubric: str, *, stage: str = 'judge', show_expected: bool = True, trust_passed: bool = False) -> None`: A grader that asks `model` to score each answer against `rubric`; it never raises.
+- `Outcome(output: Any, unfinished: str = '') -> None`: A target's output, and why it did not finish ("" when it did); unfinished is an error.
+- `RecordedRun(key: str, run_id: str, status: str, capture_content: bool, events: tuple[dict[str, Any], ...], tags: tuple[str, ...] = ()) -> None`: One recorded run: its key, id, status, whether content was kept, events and tags.
+- `RunCase(case: EvalCase, source_run: str, run_key: str) -> None`: An eval case made from one recorded run; `source_run` is that run's id.
+- `RunCases(cases: tuple[RunCase, ...], skipped: tuple[SkippedRun, ...]) -> None`: The cases made from a runs folder, and the runs skipped.
+- `Score(*, value: float, passed: bool | None = None, notes: str = '') -> None`: A grader's verdict on one run; `value` is in [0, 1] and `notes` is the reason.
+- `SkippedRun(run_key: str, run_id: str, reason: str) -> None`: A run that gave no case, and why.
+- `Target` (protocol: run_case): Runs one case in the given run (`ctx`) on `executor`; returns the output or an Outcome.
+- `ToolLoopTarget(model: LLMPort, registry: Registry, *, system: str = '', max_steps: int = 8, output_schema: OutputSchema | None = None, name: str = 'tool_loop') -> None`: `run_tool_loop` over `registry` with an optional system prompt; output is the answer.
+- `as_target(target: object) -> Target`: `target` as a Target: a Target as is, a 2-argument callable as a chat agent, else a callable.
+- `assert_eval(target: object, case: EvalCase, graders: Sequence[Grader], *, executor: Executor | None = None, timeout_s: float | None = 300.0, pass_at: float = 1.0) -> CaseResult`: Run one case (in a test, say); the result, or AssertionError with the reasons.
+- `cases_from_runs(folder: str | PathLike[str], *, run_keys: Collection[str] | None = None, status: str | Collection[str] | None = None, tags: Collection[str] = (), expected_from: ExpectedFrom = 'output') -> RunCases`: Eval cases from the recorded runs in `folder` (a runs folder or one run file).
+- `eval_executor() -> Executor`: The default eval executor: an empty registry (no stray tools) and a fresh ledger.
+- `graders` (module): Ready-made graders `async (case, run) -> Score | None`; they never raise (an error is None).
+- `load_cases(path: str | PathLike[str], *, id_field: str = 'id', input_field: str = 'input', expected_field: str = 'expected', tags_field: str = 'tags') -> tuple[EvalCase, ...]`: Cases from JSONL (one object per line), JSON (a list of objects) or CSV (a header row).
+- `async run_eval(target: object, cases: Cases, graders: Graders, *, concurrency: int = 4, executor: Executor | None = None, name: str = '', timeout_s: float | None = 300.0, pass_at: float = 1.0, save_to: str | PathLike[str] | None = None, capture_content: bool = True) -> EvalReport`: Run each case on `target`, grade it with every grader, and return the report.
+- `run_eval_sync(target: object, cases: Cases, graders: Graders, **options: Any) -> EvalReport`: `run_eval` for sync code (scripts, tests).
+- `save_report(report: EvalReport, folder: str | PathLike[str] = '.agent_adapter/evals') -> Path`: Write `report` as `<folder>/<key>.json` (atomically) and return the path.
+- `write_cases(path: str | PathLike[str], cases: Iterable[RunCase]) -> tuple[int, list[str]]`: Append cases to a `.jsonl` file, skipping ids it already holds; (written, skipped ids).
+
 ### `agent_adapter.exec`
 
 Executor: runs tools with guards, hooks, approval, cache, retries, batches, plans and loops.
 
+- `AgentDepthExceeded` (error): An agent tool was called deeper than its `max_depth` (agents calling agents).
 - `Backoff(base_s: float = 0.5, max_s: float = 30.0, multiplier: float = 2.0, jitter: float = 0.25) -> None`: Exponential backoff with jitter; delays in seconds.
 - `Executor`: see `agent_adapter`
+- `HandoffModel(model: LLMPort, handoffs: Registry | Iterable[str]) -> None`: Wraps a model: once a handoff tool has answered, the loop ends with that answer.
+- `LoopAgent(model: LLMPort, registry: Registry, instructions: str = '', max_steps: int = 8, request_options: Mapping[str, Any] | None = None) -> None`: A `run_tool_loop` agent: its model, the tools it may use and its instructions.
 - `OnError = Literal['collect', 'fail_fast']`
 - `RunLimits`: see `agent_adapter`
 - `Step`: see `agent_adapter`
 - `SyncTwins()`: `run_sync`, `run_call_sync`, `run_many_sync` and `resume_sync` for the Executor.
 - `ToolLoopResult(messages: tuple[Message, ...], final: LLMResponse, steps: int, finish: LoopFinish, tool_results: tuple[ToolResult, ...], usage: Usage) -> None`: Where a tool loop ended: the full history, the last reply and every tool result.
 - `acall`: see `agent_adapter`
+- `agent_depth() -> int`: How many agent tools are running around the current call (0 outside any).
+- `agent_tool(agent: LoopAgent | TaskAgent, *, name: str, description: str, executor: Executor | None = None, max_depth: int = 3, timeout: float | None = None, confirm: ConfirmRule = False, tags: Iterable[str] = ()) -> ToolSpec`: A tool (kind "agent") that runs `agent` on the model's `task` inside the calling run.
 - `call`: see `agent_adapter`
 - `configure`: see `agent_adapter`
 - `default_executor() -> Executor`: The default Executor, created on first use, on the default registry.
+- `handoff(to: LoopAgent | TaskAgent, *, name: str, description: str, executor: Executor | None = None, max_depth: int = 3, timeout: float | None = None) -> ToolSpec`: An agent tool tagged "handoff": under a `HandoffModel`, its answer is the loop's answer.
 - `is_control_flow(exc: BaseException) -> bool`: True for CancelledError, a registered type, a class named GraphBubbleUp in the MRO, or an exception group holding any of them.
+- `async recover_tool_loop(model: LLMPort, registry: Registry, run_id: str, *, checkpoints: CheckpointStore, checkpoint_key: bytes | None = None, rerun_in_doubt: bool = False, max_steps: int = 8, executor: Executor | None = None, ctx: ToolContext | None = None, output_schema: OutputSchema | None = None, tool_choice: Literal['auto', 'none', 'required'] | str = 'auto', concurrency: int | None = None, stage: str = 'tool_loop', request_options: Mapping[str, Any] | None = None, compression: CompressionPolicy | None = None, on_text: TextCallback | None = None, on_event: EventCallback | None = None) -> ToolLoopResult`: Continue a durable tool loop from its last checkpoint; finished tool calls replay.
 - `register_control_flow(*types: type[BaseException]) -> None`: Treat `types` (and subclasses) as control flow in the executor and the approval ports.
 - `reset_default_executor() -> None`: Drop the default Executor and its default sinks; the next use starts fresh.
 - `run_tool_loop`: see `agent_adapter`
@@ -901,7 +1307,7 @@ Executor: runs tools with guards, hooks, approval, cache, retries, batches, plan
 
 ### `agent_adapter.flow`
 
-Portable graph flows: a builder, merge rules, a validated graph and a local runner.
+Portable graph flows: a builder, merge rules, sub-flows, a node cache, a graph, a runner.
 
 - `Call(tool: str | ToolSpec, args: Mapping[str, Any] | Callable[[Any], Mapping[str, Any]] = <factory>, into: str | None = None) -> None`: Run one tool through the executor; `args` may be a function of the state.
 - `Flow`: see `agent_adapter`
@@ -913,10 +1319,12 @@ Portable graph flows: a builder, merge rules, a validated graph and a local runn
 - `Map(over: str, tool: str | ToolSpec | None = None, tool_from: str | None = None, args_from: str = 'args', args_fn: Callable[[Any], Mapping[str, Any]] | None = None, fn: Callable[..., Any] | None = None, into: str | None = None, on_error: Literal['fail', 'skip'] = 'fail') -> None`: Fan out over the list field `over`: one tool call (or `fn` call) per item.
 - `Merge()`: The built-in merge rules; annotate a state field with one (`Annotated[T, Merge.sum]`).
 - `MergeRule` (protocol: merge): Combines the updates one superstep makes to a field; `updates` are in deterministic order.
+- `NodeCache(ttl: float | None = None, *, key: Callable[[Any], Any] | None = None, reads: Sequence[str] | None = None, scope: CacheScope = 'run') -> None`: Reuse a node's updates for equal inputs: the state, its `reads` fields, or `key(state)`.
 - `NodeFn = Callable[[S], Any] | Callable[[S, ToolContext], Any]`
-- `NodeSpec(name: str, kind: NodeKind, action: Any, concurrency: int | None, timeout: float | None, retries: int, pause: bool | Callable[..., Mapping[str, Any]], prompt: str | None) -> None`: One node: its action and run options.
+- `NodeSpec(name: str, kind: NodeKind, action: Any, concurrency: int | None, timeout: float | None, retries: int, pause: bool | Callable[..., Mapping[str, Any]], prompt: str | None, cache: Any = None, child: FlowGraph | None = None) -> None`: One node: its action and run options.
 - `Route(fn: Callable[[S], str | Sequence[str]], targets: Sequence[str] | Mapping[str, str]) -> None`: Pick the next node(s): `fn(state)` returns a label or labels found in `targets`.
 - `RouteSpec(source: str, fn: Callable[..., Any], targets: Mapping[str, str], max_loops: int | None, on_exhausted: str | None) -> None`: A conditional exit: `fn(state)` returns labels; `targets` maps label -> node.
+- `SubFlow(flow: Any, *, input: Mapping[str, str] | Callable[[Any], Mapping[str, Any]] | None = None, into: str | Mapping[str, str] | Callable[[Any], Mapping[str, Any]] | None = None) -> None`: Run another `Flow` as one node: parent state in through `input`, its result out by `into`.
 - `apply_updates(state: S, updates: Sequence[Mapping[str, Any]], rules: Mapping[str, MergeRule]) -> S`: Merge `updates` (in order) into a copy of `state` and re-validate it.
 - `keyed(by: str) -> MergeRule`: A list of mappings or models; a later item with the same `by` key replaces earlier.
 - `merge_rules(model: type[BaseModel]) -> dict[str, MergeRule]`: The merge rule of every field of `model`, from `Annotated` metadata (default `replace`).
@@ -941,12 +1349,18 @@ Handlers: run tool calls from queue messages, serverless events and pipelines.
 Hooks: code that runs before, after and on errors of tool, LLM and flow-node calls.
 
 - `BudgetHook`: see `agent_adapter`
+- `CallableGuard(fn: GuardFn, *, on: Iterable[Stage] | Stage = ('args', 'result', 'llm_response'), action: Action = 'block') -> None`: Wraps `fn(stage, payload)`: True passes; False, a reason or a GuardVerdict says no.
+- `ContentGuard(*, on: Iterable[Stage] | Stage = ('args', 'result', 'llm_response'), action: Action = 'block') -> None`: Base guard: `inspect(stage, payload)` decides; `action` blocks, redacts or asks.
 - `DEFAULT_REDACT = ...`
+- `GuardVerdict(allowed: bool, reason: str = '', replacement: Any = NO_REPLACEMENT, kinds: tuple[str, ...] = (), count: int = 0) -> None`: A guard's answer: allowed, or a reason and (to redact) the rewritten payload.
 - `GuardrailHook`: see `agent_adapter`
 - `Hook`: see `agent_adapter`
 - `LLMInvocation(request: LLMRequest, provider: str, model: str, ctx: ToolContext) -> None`: A model call as hooks see it.
 - `LoggingHook`: see `agent_adapter`
+- `NemoGuard(rails: Any = None, *, config: str | Path | None = None, on: Iterable[Stage] | Stage = ('args', 'result', 'llm_response'), action: Action = 'block') -> None`: NeMo Guardrails as a guard: pass `rails` (an `LLMRails`) or `config` (its folder).
 - `NodeInvocation(flow: str, node: str, state: BaseModel, ctx: ToolContext) -> None`: A flow node run as hooks see it.
+- `PIIGuard(*, kinds: Iterable[str] = ('email', 'phone', 'card', 'iban', 'secret'), patterns: Mapping[str, str | Pattern[str]] | None = None, on: Iterable[Stage] | Stage = ('args', 'result', 'llm_response'), action: Action = 'block', placeholder: str = '[{kind}]') -> None`: Blocks, redacts or approves payloads holding personal data or secrets (regexes only).
+- `PresidioGuard(*, analyzer: Any = None, anonymizer: Any = None, entities: Iterable[str] | None = None, language: str = 'en', threshold: float = 0.5, on: Iterable[Stage] | Stage = ('args', 'result', 'llm_response'), action: Action = 'block') -> None`: Presidio as a guard; pass your own `analyzer` and `anonymizer` engines or get defaults.
 - `Rate(calls: int, per: float) -> None`: At most `calls` calls per `per` seconds, with bursts of up to `calls`.
 - `RateLimitHook`: see `agent_adapter`
 - `ShortCircuit(value: Any) -> None`: Returned by a `before_*` / `on_*_error` hook: skip the call and use `value`.
@@ -956,6 +1370,26 @@ Hooks: code that runs before, after and on errors of tool, LLM and flow-node cal
 - `async run_after(hooks: Sequence[Hook], method: str, inv: Any, value: Any) -> Any`: Thread `value` through each hook; a None return keeps the current value.
 - `async run_before(hooks: Sequence[Hook], method: str, inv: Any) -> ShortCircuit | None`: Call `method` on each hook; the first ShortCircuit wins and stops the phase.
 - `async run_on_error(hooks: Sequence[Hook], method: str, inv: Any, error: BaseException) -> ShortCircuit | None`: Offer `error` to each hook; the first ShortCircuit recovers and stops the phase.
+
+### `agent_adapter.memory`
+
+Memory: the `MemoryPort`, SQLite, callable, Mem0, Zep and Graphiti backends, and memory tools.
+
+- `CallableMemory(*, add: MemoryFn, search: MemoryFn, get: MemoryFn | None = None, delete: MemoryFn | None = None, export: MemoryFn | None = None, backend: str = 'callable', retention_days: float | None = None, capture_content: bool = False) -> None`: Wraps host functions (sync or async) as a `MemoryPort`.
+- `GraphitiMemory(graphiti: Any, *, retention_days: float | None = None, capture_content: bool = False) -> None`: Graphiti behind the memory port: episodes in a hashed group per user; search returns facts.
+- `GuardedMemory(*, retention_days: float | None = None, capture_content: bool = False)`: The base of every backend: checks inputs, drops out-of-scope or expired output.
+- `Mem0Memory(client: Any = None, *, infer: bool = False, retention_days: float | None = None, capture_content: bool = False) -> None`: Mem0 2.x behind the memory port: user, session (`run_id`) and agent scopes.
+- `MemoryHit(*, record: MemoryRecord, score: float = 0.0) -> None`: A search result: the record and its score (higher is better, backend-specific).
+- `MemoryPort` (protocol: add, delete, export, get, search): Stores and finds texts per scope; every backend here also has `*_sync` twins.
+- `MemoryRecord(*, id: str = '', scope: MemoryScope, text: str, metadata: dict[str, Any] = {}, created_at: datetime | None = None, expires_at: datetime | None = None, source: str = '') -> None`: One remembered text in its scope; `id` and `created_at` are filled in on `add`.
+- `MemoryScope(*, user_id: str = '', session_id: str = '', agent_id: str = '') -> None`: Whose memory: a user, a session (chat thread) and an agent; at least one is set.
+- `SQLiteMemory(path: str | PathLike[str], *, embedder: EmbeddingPort | None = None, retention_days: float | None = None, timeout: float = 5.0, capture_content: bool = False) -> None`: Memory in one SQLite file: keyword search, optional vectors, deletes that leave no text.
+- `ScopeFrom = Callable[[ToolContext], MemoryScope | None]`
+- `ZepMemory(client: Any = None, *, retention_days: float | None = None, capture_content: bool = False) -> None`: Zep behind the memory port: records are text episodes in a Zep user of our own (hashed id).
+- `memory_tools(memory: GuardedMemory, *, scope_from: ScopeFrom | None = None, confirm_writes: ConfirmRule = False, forget: bool = True, across_sessions: bool = True, k: int = 5) -> list[ToolSpec]`: `remember`, `recall` and `forget` tools whose scope is `scope_from(ctx)`, never an argument.
+- `scope_from_context(ctx: ToolContext) -> MemoryScope | None`: The signed-in caller's scope (`ctx.user_id`, else the host's principal), or None.
+- `thread_scope(ctx: ToolContext) -> MemoryScope | None`: Opt-in memory for anonymous chats: the thread only; safe only with unguessable ids.
+- `user_scope(ctx: ToolContext) -> MemoryScope | None`: The caller's user-only scope (for backends that partition by user), or None.
 
 ### `agent_adapter.models`
 
@@ -969,10 +1403,15 @@ Model ports: provider adapters, a host-function port, fallback, instrumentation,
 - `GeminiModel(model: str, *, client: Any | None = None, client_kwargs: Mapping[str, Any] | None = None, cache_plugin: PromptCachePlugin | None = None, thinking: Mapping[str, Any] | None = None, defaults: Mapping[str, Any] | None = None) -> None`: Gemini as an `LLMPort` (`google-genai>=2.30`; `pip install "agent-adapter[gemini]"`).
 - `InstrumentedModel(model: LLMPort, *, hooks: Sequence[Hook] = (), ledger: LedgerPort | None = None, cache: CachePort | None = None, cache_ttl: float | None = None, sink: EventSink | None = None, namespace: str = 'aa', ctx: ToolContext | None = None) -> None`: An `LLMPort` that runs `model` with hooks, a response cache, ledger entries and events.
 - `LLMPort` (protocol: cache_key_fields, generate, stream): A model provider; `generate` raises ModelError subclasses.
-- `ModelCaps(*, prompt_cache_key: bool = False, prompt_cache_retention_24h: bool = False, prompt_cache_options: bool = False, explicit_cache: bool = False, cache_control: bool = False, min_cache_tokens: int = 1024, structured_output: bool = True, reasoning: bool = False, context_window: int | None = None) -> None`: Capability flags of one model; the defaults disable every gated feature.
+- `ModelCaps(*, prompt_cache_key: bool = False, prompt_cache_retention_24h: bool = False, prompt_cache_options: bool = False, explicit_cache: bool = False, cache_control: bool = False, min_cache_tokens: int = 1024, structured_output: bool = True, reasoning: bool = False, context_window: int | None = None, max_output_tokens: int | None = None) -> None`: Capability flags of one model; the defaults disable every gated feature.
 - `OpenAIModel(model: str, *, api: Literal['responses', 'chat'] = 'responses', client: Any | None = None, client_kwargs: Mapping[str, Any] | None = None, cache_plugin: PromptCachePlugin | None = None, strict_tools: bool = True, defaults: Mapping[str, Any] | None = None) -> None`: OpenAI as an `LLMPort` (`openai>=3.41`; `pip install "agent-adapter[openai]"`).
 - `OutputSchema(*, name: str, json_schema: dict[str, Any], strict: bool = True) -> None`: Structured-output schema for a request; ports apply provider transforms.
+- `PartialOutput(*, type: Literal['partial_output'] = 'partial_output', value: Any) -> None`: The structured output parsed so far (streams with `output_schema` only); not validated.
 - `PromptCachePlugin` (protocol: apply, key_fields): Edits provider SDK kwargs to use that provider's prompt cache.
+- `StreamDone(*, type: Literal['done'] = 'done', response: LLMResponse) -> None`: The last stream item: the assembled response.
+- `StreamEvent = TextDelta | ToolCallDelta | PartialOutput | StreamDone`
+- `TextDelta(*, type: Literal['text'] = 'text', text: str) -> None`: A chunk of streamed text.
+- `ToolCallDelta(*, type: Literal['tool_call'] = 'tool_call', index: int, id: str = '', name: str = '', arguments_delta: str = '') -> None`: A chunk of a streamed tool call.
 - `normalise_usage(provider: str, raw: Any, *, api: str = '') -> Usage`: Dispatch to the normaliser of `provider` (and OpenAI `api`: "chat" or "responses").
 - `usage_anthropic(raw: Any) -> Usage`: Usage of an Anthropic `Message`; `input_tokens` already excludes cache reads and writes.
 - `usage_gemini(raw: Any) -> Usage`: Usage of a Gemini `GenerateContentResponse` (snake_case or camelCase).
@@ -989,7 +1428,7 @@ Offline harness optimiser: Propose -> Probe -> Compose over a host's eval cases.
 - `Candidate(*, label: str, dim: Literal['procedure', 'knowledge', 'compose', 'base'], edits: tuple[Edit, ...], tree: HarnessTree, parent_label: str, notes: str = '', fell_back: bool = False, error: str = '', cost_usd: float = 0.0, attempts: int = 0) -> None`: A harness proposal (or the base): its edits, the tree they produce and how it was made.
 - `CaseRun(*, case_id: str, label: str, ok: bool, delivered: bool, output: str, transcript: str, metrics: dict[str, float] = {}, score: float | None = None, passed: bool | None = None, judge_notes: str = '', error: str = '') -> None`: One eval case run under one harness: output, transcript, metrics and the judge's view.
 - `Edit(*, path: str, content: str | None, reason: str) -> None`: One proposed change: `content` None deletes the path; `reason` cites the evidence.
-- `EvalCase(*, id: str, input: Any, tags: tuple[str, ...] = (), expected: Any = None) -> None`: One evaluation input; `expected` is for the host's judge only.
+- `EvalCase`: see `agent_adapter.evals`
 - `FlowHost(flow: Flow[Any], *, initial_state: Callable[[EvalCase], BaseModel], output: Callable[[BaseModel], str], cases: Sequence[EvalCase], judge: Judge | None = None, hooks: Sequence[Hook] = (), domain: str = 'default', executor: Executor | None = None, allow_safety_tuning: bool = False) -> None`: Runs a flow with `FlowRunner`; edits node prompts (`Flow.with_prompts`) and hook configs.
 - `HarnessTree(*, files: dict[str, str]) -> None`: Every editable harness component as path -> text.
 - `Host` (protocol: caps, cases, run, surface, validate): What the optimiser needs from an application: its harness, its cases, and a way to run.
@@ -1002,14 +1441,59 @@ Offline harness optimiser: Propose -> Probe -> Compose over a host's eval cases.
 - `OptimiserConfig(*, k: int = 1, mode: Literal['parallel', 'sequential'] = 'parallel', compose_mode: Literal['greedy', 'llm'] = 'greedy', min_gain: float = 0.0, rollout_concurrency: int = 4, case_timeout_s: float | None = 300.0, evidence_chars: int = 60000, obs_trunc: int = 4000, show_scores_to_proposer: bool = False, max_lessons: int = 8, lessons_path: str = '.agent_adapter/lessons.json', out_dir: str = 'runs/opt', namespace: str = 'aa-opt', seed: int = 0, budget: OptimiserBudget = ...) -> None`: Settings of one optimiser run (`k` is the main cost knob: `(1 + 3k) * N` case runs).
 - `RegistryHost(registry: Registry, *, layout: PromptLayout, cases: Sequence[EvalCase], judge: Judge | None = None, hooks: Sequence[Hook] = (), domain: str = 'default', max_steps: int = 8, executor: Executor | None = None, allow_safety_tuning: bool = False) -> None`: Runs `run_tool_loop` over a registry; edits descriptions, hints, prompts and hook configs.
 - `RunCase = Callable[[HarnessTree, EvalCase, LLMPort], Awaitable[str | CaseRun]]`
-- `Score(*, value: float, passed: bool | None = None, notes: str = '') -> None`: A judge's verdict on one case run; `value` is in [0, 1].
+- `Score`: see `agent_adapter.evals`
 - `SurfaceCaps(*, max_chars: dict[str, int], kinds: frozenset[str], hook_schemas: dict[str, dict[str, Any]] = {}) -> None`: Character caps per path pattern, the editable kinds, and JSON schemas of hook configs.
 - `apply_tree(registry: Registry, tree: HarnessTree) -> Registry`: A copy of `registry` with the tree's descriptions and prompt hints; tools without paths stay.
-- `graders` (module): Ready-made judges: exact, contains, regex, code_check, llm_judge and all_of.
+- `graders` (module): Ready-made judges: exact, contains, regex, code_check, llm_judge and all_of (from evals).
 - `layout_from_tree(base: PromptLayout, tree: HarnessTree) -> PromptLayout`: The tree's system prompt, sections and tool hints; only `base.dynamic` is kept.
-- `load_cases(path: str | PathLike[str], *, id_field: str = 'id', input_field: str = 'input', expected_field: str = 'expected', tags_field: str = 'tags') -> tuple[EvalCase, ...]`: Cases from JSONL (one object per line), JSON (a list of objects) or CSV (a header row).
+- `load_cases`: see `agent_adapter.evals`
 - `load_harness(out_dir: str | PathLike[str]) -> HarnessTree`: The tree an optimiser run chose (or its base), read from `<out_dir>/harness.after.json`.
 - `async optimise(host: Host, config: OptimiserConfig, *, proposer: LLMPort, model: LLMPort, composer: LLMPort | None = None, cache: CachePort | None = None, ledger: Ledger | None = None) -> OptimiseResult`: Run Propose -> Probe -> Compose over the host's cases and write a reviewable patch.
+
+### `agent_adapter.policy`
+
+Policy: one file that sets approvals, budgets, guardrails, limits and access per tool and env.
+
+- `BudgetRule(*, max_usd: float, name: str = 'budget', scope: Literal['run', 'thread', 'global', 'principal', 'user', 'team'] = 'run', per: Literal['day', 'month'] | None = None, on_exceed: Literal['warn', 'stop'] = 'stop', store: str = 'memory', envs: list[str] | None = None) -> None`: A `BudgetHook`: a spend limit per scope, optionally per UTC day or month.
+- `Condition(text: str) -> None`: A parsed condition: comparisons (`== != < <= > >= in not in`), `and`, `or`, `not`.
+- `ConditionError` (error): A condition cannot be parsed, or cannot be decided for these arguments.
+- `ENV_VAR = 'AA_ENV'`
+- `Explanation(tool: str, env: str, allowed: Tri, lines: tuple[str, ...]) -> None`: The rules for one tool: `allowed` is None when it depends on the caller.
+- `GuardRule(*, tools: list[str] = <factory>, kinds: list[str] | None = None, tags: list[str] | None = None, envs: list[str] | None = None, teams: list[str] | None = None, users: list[str] | None = None, guard: str, on: list[Literal['args', 'result', 'llm_request', 'llm_response']] | None = None, action: Literal['block', 'redact', 'approve'] | None = None, entities: list[str] | None = None) -> None`: A content guard on the selected tools' arguments or results (and model calls).
+- `LimitsRule(*, max_calls: int | None = None) -> None`: Run limits: at most `max_calls` distinct calls per run.
+- `MemoryRule(*, retention_days: float | None = None, save: Literal['allow', 'confirm', 'deny'] = 'allow') -> None`: How long memories are kept, and whether the `remember` tool may save, with approval.
+- `Policy(spec: PolicySpec, *, env: str | None = None, source: str = '', allow_relax: bool = False, guards: Mapping[str, ContentGuard] | None = None, stores: Mapping[str, BudgetStore] | None = None, team_of: TeamOf | None = None, base_dir: Path | None = None) -> None`: A validated policy for one environment, ready to `apply` to an executor.
+- `PolicyChain(parts: tuple[Any, ...]) -> None`: Several policies at once: each rewrites the spec in turn, so all of them apply.
+- `PolicyDenied` (error): A policy does not allow this tool here; a denial like any other (`approval-denied`).
+- `PolicyError` (error): A policy is malformed, unknown, or would relax a code default; nothing is applied.
+- `PolicySource = str | PathLike[str] | Mapping[str, Any] | PolicySpec`
+- `PolicySpec(*, version: Literal[1] = 1, default: Literal['allow', 'deny'] | dict[str, Literal['allow', 'deny']] = 'allow', environments: list[str] | None = None, team_key: str = 'team', rules: list[ToolRule] = <factory>, guards: list[GuardRule] = <factory>, budgets: list[BudgetRule] = <factory>, rate_limits: list[RateRule] = <factory>, limits: LimitsRule | None = None, memory: MemoryRule | None = None, sandbox: SandboxRule | None = None, relax: list[Literal['limits.max_calls', 'memory.retention_days']] = <factory>) -> None`: A whole policy, as written in the file.
+- `RateRule(*, kind: str, calls: int, per: float, envs: list[str] | None = None) -> None`: A `RateLimitHook` bucket: at most `calls` per `per` seconds for one tool kind (or llm).
+- `SandboxRule(*, require_isolated: bool = False, deny_network: bool = False) -> None`: What a code sandbox must be: isolated from the host, and without network access.
+- `TeamOf = Callable[[ToolContext], str]`
+- `ToolRule(*, tools: list[str] = <factory>, kinds: list[str] | None = None, tags: list[str] | None = None, envs: list[str] | None = None, teams: list[str] | None = None, users: list[str] | None = None, allow: bool | None = None, confirm: Literal[True] | Condition | None = None, reason: str = '') -> None`: Allow or deny tools, or ask for approval always (`true`) or on a condition.
+- `load_policy(source: PolicySource, *, env: str | None = None, allow_relax: bool = False, guards: Mapping[str, ContentGuard] | None = None, stores: Mapping[str, BudgetStore] | None = None, team_of: TeamOf | None = None) -> Policy`: A validated `Policy` from a file path (.yaml, .yml, .toml, .json), a dict or a PolicySpec.
+- `team_from(key: str) -> TeamOf`: `ctx.extras[key]`, else the principal's `claims[key]`; "" when neither is a string.
+
+### `agent_adapter.retrieval`
+
+Retrieval (RAG): the `RetrieverPort`, `Document`, backends and a cited `retriever_tool`.
+
+- `CallableRetriever(fn: RetrieveFn, *, name: str = '', timeout_s: float | None = None, capture_content: bool = False) -> None`: Wraps `fn(query, k, filters)`; a sync `fn` runs in a worker thread with the contextvars.
+- `Document(*, id: str, text: str, score: float | None = None, source: Source = Source(uri='', title=''), metadata: dict[str, Any] = <factory>) -> None`: One retrieved passage: a stable id, its text, a score (higher is better) and its source.
+- `EmbeddingRetriever(embedder: EmbeddingPort, documents: Iterable[Document | str] = (), *, scope_key: str | None = None, name: str = '', timeout_s: float | None = None, capture_content: bool = False) -> None`: In-memory cosine search; with `scope_key`, documents and searches need a non-empty scope.
+- `FilterValue = str | int | float | bool`
+- `Filters = Mapping[str, str | int | float | bool]`
+- `GuardedRetriever(*, name: str = '', timeout_s: float | None = None, capture_content: bool = False) -> None`: A `RetrieverPort` that checks its inputs and never returns a document outside `filters`.
+- `LangChainRetriever(retriever: Any, *, search_kwargs: SearchKwargs | None = None, name: str = '', timeout_s: float | None = None, capture_content: bool = False) -> None`: Calls `retriever.ainvoke(query, **search_kwargs(k, filters))` (or `invoke` in a thread).
+- `LlamaIndexRetriever(index_or_retriever: Any, *, native_filters: NativeFilters | None = None, name: str = '', timeout_s: float | None = None, capture_content: bool = False) -> None`: Searches an index (`as_retriever(similarity_top_k=k, filters=...)`) or a retriever.
+- `MAX_K = 100`
+- `RETRIEVAL_KIND = 'retrieval'`
+- `RetrieveFn = Callable[[str, int, dict[str, str | int | float | bool]], Any]`
+- `RetrieverPort` (protocol: retrieve): Finds up to `k` documents for `query` that match `filters`, best first.
+- `Source(*, uri: str = '', title: str = '') -> None`: Where a document came from, for citations: a link or path and a title.
+- `ToolFilters = Mapping[str, str | int | float | bool] | Callable[[ToolContext], Mapping[str, str | int | float | bool]]`
+- `retriever_tool(retriever: RetrieverPort, *, name: str = 'search_docs', description: str = ..., k: int = 5, filters: ToolFilters | None = None, include_metadata: bool = False, max_chars: int | None = None, cache_ttl: float | None = None, cache_scope: CacheScope = 'run', timeout: float | None = None, tags: Iterable[str] = ()) -> ToolSpec`: A tool (kind "retrieval") that searches `retriever` for the model's `query`.
 
 ### `agent_adapter.runtime`
 
@@ -1021,6 +1505,28 @@ Runtime helpers: sync facade, long-lived loop, per-loop values, the current cont
 - `new_id(prefix: str = '') -> str`: `prefix` + a random uuid4 hex.
 - `run_sync`: see `agent_adapter`
 - `use_context(ctx: ToolContext) -> Iterator[ToolContext]`: Make `ctx` current inside the block; child tasks read it, writes never flow back up.
+
+### `agent_adapter.sandbox`
+
+Sandboxed code execution: `SandboxPort`, Docker, callable and dev-only local backends.
+
+- `CODE_FILES`: `dict` instance
+- `CODE_KIND = 'code'`
+- `CallableSandbox(fn: RunFn, *, name: str = '', languages: Iterable[str] = ('python',), network: bool = False, limits: Limits | None = None, grace_s: float = 30.0, capture_content: bool = False) -> None`: Wraps `fn(request)`; the service does the isolating, this class checks and bounds.
+- `DockerSandbox(image: str = 'python:3.12-slim', *, cpus: float = 1.0, memory_mb: int = 512, pids: int = 128, network: bool = False, user: str = '65534:65534', runtime: str | None = None, workdir_mb: int = 64, tmp_mb: int = 16, python: str = 'python3', docker: str = 'docker', languages: Iterable[str] = ('python',), name: str = '', limits: Limits | None = None, grace_s: float = 30.0, capture_content: bool = False) -> None`: Runs code in a throwaway container: no network, read-only root, no capabilities.
+- `DockerStatus(available: bool, client_version: str = '', server_version: str = '', reason: str = '') -> None`: Whether Docker can run Linux containers here, with the versions found.
+- `GuardedSandbox(*, name: str = '', languages: Iterable[str] = ('python',), network: bool = False, limits: Limits | None = None, grace_s: float = 30.0, capture_content: bool = False) -> None`: A `SandboxPort` that checks every request and re-applies its limits to every result.
+- `InputFiles = Mapping[str, bytes | str]`
+- `Limits(max_files: int = 16, max_file_bytes: int = 1000000) -> None`: Bounds on what a backend returns: produced files and their bytes.
+- `LocalSubprocessSandbox(*, allow_unsafe_local: bool = False, python: str = ..., name: str = '', limits: Limits | None = None, grace_s: float = 10.0, capture_content: bool = False) -> None`: DEVELOPMENT ONLY: Python in a temporary folder with a time limit and output caps.
+- `OnResult = Callable[[SandboxResult, ToolContext], Any]`
+- `RunFn = Callable[[SandboxRequest], Any]`
+- `SandboxFile(*, name: str, data: bytes, size: int) -> None`: A file the code left in its work directory; `data` may be cut (see `size`).
+- `SandboxPort` (protocol: run): Runs untrusted code in isolation, within a time limit and an output limit.
+- `SandboxRequest(code: str, language: str, timeout_s: float, max_output_bytes: int, network: bool, files: Mapping[str, bytes] = <factory>, env: Mapping[str, str] = <factory>, limits: Limits = Limits(max_files=16, max_file_bytes=1000000)) -> None`: A checked run: what a backend's `_run` receives.
+- `SandboxResult(*, exit_code: int, stdout: str = '', stderr: str = '', stdout_truncated: bool = False, stderr_truncated: bool = False, timed_out: bool = False, duration_ms: float = 0.0, files: tuple[SandboxFile, ...] = (), files_truncated: bool = False, backend: str = '') -> None`: What one run produced; output and files are bounded by the run's limits.
+- `code_tool(sandbox: SandboxPort, *, name: str = 'run_code', description: str | None = None, languages: Iterable[str] = ('python',), timeout_s: float = 30.0, max_output_bytes: int = 64000, network: bool = False, env: Mapping[str, str] | None = None, files: InputFiles | None = None, on_result: OnResult | None = None, tags: Iterable[str] = ()) -> ToolSpec`: A tool (kind "code") that runs the model's code in `sandbox`; every run needs approval.
+- `docker_status(docker: str = 'docker', *, timeout_s: float = 10.0) -> DockerStatus`: Probe the `docker` CLI and its daemon; never raises.
 
 ### `agent_adapter.server`
 
@@ -1074,23 +1580,24 @@ Tracing: the event catalogue, event sinks and the OpenTelemetry sink.
 Run viewer: record runs to JSONL files, browse them and chat locally (`agent-adapter ui`).
 
 - `ApprovalDesk(path: str | PathLike[str], reviewer: str) -> None`: Decides tool approvals in a `SQLiteApprovalStore` file; it never runs a tool.
-- `Attachment(name: str, media_type: str, size: int, path: Path, id: str = '') -> None`: A file the user attached; `path` is a local copy the server stored.
-- `ChatAgent` (protocol): `agent(message, session)`: async or sync; returns text or an async iterator of chunks.
-- `ChatMessage(text: str, attachments: tuple[Attachment, ...] = ()) -> None`: The user's message of one turn.
-- `ChatSession(id: str, history: tuple[Message, ...], state: dict[str, Any], executor: Executor, run_id: str) -> None`: One conversation as the agent sees it during a turn; `state` is live and mutable.
+- `Attachment`: see `agent_adapter.chat`
+- `ChatAgent`: see `agent_adapter.chat`
+- `ChatMessage`: see `agent_adapter.chat`
+- `ChatSession`: see `agent_adapter.chat`
 - `DEFAULT_FOLDER = '.agent_adapter/runs'`
 - `LOOPBACK = '127.0.0.1'`
-- `Recorder(folder: str | PathLike[str] = '.agent_adapter/runs', *, capture_content: bool = False, keep_runs: int = 200, max_events_per_run: int = 50000, max_queue: int = 10000, registry: RegistrySource = None, source: str = '') -> None`: Writes events under `folder`, one segment file per run and process (append-only).
+- `Recorder(folder: str | PathLike[str] = '.agent_adapter/runs', *, capture_content: bool = False, capture_confirm_content: bool = False, keep_runs: int = 200, max_events_per_run: int = 50000, max_queue: int = 10000, registry: RegistrySource = None, source: str = '', policy: PolicySource = None) -> None`: Writes events under `folder`, one segment file per run and process (append-only).
 - `RunFolder(target: str | Path) -> None`: A runs folder, or a single run file, read again on each `refresh` from where it stopped.
-- `ViewerServer(folder: RunFolder, desk: ApprovalDesk | None, port: int, chat: ChatHost | None = None) -> None`: A ThreadingHTTPServer holding the runs folder, the approval desk and its secrets.
+- `ViewerServer(folder: RunFolder, desk: ApprovalDesk | None, port: int, chat: ChatHost | None = None, evals: EvalFolder | None = None, cases_dir: Path | None = None) -> None`: A ThreadingHTTPServer holding the runs folder, the approval desk and its secrets.
 - `assign_lanes(spans: Iterable[dict[str, Any]]) -> int`: Give each span the lowest free lane at its start (greedy interval colouring).
 - `build_spans(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]`: One span per call (tool, LLM, node, flow, compression), in start order, with lanes.
 - `check_host(host: str) -> None`: Refuse any bind address but the IPv4 loopback.
 - `export(target: str | Path, out: str | Path, *, run: str | None = None) -> Path`: Write the runs under `target` (or only `run`) into the HTML file `out`; return its path.
-- `layout(graph: Mapping[str, Any]) -> dict[str, Any]`: A copy of `graph`: nodes get `layer`, `order` and `x`; edges get `via` (bend x per layer).
-- `make_server(target: str | Path, *, host: str = '127.0.0.1', port: int = 8780, approvals: str | Path | None = None, reviewer: str = '', chat: ChatHost | None = None) -> ViewerServer`: A bound, not yet serving, viewer server (`port=0` picks a free port); `chat` turns chat on.
-- `record(executor: Executor | None = None, *, folder: str | PathLike[str] = '.agent_adapter/runs', capture_content: bool = False, keep_runs: int = 200, source: str = '') -> Recorder`: Record every run of `executor` under `folder`.
-- `serve(agent: ChatAgent | None = None, *, model: LLMPort | None = None, registry: Registry | None = None, executor: Executor | None = None, folder: str | PathLike[str] = '.agent_adapter/runs', port: int = 8780, open_browser: bool = True, system: str = '', max_steps: int = 8, turn_timeout: float = 300.0, approval_timeout: float = 600.0, reviewer: str = 'local', chat_dir: str | PathLike[str] = '.agent_adapter/chats', stream: bool = True, out: TextIO | None = None) -> None`: Chat with `agent` (or the built-in loop over `model` and `registry`) in the viewer.
+- `import_otlp(source: str | Path, folder: str | Path) -> list[str]`: Write one run file per trace of the OTLP JSON file `source` into `folder`; run keys back.
+- `layout(graph: Mapping[str, Any], *, depth: int = 0) -> dict[str, Any]`: A copy of `graph`: nodes get `layer`, `order` and `x`; edges get `via` (bend x per layer).
+- `make_server(target: str | Path, *, host: str = '127.0.0.1', port: int = 8780, approvals: str | Path | None = None, reviewer: str = '', chat: ChatHost | None = None, evals: str | Path = '.agent_adapter/evals', cases_dir: str | Path = '.agent_adapter/chats') -> ViewerServer`: A bound, not yet serving, viewer server (`port=0` picks a free port); `chat` turns chat on.
+- `record(executor: Executor | None = None, *, folder: str | PathLike[str] = '.agent_adapter/runs', capture_content: bool = False, keep_runs: int = 200, source: str = '', capture_confirm_content: bool = False) -> Recorder`: Record every run of `executor` under `folder`.
+- `serve(agent: ChatAgent | None = None, *, model: LLMPort | None = None, registry: Registry | None = None, executor: Executor | None = None, folder: str | PathLike[str] = '.agent_adapter/runs', port: int = 8780, open_browser: bool = True, system: str = '', max_steps: int = 8, turn_timeout: float = 300.0, approval_timeout: float = 600.0, reviewer: str = 'local', chat_dir: str | PathLike[str] = '.agent_adapter/chats', stream: bool = True, evals: str | PathLike[str] = '.agent_adapter/evals', user_id: str = '', memory: GuardedMemory | None = None, memory_save: str = 'none', memory_every: int = 1, recall_k: int = 5, out: TextIO | None = None) -> None`: Chat with `agent` (or the built-in loop over `model` and `registry`) in the viewer.
 
 ### `agent_adapter.integrations.a2a`
 
@@ -1106,9 +1613,9 @@ A2A: serve registry tools as an A2A agent, and import a remote agent's skills as
 - `ResponseTooLarge` (error): A remote A2A response over the byte limit.
 - `TOOLS_EXTENSION = 'urn:agent-adapter:a2a:tools:v1'`
 - `ToolAgent(registry: Registry, executor: ToolRunner | None = None, *, client_approval: bool = False, authorize: Authorizer | None = None, max_data_bytes: int = 262144) -> None`: Reads a `{tool, arguments}` data part, runs it, and reports through `TaskUpdater`.
-- `a2a_app(registry: Registry, *, url: str, executor: ToolRunner | None = None, authenticate: Authenticator | None = None, authorize: Authorizer | None = None, allow_anonymous: bool = False, host: str = '127.0.0.1', allowed_hosts: Iterable[str] | None = None, public_card: bool = False, client_approval: bool = False, name: str = 'agent-adapter', description: str = 'Tools served by agent-adapter.', version: str = '1.0.0', max_body_bytes: int = 1048576, max_data_bytes: int = 262144, task_store: Any = None) -> Any`: A Starlette app: the agent card at `CARD_PATH`, JSON-RPC A2A at `/`.
+- `a2a_app(registry: Registry, *, url: str, executor: ToolRunner | None = None, authenticate: Authenticator | None = None, authorize: Authorizer | None = None, allow_anonymous: bool = False, host: str = '127.0.0.1', allowed_hosts: Iterable[str] | None = None, public_card: bool = False, client_approval: bool = False, name: str = 'agent-adapter', description: str = 'Tools served by agent-adapter.', version: str = '1.1.0', max_body_bytes: int = 1048576, max_data_bytes: int = 262144, task_store: Any = None) -> Any`: A Starlette app: the agent card at `CARD_PATH`, JSON-RPC A2A at `/`.
 - `a2a_executor(registry: Registry, *, executor: ToolRunner | None = None, client_approval: bool = False, authorize: Authorizer | None = None, max_data_bytes: int = 262144) -> AgentExecutor`: An `a2a-sdk` `AgentExecutor` running `registry.for_target("a2a")` tools.
-- `agent_card(registry: Registry, *, url: str, name: str = 'agent-adapter', description: str = 'Tools served by agent-adapter.', version: str = '1.0.0') -> AgentCard`: An AgentCard for `registry.for_target("a2a")`, served at `url` over JSON-RPC.
+- `agent_card(registry: Registry, *, url: str, name: str = 'agent-adapter', description: str = 'Tools served by agent-adapter.', version: str = '1.1.0') -> AgentCard`: An AgentCard for `registry.for_target("a2a")`, served at `url` over JSON-RPC.
 - `agent_skill(spec: ToolSpec) -> AgentSkill`: The skill for one tool: id and name are the tool name.
 - `bounded_task_store(*, ttl: float = 86400.0, max_tasks: int = 10000, max_per_owner: int = 1000, clock: Callable[[], float] = monotonic) -> Any`: An SDK `TaskStore` in memory: tasks expire `ttl` s after their last update.
 - `async call_remote(connection: A2AConnection, skill_id: str, parts: list[Any], *, timeout_s: float = 300.0, poll_interval_s: float = 1.0) -> Any`: Send one message, poll its task to a final or interrupted state, return its result.
@@ -1245,6 +1752,23 @@ CrewAI: registry tools as `BaseTool`s; `_run` bridges to the executor with `run_
 - `crewai_tool(spec: ToolSpec, *, executor: ToolRunner | None = None) -> BaseTool`: A `BaseTool` with `args_schema=spec.args_model`: `_arun` is async, `_run` uses `run_sync`.
 - `crewai_tools(registry: Registry, *, executor: ToolRunner | None = None) -> list[BaseTool]`: `crewai_tool` for every registry tool exported to `crewai`.
 
+### `agent_adapter.integrations.dbos`
+
+DBOS: a `Flow` as a `@DBOS.workflow`, one superstep per `@DBOS.step`; approvals from your store.
+
+- `ADVANCE = 'agent_adapter.flow.advance'`
+- `ApprovalNotice(*, approval_id: str) -> None`: A wake-up for a paused run: re-check the approval store for this approval's decision.
+- `DbosFlows(flows: DurableFlows, *, max_attempts: int = 5, interval_s: float = 1.0) -> None`: The DBOS workflow and steps for `flows`; build it once per process, before `DBOS.launch()`.
+- `DurableFlows(runner: FlowRunner, flows: Sequence[Flow[Any]]) -> None`: Runs registered flows one superstep per call, for a durable engine's activities or steps.
+- `FlowStepReport(*, run_id: str, flow: str, status: Literal['running', 'paused', 'done', 'denied', 'failed'], steps: int = 0, state: dict[str, Any] | None = None, pending: PendingApproval | None = None, denied_at: str | None = None) -> None`: Where a durable run stands after one step; `state` is set once it is done or denied.
+- `NOTIFY_TOPIC = 'agent_adapter.notify'`
+- `PENDING_EVENT = 'agent_adapter.pending'`
+- `PendingApproval(*, approval_id: str, kind: Literal['tool', 'node'], tool: str, node: str = '', hint: str = '') -> None`: What a paused run waits for; the tool arguments stay out of engine history.
+- `RESUME = 'agent_adapter.flow.resume'`
+- `RunIdentity(*, user_id: str = '', thread_id: str = '', principal: str = '') -> None`: Who a durable run acts for; sealed into its checkpoints, so every step must match.
+- `StepRetry` (error): A step failed on something passing (a store or network blip): DBOS runs it again.
+- `WORKFLOW = 'agent_adapter.flow'`
+
 ### `agent_adapter.integrations.discovery`
 
 Find integrations through the `agent_adapter.integrations` entry-point group.
@@ -1343,11 +1867,11 @@ MCP: serve registry tools to any MCP client, and import tools from MCP servers.
 - `client_metadata_document(client_metadata_url: str, *, redirect_uris: Sequence[str], client_name: str = 'agent-adapter', scope: str | None = None) -> dict[str, Any]`: The JSON to publish at `client_metadata_url`; its `client_id` is that URL.
 - `async import_mcp(registry: Registry, client: Client, *, prefix: str = '', names: Iterable[str] | None = None, send_ids: bool = False, **policy: Any) -> list[ToolSpec]`: Register the tools of an open `mcp.Client` (all of them, or the remote `names`).
 - `mcp_client(target: Any, *, headers: Mapping[str, str] | None = None, auth: Auth | None = None, tasks: bool = False, task_wait_s: float = 30.0) -> Client`: An unopened `mcp.Client` for an http(s) URL (Streamable HTTP), a `StdioServerParameters`, an in-process `Server` / `MCPServer`, or a client transport.
-- `mcp_server(registry: Registry, *, executor: ToolRunner | None = None, name: str = 'agent-adapter', version: str = '1.0.0', instructions: str | None = None, client_approval: bool = False, request_state_keys: Sequence[bytes | str] | None = None, principal: PrincipalHook | None = None, allow_anonymous: bool | None = None, approval_store: ApprovalStore | None = None, tasks: TaskOptions | bool = False) -> Server`: A lowlevel MCP `Server` listing and calling `registry.for_target("mcp")`.
+- `mcp_server(registry: Registry, *, executor: ToolRunner | None = None, name: str = 'agent-adapter', version: str = '1.1.0', instructions: str | None = None, client_approval: bool = False, request_state_keys: Sequence[bytes | str] | None = None, principal: PrincipalHook | None = None, allow_anonymous: bool | None = None, approval_store: ApprovalStore | None = None, tasks: TaskOptions | bool = False) -> Server`: A lowlevel MCP `Server` listing and calling `registry.for_target("mcp")`.
 - `mcp_tool(spec: ToolSpec) -> Tool`: The MCP tool definition for `spec`: schemas, wrapped output schema, annotations.
 - `oauth_client(server_url: str, *, client_metadata_url: str, redirect_uri: str, redirect_handler: Callable[[str], Awaitable[None]], callback_handler: Callable[[], Awaitable[AuthorizationCodeResult]], storage: Any = None, client_name: str = 'agent-adapter', scope: str | None = None) -> OAuthClientProvider`: An `httpx2.Auth` for `mcp_client(server_url, auth=...)`: authorization code + PKCE.
 - `output_schema_for(spec: ToolSpec) -> dict[str, Any] | None`: `outputSchema`: the result schema, wrapped under `result` unless it is an object.
-- `streamable_http_app(registry: Registry, *, executor: ToolRunner | None = None, path: str = '/mcp', stateless: bool = True, json_response: bool = True, name: str = 'agent-adapter', version: str = '1.0.0', instructions: str | None = None, client_approval: bool = False, request_state_keys: Sequence[bytes | str] | None = None, principal: PrincipalHook | None = AUTHENTICATED, allow_anonymous: bool = False, approval_store: ApprovalStore | None = None, tasks: TaskOptions | bool = False, **http_options: Any) -> Any`: An ASGI (Starlette) app serving `mcp_server(registry, ...)` over Streamable HTTP at `path`.
+- `streamable_http_app(registry: Registry, *, executor: ToolRunner | None = None, path: str = '/mcp', stateless: bool = True, json_response: bool = True, name: str = 'agent-adapter', version: str = '1.1.0', instructions: str | None = None, client_approval: bool = False, request_state_keys: Sequence[bytes | str] | None = None, principal: PrincipalHook | None = AUTHENTICATED, allow_anonymous: bool = False, approval_store: ApprovalStore | None = None, tasks: TaskOptions | bool = False, **http_options: Any) -> Any`: An ASGI (Starlette) app serving `mcp_server(registry, ...)` over Streamable HTTP at `path`.
 - `tool_annotations(spec: ToolSpec) -> dict[str, bool]`: MCP `ToolAnnotations` fields (snake_case) from `effects`, `confirm` and `idempotent`.
 
 ### `agent_adapter.integrations.openai`
@@ -1424,3 +1948,26 @@ Strands Agents: each ToolSpec as an `AgentTool`; approval through a before-tool-
 - `strands_compress_middleware(policy: CompressionPolicy, *, pinned: Pinned | None = None, model_max_tokens: int | None = None) -> Callable[[Any], Awaitable[Any]]`: An Input handler: `agent.add_middleware(InvokeModelStage.Input, handler)`.
 - `strands_tool(spec: ToolSpec, *, executor: ToolRunner | None = None) -> Any`: An `AgentTool` for `spec`; results are Strands tool results (`status` error or success).
 - `strands_tools(registry: Registry, *, executor: ToolRunner | None = None) -> list[Any]`: `AgentTool`s for every registry tool exported to this target.
+
+### `agent_adapter.integrations.temporal`
+
+Temporal: a `Flow` as a workflow, one superstep per activity; approvals from your store.
+
+- `ADVANCE = 'agent_adapter.flow.advance'`
+- `ApprovalNotice`: see `agent_adapter.integrations.dbos`
+- `DurableFlows`: see `agent_adapter.integrations.dbos`
+- `FlowStepReport`: see `agent_adapter.integrations.dbos`
+- `FlowWorkflow() -> None`: The flow workflow: `run(request)` drives one flow run to its end (no I/O here).
+- `NOTIFY = 'notify'`
+- `PENDING = 'pending'`
+- `PendingApproval`: see `agent_adapter.integrations.dbos`
+- `RESUME = 'agent_adapter.flow.resume'`
+- `RunIdentity`: see `agent_adapter.integrations.dbos`
+- `WORKFLOW = 'agent_adapter.flow'`
+- `flow_activities(flows: DurableFlows) -> list[Callable[..., Any]]`: The two activities a worker registers: advance a run, and resume it from the store.
+- `flow_worker(client: Client, flows: DurableFlows, *, task_queue: str, **options: Any) -> Worker`: A Temporal `Worker` for the flow workflow and its activities; `options` go to `Worker`.
+- `flow_workflow() -> type[FlowWorkflow]`: A `FlowWorkflow` subclass with Temporal's decorators applied (built once).
+- `async notify(handle: WorkflowHandle[Any, Any], approval_id: str, *, wait: bool = True) -> None`: Wake a paused run after you decided `approval_id` in the approval store.
+- `async pending(handle: WorkflowHandle[Any, Any]) -> PendingApproval | None`: The approval the run waits for (no arguments), or None.
+- `async result(handle: WorkflowHandle[Any, Any]) -> FlowStepReport`: Wait for the run to end and return its report (done or denied).
+- `async start_flow(client: Client, flow: str, state: Mapping[str, Any], *, run_id: str, task_queue: str, approval_timeout_s: float | None = None, activity_timeout_s: float = 600.0, max_attempts: int = 0, identity: RunIdentity | None = None) -> WorkflowHandle[Any, Any]`: Start a flow run as a workflow whose id is the run id; `max_attempts=0` retries forever.

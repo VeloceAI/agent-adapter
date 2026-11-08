@@ -6,13 +6,13 @@ generated `AGENTS.md` instead.
 
 ## 1. What it is, in five lines
 
-- An open-source (Apache-2.0), framework-independent Python SDK (Python ≥ 3.11, version 1.0.0, on PyPI as `agent-adapter`).
+- An open-source (Apache-2.0), framework-independent Python SDK (Python ≥ 3.11, version 1.1.0, on PyPI as `agent-adapter`).
 - Plain functions become checked LLM tools (`@tool`, `Registry`, `ToolSpec`).
 - Every call, from any source, runs through one `Executor` pipeline: validation, hooks,
   budgets, one-use approval, cache, retries, ledger, events.
 - Around it: portable graph `Flow`s, a built-in agent loop (`run_tool_loop`), model ports,
   context compression, 19 framework integrations, MCP, an HTTP tool server, A2A, AG-UI, a
-  TypeScript client, a local run viewer with a chat page, and an offline optimiser.
+  TypeScript client, a local run viewer with a chat page, evals, and an offline optimiser.
 - The core depends only on pydantic. Every framework is an optional extra, imported lazily.
 
 Design rules that never bend:
@@ -29,29 +29,36 @@ Design rules that never bend:
 ```mermaid
 flowchart TB
   subgraph EDGE["Edges (optional extras, lazy imports)"]
-    INT["integrations/<br/>19 frameworks · MCP · A2A · AG-UI · OpenAPI"]
+    INT["integrations/<br/>19 frameworks · MCP · A2A · AG-UI · OpenAPI · Temporal · DBOS"]
     SRV["server/<br/>HTTP: REST + SSE + OpenAPI"]
     HND["handlers/<br/>queues · serverless · pipelines"]
-    CLI["cli/<br/>init · doctor · guide · ui"]
+    CLI["cli/<br/>init · doctor · guide · ui · eval · migrate · policy · audit"]
+    AUD["audit/<br/>signed log"]
     VWR["viewer/<br/>recorder · run viewer · chat"]
   end
   subgraph ORCH["Orchestration"]
     FLOW["flow/<br/>Flow · FlowRunner · Map · Join · Route"]
     LOOP["exec/tool_loop.py<br/>run_tool_loop"]
     OPT["optimiser/<br/>Propose · Probe · Compose"]
+    EVL["evals/<br/>cases · graders · reports"]
+    CHAT["chat/<br/>chat contract"]
   end
   subgraph RUN["Execution"]
     EXEC["exec/<br/>Executor pipeline"]
+    POL["policy/<br/>one policy file"]
     HOOK["hooks/"]
     APR["approval/<br/>ports · stores"]
     CACHE["cache/"]
     COST["cost/<br/>prices · ledger"]
     TRC["tracing/<br/>events · sinks · OTel"]
+    CKP["exec/checkpoints/<br/>durable runs"]
   end
   subgraph MOD["Models"]
     MODELS["models/<br/>ports · fallback · usage"]
     CTX["context/<br/>compression"]
     EMB["embeddings/"]
+    MEM["memory/ · retrieval/"]
+    SBX["sandbox/<br/>code_tool · Docker"]
   end
   subgraph BASE["Base (pydantic only)"]
     CORE["core/<br/>ToolSpec · Registry · errors · context"]
@@ -83,24 +90,31 @@ module.
 | `core/` | `ToolSpec`, `Registry`, `ToolContext`, messages, ports, the error hierarchy | `tool.py`, `registry.py`, `errors.py`, `ports.py` |
 | `schema/` | portable JSON-schema checks; OpenAI, Gemini and Anthropic rewrites | `portable.py`, `transforms.py` |
 | `runtime/` | `run_sync`, a long-lived loop for sync code, ids, the current context | `__init__.py` |
-| `exec/` | the `Executor`: run, run_many, plans, parallel, retry, guards, resume; the tool loop | `executor.py`, `_call_steps.py`, `tool_loop.py` |
-| `hooks/` | before, after and error hooks: `LoggingHook`, `BudgetHook`, `GuardrailHook`, `RateLimitHook` | `__init__.py` |
-| `approval/` | ports (`AutoApprove`, `CallbackApproval`, `DeferredApproval`), batches; stores in memory, SQLite, Redis, SQLAlchemy and DynamoDB | `builtin.py`, `deferred.py`, `store.py` |
+| `exec/` | the `Executor`: run, run_many, plans, parallel, retry, guards, resume; the tool loop; agents as tools and handoffs; checkpoint stores and crash-safe runs (`checkpoints/`, `_durable.py`) | `executor.py`, `_call_steps.py`, `tool_loop.py`, `agents.py`, `handoffs.py`, `checkpoints/__init__.py` |
+| `hooks/` | before, after and error hooks: `LoggingHook`, `BudgetHook`, `GuardrailHook`, `RateLimitHook`; content guards (`PIIGuard`, `CallableGuard`, Presidio, NeMo) in `builtin/guards/`; shared budget counters (`BudgetStore`, SQLite, Redis, SQLAlchemy) in `builtin/budgets/` | `__init__.py`, `builtin/guards/base.py`, `builtin/budgets/__init__.py` |
+| `approval/` | ports (`AutoApprove`, `CallbackApproval`, `DeferredApproval`), batches; stores in memory, SQLite, Redis, SQLAlchemy and DynamoDB; approval memory (past decisions, proposed rules) | `builtin.py`, `deferred.py`, `store.py`, `memory.py`, `rules.py` |
 | `cache/` | backends, keys, the tool and LLM caches, the prompt-prefix layout | `__init__.py` |
 | `cost/` | the price table (`prices_default.json`), the ledger, its sinks, summaries | `ledger.py`, `prices.py` |
-| `models/` | model ports: OpenAI (Chat and Responses), Gemini, Anthropic, `CallableModel`, `FallbackModel`, instrumentation, usage | `_port.py`, `callable.py`, `instrument.py` |
+| `models/` | model ports: OpenAI (Chat and Responses), Gemini, Anthropic, `CallableModel`, `FallbackModel`, instrumentation, usage, stream events incl. partial structured output | `_port.py`, `callable.py`, `instrument.py` |
 | `embeddings/` | `EmbeddingPort`, `CallableEmbedder`, the embedding cache | `__init__.py` |
+| `memory/` | `MemoryPort`, SQLite and callable backends, Mem0/Zep/Graphiti adapters, `memory_tools`, retention | `__init__.py`, `sqlite.py`, `tools.py` |
+| `chat/` | the chat agent contract (`ChatMessage`, `ChatSession`, `Attachment`, `ChatAgent`), shared by the viewer and evals | `contract.py` |
+| `sandbox/` | `SandboxPort`, `DockerSandbox`, `CallableSandbox` (hosted), the dev-only `LocalSubprocessSandbox`, `code_tool` (always approved) | `port.py`, `_base.py`, `docker.py`, `tool.py` |
+| `policy/` | one policy file (YAML, TOML, JSON or dict) applied to an executor: access, approvals, guards, budgets, limits per tool, team and env | `__init__.py`, `policy.py`, `model.py`, `condition.py` |
+| `audit/` | the signed, hash-chained audit log of security events (a leaf sink like the viewer), `verify`, `export`, stores | `__init__.py`, `sink.py`, `verify.py` |
+| `retrieval/` | `RetrieverPort`, `Document`, callable, embedding, LlamaIndex and LangChain retrievers, `retriever_tool` | `__init__.py`, `_base.py`, `tool.py` |
 | `context/` | context compression: a policy of steps (trim, cut, shrink, de-duplicate, rank, summarise) under fixed invariants; `compress_for` per framework | `__init__.py` |
-| `flow/` | the `Flow` builder, merge rules, the validated graph, the local `FlowRunner`, pause and resume, mermaid | `spec.py`, `runner.py`, `actions.py`, `state.py` |
+| `flow/` | the `Flow` builder, merge rules, sub-flows (`SubFlow`), the node cache (`NodeCache`), the validated graph, the local `FlowRunner`, pause and resume, mermaid | `spec.py`, `runner.py`, `actions.py`, `state.py` |
 | `tracing/` | the event catalogue, sinks (`EventLog`, logging), OpenTelemetry GenAI spans | `events.py`, `sinks.py`, `otel.py` |
-| `integrations/` | one module per framework or protocol, plus `attach()` discovery | `base.py`, `_attach.py`, `discovery.py` |
-| `server/` | the HTTP tool server: ASGI and WSGI, auth, approvals over REST, SSE, idempotency, OpenAPI | `service.py`, `asgi.py`, `auth.py` |
+| `integrations/` | one module per framework or protocol, plus `attach()` discovery; Temporal and DBOS durable engines | `base.py`, `_attach.py`, `discovery.py`, `temporal.py`, `dbos.py`, `_durable_flows.py` |
+| `server/` | the HTTP tool server: ASGI and WSGI, auth, approvals over REST, SSE, idempotency, OpenAPI, budgets (`GET /budget`) | `service.py`, `asgi.py`, `auth.py` |
 | `handlers/` | run tool calls from queue messages, serverless events and pipelines | `__init__.py` |
 | `optimiser/` | an offline loop over eval cases that writes a reviewable diff | `__init__.py` |
-| `viewer/` | records runs to JSONL, the local web viewer, exports, the chat page | `recorder.py`, `server.py`, `serving.py`, `assets.py` |
-| `viewer/chat/` | the chat contract, the turn host, sessions, uploads, one-use approvals, routes, SSE | `contract.py`, `host.py`, `routes.py` |
-| `viewer/static/` | the page: plain JS and CSS, no build step, no CDN | `index.html`, `data.js`, `chat.js`, `graph*.js` |
-| `cli/` | `agent-adapter init / doctor / guide / ui` | `__init__.py`, `ui.py` |
+| `evals/` | eval cases, targets, graders, `run_eval`, reports (JUnit, Markdown, JSON), saved reports, the pytest plugin; cases from recorded runs (`from_runs.py`); the cost advisor (`advisor.py`, `StepModels`) | `runner.py`, `graders.py`, `report.py`, `store.py`, `advisor.py` |
+| `viewer/` | records runs to JSONL, the local web viewer, exports, the chat page, the Evals view of saved reports, run search and tags (`_search.py`, `_tags.py`), OTLP JSON import (`_otlp_import.py`), save a run as an eval case (`_case_routes.py`, `static/runcases.js`) | `recorder.py`, `server.py`, `serving.py`, `assets.py`, `_evals.py` |
+| `viewer/chat/` | the chat contract (re-exported from `chat/`), the turn host, sessions, uploads, one-use approvals, routes, SSE | `contract.py`, `host.py`, `routes.py` |
+| `viewer/static/` | the page: plain JS and CSS, no build step, no CDN | `index.html`, `data.js`, `chat.js`, `graph*.js`, `runsearch.js` |
+| `cli/` | `agent-adapter init / doctor / guide / ui / eval / migrate / policy / audit` | `__init__.py`, `ui.py`, `doctor_features.py`, `migrate.py` |
 | `_guide/` | the packaged copy of `AGENTS.md` and `llms-full.txt` (generated) | — |
 
 Public API:
@@ -141,6 +155,9 @@ Other paths reuse it:
   - `Merge` rules combine parallel writes.
   - `Route` picks the next node.
   - `pause=` parks the run and resume continues it.
+  - With `checkpoints=`, each superstep saves a sealed checkpoint and tool calls are logged;
+    `recover` continues a crashed run.
+  - `SubFlow` runs a child graph as one node; `cache=` reuses a node's updates.
   - Each tool call goes through the executor. It emits `flow.*` and `node.*` events; with
     `trace_state=True`, `node.finished` carries the changed values.
 - **Tool loop.** `run_tool_loop(model, registry, messages)` asks the model, runs its tool
@@ -150,16 +167,19 @@ Other paths reuse it:
   cache, the ledger and `llm.*` events.
 - **Viewer.** `viewer.record(executor)` adds a `Recorder` sink. A writer thread appends
   JSONL segments under `.agent_adapter/runs`. `agent-adapter ui` serves them on
-  127.0.0.1 with a token.
+  127.0.0.1 with a token. Saved eval reports (`.agent_adapter/evals`) show in the Evals tab;
+  each case links to its run.
 - **Chat turn.** The page posts a turn to the chat host. The host calls the agent
   `fn(message, session)`, whose tool calls use `ctx=session.context()`. Events stream back
-  over SSE as tool and approval cards plus text chunks. The turn is recorded as a run, so
+  over SSE as tool and approval cards plus text chunks; tool arguments stream into a draft
+  card (`tool_draft` events). The turn is recorded as a run, so
   the inspector shows its graph, timeline, events, state and cost.
 
 ## 5. Where to change what
 
 | Task | Files | Then |
 |---|---|---|
+| add a checkpoint store | `exec/checkpoints/<name>.py` | the conformance suite in `tests/exec/checkpoints/` |
 | add a framework integration | `integrations/<name>.py`, an extra in `pyproject.toml`, `examples/<name>_tools.py`, `docs/integrations/<name>.md` | a contract test in `tests/integrations/`, a nox contract session, the support matrix |
 | add an executor feature | `exec/` (keep `executor.py` thin; steps live in `_call_steps.py` and friends) | tests in `tests/exec/`; the event catalogue if you emit new events |
 | add or rename an event | `tracing/events.py` | the docs page on events, OTel mapping (`tracing/_genai.py`), viewer folding (`viewer/_fold.py`) |
@@ -277,19 +297,23 @@ Guard tests that catch common mistakes:
 | `NEXT_STEPS.md` | open work for maintainers, by priority |
 | `mkdocs.yml`, `overrides/`, `docs/` | the docs site (Material for MkDocs, offline Mermaid, `scripts/docs_hooks.py`) |
 | `clients/typescript/` | the TypeScript client for the HTTP server (private, 0.1.0) |
+| `scripts/bench_overhead.py` | the executor overhead benchmark (not in the suite; smoke test in `tests/docs/test_bench_overhead.py`) |
 | `docs/superpowers/` | internal design specs and the interface contract; excluded from the site |
 
-## 12. Notes for this workstation only
+## 12. Notes for the two workstations
 
 Skip this section on any other machine.
 
-- **Git.** The repository is `VeloceAI/agent-adapter` (private), branch `main`. Pushing
-  needs the repo-local credential override for the Veloce-AI account.
-- **Disk and memory.** Everything lives on C: (the project `.venv`, caches, builds). The
-  laptop has 16 GB of RAM: run the full suite and nox sessions one at a time, and close
-  other heavy apps first.
-- **Running nox.** `.venv\Scripts\python.exe -m nox --reuse-existing-virtualenvs -s <session>`.
-  Set `NO_MKDOCS_2_WARNING=1`.
+- **The laptop with git** (`C:\VeloceAI\agent_adapter`). The repository is
+  `VeloceAI/agent-adapter` (private), branch `main`; pushing needs the repo-local credential
+  override for the Veloce-AI account. Everything lives on C:; do not use D:.
+- **The build machine** (no git). Venvs, nox envs, caches and builds live under `D:\aa`.
+  Work done there reaches the repository as an archive that is merged on the laptop: keep
+  the Apache-2.0 and PyPI changes (`LICENSE`, `NOTICE`, `pyproject.toml` metadata, the
+  install docs) when merging.
+- **Memory.** Both have 16 GB of RAM: run the full suite and nox sessions one at a time.
+  Run nox with `.venv\Scripts\python.exe -m nox --reuse-existing-virtualenvs -s <session>`
+  and `NO_MKDOCS_2_WARNING=1`.
 - **Parallel work.** Run at most three parallel agents or heavy jobs. Never run
   `mkdocs serve` during agent work: build with `mkdocs build --strict -d <folder>` and
   serve that folder.

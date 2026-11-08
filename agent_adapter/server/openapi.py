@@ -18,10 +18,12 @@ TARGET = "http"
 _REF = "#/components/schemas/"
 _JSON = "application/json"
 _STRING: dict[str, Any] = {"type": "string"}
+_SCOPES = ("principal", "user", "team", "global")
 _ERRORS = {
     "invoke": ("400", "401", "403", "404", "409", "422", "429", "502", "504"),
     "decide": ("400", "401", "403", "404", "409", "422", "502", "504"),
     "read": ("401", "403", "404"),
+    "budget": ("400", "401", "403", "404"),
 }
 
 
@@ -200,8 +202,26 @@ def _fixed_paths() -> dict[str, Any]:
             }
         },
         "/runs/{run_id}/cost": _read("runCost", "LedgerSummary", [run_id]),
+        "/budget": _budget("getBudgets", []),
+        "/budget/{scope}": _budget(
+            "getBudgetsOfScope",
+            [{"name": "scope", "in": "path", "required": True, "schema": {"enum": list(_SCOPES)}}],
+        ),
         "/openapi.json": _document("openapiDocument", "This document (OpenAPI 3.1)"),
         "/openapi-3.0.json": _document("openapiDocument30", "This document as OpenAPI 3.0.3"),
+    }
+
+
+def _budget(operation_id: str, parameters: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "get": {
+            "operationId": operation_id,
+            "parameters": [*parameters, _query("key")],
+            "responses": {
+                "200": _json("OK", {"$ref": _REF + "BudgetList"}),
+                **_problems("budget"),
+            },
+        }
     }
 
 
@@ -275,8 +295,32 @@ def _fixed_schemas() -> dict[str, Any]:
             hint=_STRING,
             created_at={"type": "number"},
             decision={"oneOf": [decision, {"type": "null"}]},
+            context={"$ref": _REF + "ApprovalContext"},
+        ),
+        ApprovalContext=_object(
+            tool=_STRING,
+            similar={"type": "integer"},
+            approved={"type": "integer"},
+            denied={"type": "integer"},
+            deciders={"type": "array", "items": _STRING},
+            last_decided_at={"type": ["number", "null"]},
+            examples={"type": "array", "items": {"type": "object"}},
+            summary=_STRING,
         ),
         ApprovalList=_object(approvals={"type": "array", "items": {"$ref": _REF + "Approval"}}),
+        Budget=_object(
+            name=_STRING,
+            scope={"enum": list(_SCOPES)},
+            key=_STRING,
+            window=_STRING,
+            limit_usd={"type": "number"},
+            spent_usd={"type": "number"},
+            reserved_usd={"type": "number"},
+            remaining_usd={"type": "number"},
+            resets_at={"type": ["number", "null"]},
+            on_exceed={"enum": ["stop", "warn"]},
+        ),
+        BudgetList=_object(budgets={"type": "array", "items": {"$ref": _REF + "Budget"}}),
         ToolDescriptor=_object(
             name=_STRING,
             description=_STRING,

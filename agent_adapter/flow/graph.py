@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import math
 import re
 from collections.abc import Callable, Mapping, Sequence
@@ -12,7 +13,8 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from agent_adapter.core.errors import FlowDefinitionError
-from agent_adapter.flow.actions import Call, Join, Map
+from agent_adapter.flow._subcheck import check_cache, check_subflow
+from agent_adapter.flow.actions import Call, Join, Map, SubFlow
 from agent_adapter.flow.state import MergeRule, merge_rules
 
 NAME_PATTERN = r"^[A-Za-z_][A-Za-z0-9_]{0,63}$"
@@ -21,7 +23,7 @@ LOOP_FIELD = "aa_loop_counts"  # reserved: compilers keep route loop counters th
 VISITS_FIELD = "aa_visits"  # reserved: compilers keep node visit counts there
 RESERVED_FIELDS = (LOOP_FIELD, VISITS_FIELD)
 
-NodeKind = Literal["fn", "call", "map", "join"]
+NodeKind = Literal["fn", "call", "map", "join", "subflow"]
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,8 @@ class NodeSpec:
     retries: int
     pause: bool | Callable[..., Mapping[str, Any]]
     prompt: str | None
+    cache: Any = None  # a NodeCache, or None
+    child: FlowGraph | None = None  # a SubFlow's validated graph (set by validation)
 
 
 @dataclass(frozen=True)
@@ -83,6 +87,8 @@ def node_kind(action: Any) -> NodeKind | None:
         return "map"
     if isinstance(action, Join):
         return "join"
+    if isinstance(action, SubFlow):
+        return "subflow"
     return "fn" if callable(action) else None
 
 
@@ -153,22 +159,26 @@ class _Checker:
         for node in nodes:
             if node.name in table:
                 continue  # the builder reported the duplicate
-            table[node.name] = node
             if not _NAME.match(node.name):
                 self.found.append(f"node name {node.name!r} is not an identifier ({NAME_PATTERN})")
-            self._action(node)
+            node = self._action(node)
+            table[node.name] = node
             self._options(node)
         if not table:
             self.found.append("flow has no nodes")
         return table
 
-    def _action(self, node: NodeSpec) -> None:
+    def _action(self, node: NodeSpec) -> NodeSpec:
+        """Check the node's action; a SubFlow node comes back holding its child graph."""
         action, where = node.action, f"node {node.name!r}"
         if node_kind(action) is None:
             self.found.append(
-                f"{where}: action must be a function, Call, Map or Join, "
+                f"{where}: action must be a function, Call, Map, Join or SubFlow, "
                 f"got {type(action).__name__}"
             )
+        elif isinstance(action, SubFlow):
+            child = check_subflow(where, action, self.state_model, self.rules, self.found)
+            return dataclasses.replace(node, child=child)
         elif isinstance(action, Map):
             if action.over not in self.fields:
                 self.found.append(f"{where}: Map.over {action.over!r} is not a state field")
@@ -181,6 +191,7 @@ class _Checker:
                 )
         elif isinstance(action, Call) and action.into not in (None, *self.fields):
             self.found.append(f"{where}: Call.into {action.into!r} is not a state field")
+        return node
 
     def _options(self, node: NodeSpec) -> None:
         where = f"node {node.name!r}"
@@ -195,6 +206,8 @@ class _Checker:
             self.found.append(f"{where}: pause must be a bool or a callable, got {node.pause!r}")
         if node.prompt is not None and not isinstance(node.prompt, str):
             self.found.append(f"{where}: prompt must be a string, got {node.prompt!r}")
+        if node.cache is not None:
+            check_cache(where, node, self.fields, self.found)
 
     def endpoints(
         self,

@@ -1,0 +1,16 @@
+from agents import Agent, function_tool
+
+
+@function_tool
+async def shipping_rate(region: str) -> float:
+    """Shipping rate for a region."""
+    return 5.0
+
+
+@function_tool(name_override="track_parcel")
+def track(parcel_id: str) -> str:
+    """Where a parcel is."""
+    return "in transit"
+
+
+agent = Agent(name="shop", tools=[shipping_rate, track])

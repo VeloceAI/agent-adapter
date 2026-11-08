@@ -355,3 +355,11 @@ async def test_a_node_raising_cancelled_error_ends_the_run_as_cancelled():
         await adk.run_workflow(workflow, {})
     assert [e.data["ok"] for e in sink.of_type("run.finished")] == [False]
     assert [e.data["status"] for e in sink.of_type("flow.finished")] == ["failed"]
+
+
+def test_compile_flow_refuses_a_subflow_node():
+    from tests.flow.subflow_helpers import child_flow, parent_flow
+
+    with pytest.raises(FlowCompileError, match="SubFlow") as caught:
+        adk.compile_flow(parent_flow(child_flow()), executor=Executor(Registry()))
+    assert caught.value.target == "adk"

@@ -17,7 +17,8 @@ from agent_adapter.core.errors import (
     log_failure,
     qualified_name,
 )
-from agent_adapter.hooks.base import Hook, ShortCircuit, hook_name
+from agent_adapter.core.types import LedgerEntry
+from agent_adapter.hooks.base import Hook, LLMInvocation, ShortCircuit, hook_name
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,17 @@ async def run_on_error(
         if result is not None:
             return _short_circuit(hook, method, result)
     return None
+
+
+async def run_end(hooks: Sequence[Hook], inv: LLMInvocation, billed: LedgerEntry | None) -> None:
+    """`on_llm_end` on every hook; a failing hook is logged and the others still run."""
+    for hook in hooks:
+        try:
+            await hook.on_llm_end(inv, billed)
+        except Exception as exc:
+            if is_control_flow(exc):
+                raise
+            log_failure(logger, logging.ERROR, exc, "hook %s failed in on_llm_end", hook_name(hook))
 
 
 async def _call(hook: Hook, method: str, *args: Any) -> Any:

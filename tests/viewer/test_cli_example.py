@@ -136,3 +136,19 @@ def test_ui_export_refuses_approvals_and_run_needs_export(
     assert code == 2 and "drop --approvals" in capsys.readouterr().err
     code, _ = run_cli("ui", str(tmp_path), "--run", "run_1")
     assert code == 2 and "--run needs --export" in capsys.readouterr().err
+
+
+def test_ui_reads_saved_evals_from_the_evals_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    served: list[ViewerServer] = []
+
+    def interrupted(self: ViewerServer, poll_interval: float = 0.5) -> None:
+        served.append(self)
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(server.ViewerServer, "serve_forever", interrupted)
+    code, _ = run_cli("ui", str(tmp_path), "--port", "0", "--evals", str(tmp_path / "ev"))
+    assert code == 0 and served[0].evals.folder == (tmp_path / "ev").resolve()
+    code, _ = run_cli("ui", str(tmp_path), "--export", str(tmp_path / "r.html"), "--evals", "x")
+    assert code == 2 and "drop --evals" in capsys.readouterr().err

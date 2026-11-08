@@ -12,9 +12,15 @@ import functools
 import logging
 import threading
 from collections.abc import Collection, Iterator, Mapping
-from typing import Any
+from typing import Any, Protocol
 
-from agent_adapter.core.errors import AdapterError, ToolUsageError, log_failure, qualified_name
+from agent_adapter.core.errors import (
+    AdapterError,
+    CheckpointStoreCorrupt,
+    ToolUsageError,
+    log_failure,
+    qualified_name,
+)
 from agent_adapter.core.types import ErrorInfo, ToolResult
 from agent_adapter.exec._canon import (
     Decoder,
@@ -49,6 +55,22 @@ class JournalSlot:
     why: str = ""  # why the call has no key
 
 
+class JournalObserver(Protocol):
+    """Told before a journaled call runs and after it settles (durable runs log both)."""
+
+    async def replayed(self, path: tuple[Any, ...], slot: JournalSlot) -> None: ...
+
+    async def started(self, path: tuple[Any, ...], slot: JournalSlot) -> None: ...
+
+    async def settled(
+        self,
+        path: tuple[Any, ...],
+        slot: JournalSlot,
+        result: ToolResult,
+        stored: Mapping[str, Any] | None,
+    ) -> None: ...
+
+
 class Journal:
     """The finished executor calls of one node visit, replayed when a resumed node re-runs.
 
@@ -67,6 +89,8 @@ class Journal:
         decoder: Decoder | None = None,
         calls: bool = True,
         allowed: Mapping[str, type] | None = None,
+        observer: JournalObserver | None = None,
+        path: tuple[Any, ...] = (),
     ) -> None:
         if token is not _TOKEN:
             raise ToolUsageError("Journal is made by the flow runner only")
@@ -88,6 +112,33 @@ class Journal:
         self._unkeyed = 0
         self._lock = threading.Lock()
         self._closed = False
+        self._observer = observer
+        self._path = path
+
+    @property
+    def durable(self) -> bool:
+        """Whether a durable run logs this journal's calls."""
+        return self._observer is not None
+
+    async def started(self, slot: JournalSlot) -> None:
+        """Tell the observer a call is about to run, or that it replayed."""
+        if self._observer is None:
+            return
+        if slot.result is None:
+            await self._observer.started(self._path, slot)
+        else:
+            await self._observer.replayed(self._path, slot)
+
+    async def settle(self, slot: JournalSlot, result: ToolResult) -> None:
+        """Record a call's result, then tell the observer what was kept for its replay."""
+        self.record(slot, result)
+        if self._observer is None:
+            return
+        stored = None
+        if slot.digest:
+            with self._lock:
+                stored = self._results.get((slot.tool, slot.digest, slot.occurrence))
+        await self._observer.settled(self._path, slot, result, stored)
 
     def claim(self, tool: str, arguments: Any, returns: Any = None) -> JournalSlot | None:
         """The next slot for this call (None when it is not journaled).
@@ -160,6 +211,8 @@ class Journal:
                 decoder=self._decoder,
                 calls=calls,
                 allowed=self._allowed,
+                observer=self._observer,
+                path=(*self._path, (name, n)),
             )
             if self._closed:
                 child.close()
@@ -195,6 +248,9 @@ class Journal:
         try:
             return _load_result(stored, self._decoder, allowed)
         except (NotSealable, ValueError, TypeError, KeyError) as exc:
+            if self._observer is not None:  # a durable run never runs a logged call again
+                log_failure(logger, logging.ERROR, exc, "logged result cannot be replayed")
+                raise CheckpointStoreCorrupt("a logged tool result cannot be replayed") from exc
             log_failure(
                 logger,
                 logging.WARNING,
@@ -211,8 +267,19 @@ def _make_journal(
     decoder: Decoder | None = None,
     calls: bool = True,
     allowed: Mapping[str, type] | None = None,
+    observer: JournalObserver | None = None,
+    path: tuple[Any, ...] = (),
 ) -> Journal:
-    return Journal(_TOKEN, data, encoder=encoder, decoder=decoder, calls=calls, allowed=allowed)
+    return Journal(
+        _TOKEN,
+        data,
+        encoder=encoder,
+        decoder=decoder,
+        calls=calls,
+        allowed=allowed,
+        observer=observer,
+        path=path,
+    )
 
 
 def unsealable_calls(data: JournalData, where: str = "") -> list[str]:

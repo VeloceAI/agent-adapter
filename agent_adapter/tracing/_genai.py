@@ -11,7 +11,10 @@ from agent_adapter.core.types import Event
 from agent_adapter.tracing import semconv as sc
 
 # Scalar, non-content keys copied onto span events; never reasons, names or free text.
-NOTE_KEYS = frozenset({"attempt", "delay_s", "error_kind", "approval_id", "approved"})
+NOTE_KEYS = frozenset(
+    {"attempt", "delay_s", "error_kind", "approval_id", "approved", "edited", "outcome"}
+    | {"guard", "stage", "count"}
+)
 _FAILED_FLOW = frozenset({"failed", "error", "cancelled"})
 _PROMPT_KEYS = ("input_tokens", "cached_input_tokens", "cache_write_input_tokens")
 

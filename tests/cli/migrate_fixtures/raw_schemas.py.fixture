@@ -1,0 +1,23 @@
+from llama_index.core.tools import FunctionTool
+
+CHAT_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "find_order",
+            "description": "Find an order.",
+            "parameters": {"type": "object", "properties": {"order_id": {"type": "string"}}},
+        },
+    }
+]
+RESPONSES_TOOL = {"type": "function", "name": "cancel_order", "parameters": {"type": "object"}}
+CLAUDE_TOOLS = [{"name": "return_item", "description": "Return an item.", "input_schema": {}}]
+NOT_A_TOOL = {"type": "function", "label": "no name or parameters here"}
+
+
+def gift_wrap(order_id: str) -> str:
+    """Gift-wrap an order."""
+    return "wrapped"
+
+
+wrap_tool = FunctionTool.from_defaults(fn=gift_wrap, name="gift_wrap_order")

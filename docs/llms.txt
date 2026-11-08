@@ -8,7 +8,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 
 ## Home
 
-- [Home](https://agent-adapter.veloceai.in/): Agent Adapter is an open-source (Apache-2.0), framework-independent Python SDK (version **1.0.0**)
+- [Home](https://agent-adapter.veloceai.in/): Agent Adapter is an open-source (Apache-2.0), framework-independent Python SDK (version **1.1.0**)
 
 ## Get started
 
@@ -27,19 +27,31 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Wrap a legacy class](https://agent-adapter.veloceai.in/how-to/wrap-legacy-code/): Turn an existing service class into tools without editing it: its methods, its blocking sync calls and its own exceptions
 - [Parallel retrieval](https://agent-adapter.veloceai.in/how-to/parallel-retrieval/): Ask several retrievers at once, merge what they return, and stop early when one answer is enough
 - [Human in the loop](https://agent-adapter.veloceai.in/how-to/human-in-the-loop/): Pause a risky call until a person reviews it, then resume it: approved, edited or denied
+- [Run flows on Temporal or DBOS](https://agent-adapter.veloceai.in/how-to/durable-engines/): A `Flow` can run as a Temporal workflow or a DBOS workflow
 - [Budgets](https://agent-adapter.veloceai.in/how-to/budgets/): Cap what a run or a conversation may spend, and how many calls it may make
+- [Team budgets](https://agent-adapter.veloceai.in/how-to/team-budgets/): Cap what each user, each team, or everyone may spend, per UTC day or month, across every worker and host
 - [Caching](https://agent-adapter.veloceai.in/how-to/caching/): Skip repeat work
 - [Bring your own model](https://agent-adapter.veloceai.in/how-to/bring-your-own-model/): The adapter does not care which model runs
+- [Model recipes](https://agent-adapter.veloceai.in/how-to/model-recipes/): Each recipe wraps the vendor's own SDK in a `CallableModel`
+- [Send traces](https://agent-adapter.veloceai.in/how-to/send-traces/): `OTelSink` turns the executor's events into OpenTelemetry spans that follow the GenAI semantic conventions
 - [Compress a long context](https://agent-adapter.veloceai.in/how-to/compress-long-context/): Your backend calls one model and the history keeps growing
 - [Sync code and backends](https://agent-adapter.veloceai.in/how-to/sync-backends/): The adapter is async
 - [Testing tools](https://agent-adapter.veloceai.in/how-to/testing-tools/): Test tools offline: no network, no API keys, no real waiting
 - [See your runs](https://agent-adapter.veloceai.in/how-to/see-your-runs/): Record every run to a folder with one line, then open a local page that shows it: the flow graph, a timeline of parallel calls, costs, cache hits, retries...
+- [Search and tag runs](https://agent-adapter.veloceai.in/how-to/search-your-runs/): The runs list of `agent-adapter ui` has a search box and a tag filter
 - [Navigate the graph](https://agent-adapter.veloceai.in/how-to/navigate-the-graph/): The Agent Adapter run viewer draws the `Flow` a `FlowRunner` ran and paints each node's live status on it
 - [Chat with your agent](https://agent-adapter.veloceai.in/how-to/chat-with-your-agent/): Chat with any agent in the local Agent Adapter page, and watch it work: streamed text, tool calls, approvals, the flow graph, a timeline, state and cost for...
+- [Remember users across chats](https://agent-adapter.veloceai.in/how-to/chat-memory/): The chat page can remember what a user said in earlier chats
 - [Chat flows by example](https://agent-adapter.veloceai.in/how-to/chat-flows/): `examples/chat_flows.py` is a scripted city help desk (no model, no API key): one agent picks a `Flow` per question, one per pattern
 - [Wrap a framework for chat](https://agent-adapter.veloceai.in/how-to/chat-wrappers/): The Agent Adapter chat page talks to one function: `agent(message, session)`, returning text or an async iterator of text chunks (Chat with your agent)
+- [Multi-agent](https://agent-adapter.veloceai.in/how-to/multi-agent/): Any agent can be a tool of another
+- [Evaluate your agent](https://agent-adapter.veloceai.in/how-to/evaluate-your-agent/): Evals run a set of cases on your agent, grade each answer, and report
+- [Evals from production](https://agent-adapter.veloceai.in/how-to/evals-from-production/): Turn recorded runs into eval cases, so a failure seen in production becomes a regression case that CI runs on every change
+- [See your evals](https://agent-adapter.veloceai.in/how-to/see-your-evals/): Save each eval report to a folder, then open the **Evals** tab of the local viewer
 - [Optimise your agent](https://agent-adapter.veloceai.in/how-to/optimise-your-agent/): The optimiser tunes the texts around any agent you can call: a plain function, or a LangGraph, OpenAI Agents or Pydantic AI agent
+- [Cut model costs per step](https://agent-adapter.veloceai.in/how-to/cut-model-costs/): Not every step of an agent needs your best model
 - [Tutorial: a research agent](https://agent-adapter.veloceai.in/tutorials/research-agent/): You build a small research agent end to end: tools from plain functions, retrieval from three sources at once, a model loop, a human approval before it...
+- [Tutorial: the golden path](https://agent-adapter.veloceai.in/tutorials/golden-path/): A small support-desk service wired the way we recommend for production: a confirmed refund, approvals that survive a restart, a daily budget per user,...
 - [Cookbook](https://agent-adapter.veloceai.in/cookbook/): Short recipes for tasks people ask about
 - [Retry a flaky tool](https://agent-adapter.veloceai.in/cookbook/retry-flaky-tool/): A billing API drops connections now and then
 - [Cap spend per user](https://agent-adapter.veloceai.in/cookbook/spend-per-user/): Each user may spend $0.25 a day on model calls
@@ -60,9 +72,10 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Approval](https://agent-adapter.veloceai.in/examples/approval/): Human review, durable stores, resume once
 - [Cost and cache](https://agent-adapter.veloceai.in/examples/cost-cache/): Ledgers, prices, budgets, caches, embeddings
 - [Parallel fan-out and fan-in](https://agent-adapter.veloceai.in/examples/parallel/): Several calls at once, then merge
+- [Memory and retrieval](https://agent-adapter.veloceai.in/examples/memory/): Per-user memory, and RAG with citations
 - [Flows](https://agent-adapter.veloceai.in/examples/flows/): Graphs of nodes with joins, loops and pauses
 - [Serving and protocols](https://agent-adapter.veloceai.in/examples/serving/): MCP, A2A, AG-UI, HTTP and OpenAPI
-- [Optimiser](https://agent-adapter.veloceai.in/examples/optimiser/): Improve an agent's harness against eval cases
+- [Evals and optimiser](https://agent-adapter.veloceai.in/examples/optimiser/): Grade an agent on eval cases; improve its harness
 - [Cookbook](https://agent-adapter.veloceai.in/examples/cookbook/): Short recipes for common production needs
 
 ## Backends
@@ -150,17 +163,28 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Executor policies](https://agent-adapter.veloceai.in/concepts/executor-policies/): What the Executor enforces on every call: approval, run guards, retries and timeouts, the tool cache, the ledger and events
 - [Flows](https://agent-adapter.veloceai.in/concepts/flows/): A flow is a graph of nodes over one pydantic state
 - [Flow pause and resume](https://agent-adapter.veloceai.in/concepts/flow-resume/): A flow pauses at a `pause` gate or when a tool inside a node needs an approval that is not decided yet
+- [Sub-flows and node cache](https://agent-adapter.veloceai.in/concepts/flow-subflows/): A `SubFlow` node runs another `Flow` as one node of its parent
+- [Durable runs](https://agent-adapter.veloceai.in/concepts/durable-runs/): A durable run survives its worker
 - [Hooks](https://agent-adapter.veloceai.in/concepts/hooks/): A hook is middleware around every tool call, model call and flow node
+- [Guardrails](https://agent-adapter.veloceai.in/concepts/guardrails/): A guard is a hook that looks at what goes into and out of your agent: tool arguments, tool results, model requests and model replies
+- [Policy file](https://agent-adapter.veloceai.in/concepts/policy/): A policy is one file that says, per tool, per team or user and per environment, which tools may run, which need a person's approval, which guards check...
+- [Audit log](https://agent-adapter.veloceai.in/concepts/audit/): `agent_adapter.audit` keeps a signed, tamper-evident record of the security-relevant things your agents did: approvals asked, decided and used, denials,...
+- [Audit log in production](https://agent-adapter.veloceai.in/concepts/audit-operations/): How the audit log behaves under load and failure, what strict mode stops, and what the log cannot prove on its own
 - [Approval](https://agent-adapter.veloceai.in/concepts/approval/): A tool with `confirm=` set asks an approval port before it runs
 - [Resume a parked call](https://agent-adapter.veloceai.in/concepts/approval-resume/): A `confirm` tool behind `DeferredApproval` pauses with `ApprovalPending`
 - [Approval batches](https://agent-adapter.veloceai.in/concepts/approval-batches/): A framework that pauses a run for several tool calls at once (the Agents SDK, Pydantic AI) asks the approval port about the whole batch
 - [Approval stores](https://agent-adapter.veloceai.in/concepts/approval-stores/): A `DeferredApproval` parks a call in an `ApprovalStore` until a reviewer decides
 - [Database approval stores](https://agent-adapter.veloceai.in/concepts/approval-stores-db/): Two more approval stores keep parked calls in a database you already run: **Postgres** through SQLAlchemy 2 (async), and **DynamoDB** for AWS serverless...
+- [Approval memory](https://agent-adapter.veloceai.in/concepts/approval-memory/): Reviewers decide the same kinds of calls again and again
 - [Cost](https://agent-adapter.veloceai.in/concepts/cost/): `agent_adapter.cost` turns token usage into dollars
 - [Tracing](https://agent-adapter.veloceai.in/concepts/tracing/): Every step emits an `Event` (catalogue in Context, events and ports) to one `EventSink`
 - [Cache](https://agent-adapter.veloceai.in/concepts/cache/): `agent_adapter.cache` saves money and time at four layers
 - [Embeddings](https://agent-adapter.veloceai.in/concepts/embeddings/): `agent_adapter.embeddings` turns texts into vectors with **your** embedding model
+- [Memory](https://agent-adapter.veloceai.in/concepts/memory/): `agent_adapter.memory` lets an agent remember facts across turns and chats
+- [Retrieval (RAG)](https://agent-adapter.veloceai.in/concepts/retrieval/): `agent_adapter.retrieval` lets a model search **your** documents and answer with citations
+- [Sandboxed code](https://agent-adapter.veloceai.in/concepts/sandbox/): `agent_adapter.sandbox` lets a model write code and run it somewhere it can do no harm
 - [Model ports](https://agent-adapter.veloceai.in/concepts/models/): A model port turns one provider-neutral `LLMRequest` into one `LLMResponse`
+- [Streaming](https://agent-adapter.veloceai.in/concepts/streaming/): A model port's `stream(request)` yields events while the reply arrives
 - [Instrumented models and tool loop](https://agent-adapter.veloceai.in/concepts/tool-loop/): `InstrumentedModel` wraps any `LLMPort` with the executor's hooks, the LLM response cache, one ledger entry per call and `llm.*` events
 - [Context compression](https://agent-adapter.veloceai.in/concepts/context-compression/): Long conversations hit the model's context window and cost more on every call
 - [Errors](https://agent-adapter.veloceai.in/concepts/errors/): Symptoms and fixes: Troubleshooting
@@ -170,6 +194,8 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 ## Guides
 
 - [Security](https://agent-adapter.veloceai.in/guides/security/): What can go wrong when a model drives your tools, what the adapter stops on its own, and what your app must still do
+- [Threat model](https://agent-adapter.veloceai.in/guides/threat-model/): What an agent built on the adapter has to protect, where the trust boundaries are, what the adapter enforces on its own, and what stays your job
+- [Production checklist](https://agent-adapter.veloceai.in/guides/production-checklist/): Go through this list before an agent built on the adapter takes real traffic
 - [Performance](https://agent-adapter.veloceai.in/guides/performance/): Where time goes, and the knobs that change it
 - [Observability](https://agent-adapter.veloceai.in/guides/observability/): See what a run did, what it cost, and why it failed, without leaking its data
 - [Versioning](https://agent-adapter.veloceai.in/guides/versioning/): Agent Adapter follows Semantic Versioning 2.0
@@ -177,6 +203,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Raw tool calling](https://agent-adapter.veloceai.in/migration/raw-tool-calling/): You wrote the JSON schema by hand, kept a `name -> function` dict, and called `fn(**json.loads(arguments))`
 - [LangChain tools](https://agent-adapter.veloceai.in/migration/langchain-tools/): Your tools are LangChain `@tool` functions
 - [Hand-rolled approval](https://agent-adapter.veloceai.in/migration/hand-rolled-approval/): You check "does this need approval?" inside the tool, park the arguments in a dict or a table, and run the tool once someone flips a flag
+- [The migrate command](https://agent-adapter.veloceai.in/migration/migrate-command/): `migrate` reads your Python files and lists every framework tool definition it finds
 - [From LangGraph](https://agent-adapter.veloceai.in/tutorials/migrate-langgraph/): You keep your graph, your state and your checkpointer
 
 ## Reference
@@ -185,22 +212,30 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Top level](https://agent-adapter.veloceai.in/reference/top-level/): The everyday names, imported from `agent_adapter`
 - [Errors](https://agent-adapter.veloceai.in/reference/errors/): Every error Agent Adapter raises, in one table
 - [Executor](https://agent-adapter.veloceai.in/reference/exec/): Running tool calls: retries, plans and the tool loop
-- [Hooks](https://agent-adapter.veloceai.in/reference/hooks/): Hooks around tool, model and node calls, and the built-in hooks
+- [Hooks](https://agent-adapter.veloceai.in/reference/hooks/): Hooks around tool, model and node calls, the built-in hooks and content guards
 - [Approval](https://agent-adapter.veloceai.in/reference/approval/): Confirm rules, approval ports and stores
 - [Flows](https://agent-adapter.veloceai.in/reference/flow/): Flow graphs, nodes and the runner
 - [Cost](https://agent-adapter.veloceai.in/reference/cost/): Ledger sinks, summaries and resolved prices
 - [Cache](https://agent-adapter.veloceai.in/reference/cache/): Tool-result and model-response caches, keys and provider prompt caches
 - [Embeddings](https://agent-adapter.veloceai.in/reference/embeddings/): The embedding port, a callable embedder and its cache
+- [Memory](https://agent-adapter.veloceai.in/reference/memory/): The memory port, SQLite and callable backends, Mem0/Zep/Graphiti adapters and the memory tools
+- [Retrieval](https://agent-adapter.veloceai.in/reference/retrieval/): The retriever port, documents with sources, callable, embedding, LlamaIndex and LangChain retrievers, and `retriever_tool`
+- [Sandbox](https://agent-adapter.veloceai.in/reference/sandbox/): The sandbox port, Docker, callable and development-only local backends, and `code_tool`
+- [Policy](https://agent-adapter.veloceai.in/reference/policy/): One policy file for access, approvals, guards, budgets and limits per tool, team and environment
+- [Audit log](https://agent-adapter.veloceai.in/reference/audit/): A signed, tamper-evident log of approvals, guard blocks and redactions, budget stops, memory deletes and exports
 - [Context compression](https://agent-adapter.veloceai.in/reference/context/): Compression policies, steps, scorers, `CompressingModel` and the message-format converters
 - [Runtime](https://agent-adapter.veloceai.in/reference/runtime/): The current tool context, ids and loop-local state
 - [Tracing](https://agent-adapter.veloceai.in/reference/tracing/): Events, event sinks and OpenTelemetry spans
 - [Models](https://agent-adapter.veloceai.in/reference/models/): Model ports, provider models and usage helpers
 - [HTTP server](https://agent-adapter.veloceai.in/reference/server/): The tool service, its ASGI and WSGI apps, auth and problems
 - [Handlers](https://agent-adapter.veloceai.in/reference/handlers/): Run tool calls from queue messages, serverless events and pipelines
+- [Chat contract](https://agent-adapter.veloceai.in/reference/chat/): The types a chat agent receives for one turn and what it may return, shared by the chat page and evals
 - [Run viewer](https://agent-adapter.veloceai.in/reference/viewer/): Record runs to a folder and browse them on 127.0.0.1 (`agent-adapter ui`), or chat with an agent there
 - [Integrations: model APIs and protocols](https://agent-adapter.veloceai.in/reference/integrations-providers/): Export tools to model APIs and agent protocols (MCP, A2A, AG-UI); import tools from LangChain, OpenAPI and MCP
 - [Integrations: frameworks](https://agent-adapter.veloceai.in/reference/integrations-frameworks/): Export tools, approval and flows to agent frameworks
+- [Integrations: durable engines](https://agent-adapter.veloceai.in/reference/integrations-durable/): Flows on Temporal and DBOS: Run flows on Temporal or DBOS
 - [Integrations: protocol](https://agent-adapter.veloceai.in/reference/integrations-base/): The integration protocol and entry-point discovery, for authors of new integrations (Writing an integration)
+- [Evals](https://agent-adapter.veloceai.in/reference/evals/): Run eval cases on any agent, grade them and report (Evaluate your agent)
 - [Optimiser](https://agent-adapter.veloceai.in/reference/optimiser/): Improve tool descriptions and prompts against eval cases (Optimiser)
 - [CLI](https://agent-adapter.veloceai.in/reference/cli/): The `agent-adapter` command has subcommands
 - [Changelog](https://agent-adapter.veloceai.in/changelog/): All notable changes to this project are documented here
@@ -210,4 +245,5 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Writing an integration](https://agent-adapter.veloceai.in/contributing/writing-an-integration/): An integration turns registry tools into one framework's native tools
 - [Performance regression tests](https://agent-adapter.veloceai.in/contributing/performance-tests/): A test that guards against exponential or quadratic work must not time the work: seconds change with machine load, so a `< 2 s` assertion flakes
 - [Cutting a release](https://agent-adapter.veloceai.in/contributing/release/): How to ship a new version of Agent Adapter to PyPI
+- [API stability policy](https://agent-adapter.veloceai.in/contributing/stability/): The rules every change to Agent Adapter follows in 1.x: what callers may rely on, what may change, and how something is retired
 - [Roadmap](https://agent-adapter.veloceai.in/roadmap/): What we plan to add or improve after **1.0**

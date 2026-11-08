@@ -197,9 +197,11 @@ class ApprovalNotFound(AdapterError):
 
     kind = "approval-not-found"
 
-    def __init__(self, approval_id: str) -> None:
+    def __init__(self, approval_id: str, *, expired: bool = False, tool: str = "") -> None:
         self.approval_id = approval_id
-        super().__init__(f"no approval request {approval_id!r}")
+        self.expired = expired  # a store saw its TTL run out (it was not just unknown)
+        self.tool = tool
+        super().__init__(f"no approval request {approval_id!r}" + (" (expired)" if expired else ""))
 
 
 class ApprovalAlreadyDecided(AdapterError):
@@ -284,6 +286,47 @@ class FlowLoopExceeded(FlowError):
         self.limit = limit
         super().__init__(
             f"flow {flow!r}: node {node!r} exceeded its loop limit {limit}", flow=flow, node=node
+        )
+
+
+class CheckpointNotFound(AdapterError):
+    """No checkpoint is stored for this run id."""
+
+    kind = "checkpoint-not-found"
+
+    def __init__(self, run_id: str) -> None:
+        self.run_id = run_id
+        super().__init__(f"no checkpoint is stored for run {run_id!r}")
+
+
+class CheckpointConflict(AdapterError):
+    """Another worker saved this run's checkpoint first, or the run is not in a state to go on."""
+
+    kind = "checkpoint-conflict"
+
+    def __init__(self, run_id: str, message: str) -> None:
+        self.run_id = run_id
+        super().__init__(f"run {run_id!r}: {message}")
+
+
+class CheckpointStoreCorrupt(AdapterError):
+    """A stored checkpoint is unreadable, wrongly signed or disagrees with itself; fails closed."""
+
+    kind = "checkpoint-store-corrupt"
+
+
+class RecoveryNeedsDecision(AdapterError):
+    """A crashed run left calls of tools not marked idempotent in doubt; a person must decide."""
+
+    kind = "recovery-needs-decision"
+
+    def __init__(self, run_id: str, calls: Iterable[tuple[str, str]]) -> None:
+        self.run_id = run_id
+        self.calls = tuple(calls)  # (tool, why) per call in doubt
+        tools = ", ".join(sorted({tool for tool, _ in self.calls}))
+        super().__init__(
+            f"run {run_id!r}: {len(self.calls)} call(s) may or may not have run before the "
+            f"crash ({tools}); check them, then recover with rerun_in_doubt=True"
         )
 
 

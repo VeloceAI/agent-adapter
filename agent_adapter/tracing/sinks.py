@@ -4,19 +4,22 @@ from __future__ import annotations
 
 import logging
 import threading
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 
 from agent_adapter.core.errors import ConfigError, log_failure
 from agent_adapter.core.ports import EventSink
 from agent_adapter.core.types import Event
 from agent_adapter.runtime._fork import ForkSafeLock
 from agent_adapter.tracing.events import emit
+from agent_adapter.tracing.events import members as members  # re-exported: one walk for all
 
 logger = logging.getLogger(__name__)
 
 # Event data keys that may carry prompts, arguments or results: logged or exported only
 # with capture_content=True (and logged only at DEBUG).
-CONTENT_KEYS = frozenset({"arguments", "result", "input_messages", "output_messages", "updates"})
+CONTENT_KEYS = frozenset(
+    {"arguments", "result", "input_messages", "output_messages", "updates", "input", "output"}
+)
 
 
 class EventLog:
@@ -172,20 +175,6 @@ class SinkHub:
 
     def __repr__(self) -> str:
         return f"SinkHub({', '.join(type(s).__name__ for s in self.sinks)})"
-
-
-def members(sink: EventSink | None) -> Iterator[EventSink]:
-    """`sink` and, through hubs and fan-outs, every sink inside it, each once (depth first)."""
-    seen: set[int] = set()
-    todo = [] if sink is None else [sink]
-    while todo:
-        current = todo.pop()
-        if id(current) in seen:
-            continue
-        seen.add(id(current))
-        yield current
-        if isinstance(current, SinkHub | FanoutSink):
-            todo.extend(reversed(current.sinks))
 
 
 def first_sink(own: EventSink | None, fallback: EventSink | None) -> EventSink | None:

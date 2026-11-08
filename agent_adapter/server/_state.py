@@ -102,6 +102,11 @@ class State:
         """The live registry view the HTTP surface exposes (`for_target("http")`)."""
         return self.registry.for_target(TARGET)
 
+    def listed(self, spec: ToolSpec) -> ToolSpec:
+        """`spec` as the executor's policy enforces it, so listings show its approvals."""
+        policy = self.executor.policy
+        return policy.effective(spec) if policy is not None else spec
+
     def spec(self, name: str) -> ToolSpec:
         """The exported tool `name`.
 

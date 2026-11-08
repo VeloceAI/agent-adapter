@@ -24,6 +24,7 @@ from agent_adapter.runtime.current import use_context
 
 logger = logging.getLogger(__name__)
 
+MAP_TOOLS = "map-tools"  # a durable Map visit's child journal of its tool calls
 ItemOutcome = tuple[str, Any]  # ("ok", value) or ("skipped", error description)
 _SKIPPED = object()  # a Map item skipped (on_error="skip") before a pause
 
@@ -91,9 +92,18 @@ class MapVisit:
         if isinstance(action.tool, ToolSpec):
             registry = Registry()
             registry.add(action.tool)
-        results = await self.executor.run_many(
-            calls, self.ctx, concurrency=self.node.concurrency, registry=registry
+        journal = current_journal()
+        # A durable run logs item calls (claimed in item order) so a recovery replays them;
+        # a pause keeps finished items by index instead, so this journal never goes in one.
+        scope = (
+            _journal_scope(journal.child(MAP_TOOLS))
+            if journal is not None and journal.durable
+            else nullcontext()
         )
+        with scope:
+            results = await self.executor.run_many(
+                calls, self.ctx, concurrency=self.node.concurrency, registry=registry
+            )
         return [_result_value(result) for result in results]
 
     def _item_call(self, action: Map, item: Any, index: int) -> tuple[str, Mapping[str, Any]]:

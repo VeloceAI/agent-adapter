@@ -1,6 +1,6 @@
 # Agent Adapter: guide for AI coding agents
 
-Version 1.0.0. Generated from the package's own code, so it matches
+Version 1.1.0. Generated from the package's own code, so it matches
 this install. Print it with `agent-adapter guide`. This is the concise guide; `agent-adapter guide --full` adds every signature.
 
 ## What it is
@@ -57,9 +57,16 @@ the newest release inside each pinned range is tested. An extra marked
 | AG-UI event stream (CopilotKit and other UIs) | `pip install "agent-adapter[ag-ui]"` | `ag-ui-protocol>=1.0,<2` |
 | Postgres or any SQLAlchemy database as the approval store | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
 | DynamoDB approval store (AWS serverless) | `pip install "agent-adapter[dynamodb]"` | `aioboto3>=13,<16` |
+| flows as Temporal workflows (`agent_adapter.integrations.temporal`) | `pip install "agent-adapter[temporal]"` | `temporalio>=1.35,<2` |
+| flows as DBOS workflows (`DbosFlows`) | `pip install "agent-adapter[dbos]"` | `dbos>=3.4,<4` |
 | HTTP tool server (ASGI) with MCP mounted | `pip install "agent-adapter[server]"` | `starlette>=1.0,<2`, `uvicorn>=0.30,<1`, `h11>=0.16,<1`, extra `mcp` |
 | HTTP tool server under WSGI (Flask, Django) | `pip install "agent-adapter[server-wsgi]"` | `a2wsgi>=1.10,<2`, extra `server` |
-| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dspy`, `semantic-kernel`, `strands` |
+| Presidio PII guard (`PresidioGuard`; also needs a spaCy model) | `pip install "agent-adapter[presidio]"` | `presidio-analyzer>=2.2,<3`, `presidio-anonymizer>=2.2,<3` |
+| NeMo Guardrails guard (`NemoGuard`) | `pip install "agent-adapter[nemo]"` | `nemoguardrails>=0.24,<1` |
+| Mem0 memory backend (`Mem0Memory`) | `pip install "agent-adapter[mem0]"` | `mem0ai>=2.2,<3` |
+| Zep memory backend (`ZepMemory`) | `pip install "agent-adapter[zep]"` | `zep-cloud>=4.1,<5` |
+| Graphiti knowledge-graph memory (`GraphitiMemory`) | `pip install "agent-adapter[graphiti]"` | `graphiti-core>=0.31,<1` |
+| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `mem0`, `nemo`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `zep` |
 
 ## Import rules
 
@@ -197,7 +204,20 @@ result = await aa.run_tool_loop(model, registry, ask, executor=executor)
 print(result.final.text)
 ```
 
-### 7. Get structured output (JSON matching a schema) → `output_schema=OutputSchema(...)`, then `.final.parsed`
+### 7. Make an agent a tool of another agent → `agent_tool(LoopAgent(...), executor=)` (`agent_adapter.exec`)
+
+```python
+from agent_adapter.exec import LoopAgent, agent_tool
+
+desk = LoopAgent(model, registry.subset(names=["get_weather"]), instructions="Weather only.")
+team = aa.Registry()
+boss = aa.Executor(team)  # the desk's calls share its hooks, budget, approvals and run
+team.add(agent_tool(desk, name="weather_desk", description="Weather.", executor=boss))
+ask = [aa.Message(role="user", content="Oslo?")]
+result = await aa.run_tool_loop(model, team, ask, executor=boss)  # nesting: max_depth=3
+```
+
+### 8. Get structured output (JSON matching a schema) → `output_schema=OutputSchema(...)`, then `.final.parsed`
 
 ```python
 from agent_adapter.models import OutputSchema
@@ -208,7 +228,7 @@ result = await aa.run_tool_loop(model, registry, ask, executor=executor, output_
 print(result.final.parsed["city"])
 ```
 
-### 8. Fan out many calls in parallel → `executor.run_many()`
+### 9. Fan out many calls in parallel → `executor.run_many()`
 
 ```python
 cities = ("Oslo", "Rome", "Lima")
@@ -216,7 +236,7 @@ calls = [aa.ToolCall(name="get_weather", arguments={"city": c}) for c in cities]
 results = await executor.run_many(calls, concurrency=4)  # one ToolResult per call
 ```
 
-### 9. Fan in: steps that need earlier results → `executor.run_plan()` with `aa.Step(depends_on=)`
+### 10. Fan in: steps that need earlier results → `executor.run_plan()` with `aa.Step(depends_on=)`
 
 ```python
 first = aa.Step(id="a", tool="get_weather", args={"city": "Oslo"})
@@ -224,7 +244,7 @@ then = aa.Step(id="b", tool="get_weather", depends_on=["a"], args=lambda d: {"ci
 by_id = await executor.run_plan([first, then])
 ```
 
-### 10. Run any async work in parallel with a deadline → `executor.parallel()`
+### 11. Run any async work in parallel with a deadline → `executor.parallel()`
 
 ```python
 async def fetch(url: str) -> str:  # your own async work
@@ -234,7 +254,7 @@ async def fetch(url: str) -> str:  # your own async work
 pages = await executor.parallel(lambda: fetch("a"), lambda: fetch("b"), timeout=30)
 ```
 
-### 11. Ask a person before a side effect → `confirm=True` on the tool plus an approval port on the executor
+### 12. Ask a person before a side effect → `confirm=True` on the tool plus an approval port on the executor
 
 ```python
 def review(request: aa.ApprovalRequest) -> bool:  # ask in your UI, chat or CLI
@@ -245,7 +265,7 @@ executor = aa.Executor(registry, approval=aa.CallbackApproval(review))
 print(executor.run_sync("cancel_order", {"order_id": "o-1"}))
 ```
 
-### 12. Park an approval and resume it later (any process) → `DeferredApproval`, `ApprovalPending`, `resume_sync()`
+### 13. Park an approval and resume it later (any process) → `DeferredApproval`, `ApprovalPending`, `resume_sync()`
 
 ```python
 executor = aa.Executor(registry, approval=aa.DeferredApproval.sqlite("approvals.db"))
@@ -257,7 +277,7 @@ except aa.ApprovalPending as pending:  # store pending.approval_id for a reviewe
     print(done.value)  # the call runs once; a second resume is refused
 ```
 
-### 13. Share approvals across processes and hosts → `SQLAlchemyApprovalStore` (or `aa.RedisApprovalStore`)
+### 14. Share approvals across processes and hosts → `SQLAlchemyApprovalStore` (or `aa.RedisApprovalStore`)
 
 ```python
 from agent_adapter.approval import SQLAlchemyApprovalStore
@@ -268,7 +288,7 @@ store = SQLAlchemyApprovalStore("sqlite+aiosqlite:///approvals.db")
 executor = aa.Executor(registry, approval=aa.DeferredApproval(store))
 ```
 
-### 14. Cap spend and tool calls per run → `aa.Ledger`, `aa.Prices`, `aa.BudgetHook`, `aa.RunLimits`
+### 15. Cap spend and tool calls per run → `aa.Ledger`, `aa.Prices`, `aa.BudgetHook`, `aa.RunLimits`
 
 ```python
 mine = {"my-llm": {"provider": "local", "input": 1.0, "output": 4.0}}  # USD per 1M
@@ -278,7 +298,24 @@ executor = aa.Executor(
 )  # once_per_run=True too
 ```
 
-### 15. Cache tool results → `cache_ttl=` / `cache_scope=` on the tool, `cache=` on the executor
+### 16. Block, redact or approve personal data and secrets → `PIIGuard`, `CallableGuard(fn)` hooks (`agent_adapter.hooks`)
+
+```python
+from agent_adapter.hooks import CallableGuard, PIIGuard
+
+
+def moderate(stage: str, payload: object) -> bool | str:  # or call your guard service
+    return "off topic" if "lottery" in str(payload) else True
+
+
+redact = PIIGuard(on=("result", "llm_response"), action="redact")  # emails, cards, keys
+no_secrets = PIIGuard(kinds=["secret", "card"], on="args")  # or action="approve"
+guards = [no_secrets, redact, CallableGuard(moderate, on=("args", "llm_request"))]
+executor = aa.Executor(registry, hooks=guards)
+print(executor.run_sync("get_weather", {"city": "Oslo"}))
+```
+
+### 17. Cache tool results → `cache_ttl=` / `cache_scope=` on the tool, `cache=` on the executor
 
 ```python
 # global: every caller shares one entry; public data only, never per-user data
@@ -287,7 +324,7 @@ executor = aa.Executor(registry, cache=aa.MemoryCache())
 # many processes: cache=agent_adapter.cache.RedisCache(url) (extra `redis`)
 ```
 
-### 16. Cache model replies → `executor.model(model, cache_ttl=)`
+### 18. Cache model replies → `executor.model(model, cache_ttl=)`
 
 ```python
 executor = aa.Executor(registry, cache=aa.MemoryCache())
@@ -296,7 +333,7 @@ ask = aa.LLMRequest(messages=(aa.Message(role="user", content="hi"),))
 first, again = await llm.generate(ask), await llm.generate(ask)  # again.cached
 ```
 
-### 17. Log and trace every call → `aa.LoggingHook` and an event sink
+### 19. Log and trace every call → `aa.LoggingHook` and an event sink
 
 ```python
 from agent_adapter.tracing import EventLog  # or OTelSink() (extra `otel`)
@@ -306,7 +343,7 @@ executor = aa.Executor(registry, hooks=[aa.LoggingHook()], sink=events)
 executor.run_sync("get_weather", {"city": "Oslo"})  # secret-named keys are redacted
 ```
 
-### 18. Bring your own model → `aa.CallableModel` (sync or async function)
+### 20. Bring your own model → `aa.CallableModel` (sync or async function)
 
 ```python
 def house_llm(request: aa.LLMRequest) -> dict:  # call your SDK or HTTP API here
@@ -316,7 +353,7 @@ def house_llm(request: aa.LLMRequest) -> dict:  # call your SDK or HTTP API here
 model = aa.CallableModel(house_llm, provider="house", model="house-13b")
 ```
 
-### 19. Use a hosted provider or a local OpenAI-compatible server → `OpenAIModel` / `AnthropicModel` / `GeminiModel`
+### 21. Use a hosted provider or a local OpenAI-compatible server → `OpenAIModel` / `AnthropicModel` / `GeminiModel`
 
 ```python
 from agent_adapter.models import AnthropicModel, OpenAIModel
@@ -327,14 +364,14 @@ ollama = {"base_url": "http://localhost:11434/v1", "api_key": "unused"}  # or vL
 llama = OpenAIModel("llama3.1", api="chat", strict_tools=False, client_kwargs=ollama)
 ```
 
-### 20. Fall back to a second model → `aa.FallbackModel`
+### 22. Fall back to a second model → `aa.FallbackModel`
 
 ```python
 backup = aa.CallableModel(lambda request: "Try again later.", model="backup")
 model = aa.FallbackModel([model, backup])  # on rate limit, outage or timeout
 ```
 
-### 21. Bring your own embedder → `CallableEmbedder`
+### 23. Bring your own embedder → `CallableEmbedder`
 
 ```python
 from agent_adapter.embeddings import CallableEmbedder
@@ -343,7 +380,7 @@ embedder = CallableEmbedder(lambda texts: [[1.0, 0.5] for _ in texts], model="mi
 vectors = (await embedder.embed(["hello", "world"])).vectors
 ```
 
-### 22. Price your own models → `aa.Prices.default().merged()` (or `aa.Prices.empty()`)
+### 24. Price your own models → `aa.Prices.default().merged()` (or `aa.Prices.empty()`)
 
 ```python
 mine = {
@@ -353,7 +390,7 @@ mine = {
 prices = aa.Prices.default().merged({"version": "mine", "models": mine})
 ```
 
-### 23. Compress a long context for one call → `CompressionPolicy`, `LLMRequest(compression=)`
+### 25. Compress a long context for one call → `CompressionPolicy`, `LLMRequest(compression=)`
 
 ```python
 from agent_adapter.context import CompressionPolicy, RemoveOldMessages
@@ -364,7 +401,7 @@ policy = CompressionPolicy(
 reply = await model.generate(aa.LLMRequest(messages=history, compression=policy))
 ```
 
-### 24. Compress messages in a LangGraph node → `langgraph_compressor`
+### 26. Compress messages in a LangGraph node → `langgraph_compressor`
 
 ```python
 from agent_adapter.integrations.langgraph import langgraph_compressor
@@ -373,7 +410,7 @@ compressor = langgraph_compressor(policy)  # `policy` as in the recipe above
 messages = await compressor(state["messages"])  # in your node, before the model
 ```
 
-### 25. Compress any framework's message list → `compress_for()` / `compress_for_sync()`
+### 27. Compress any framework's message list → `compress_for()` / `compress_for_sync()`
 
 ```python
 from agent_adapter.context import compress_for_sync
@@ -382,14 +419,14 @@ smaller, report = compress_for_sync(chat_dicts, policy, format="openai")
 print(report.tokens_before, report.tokens_after)  # `smaller` is still chat dicts
 ```
 
-### 26. Attach tools to any framework → `aa.attach()` (by name or by framework object)
+### 28. Attach tools to any framework → `aa.attach()` (by name or by framework object)
 
 ```python
 tools = aa.attach("openai", registry, executor=executor)  # Chat Completions tools
 # aa.attach(agent_or_graph, registry, executor=executor): LangGraph, Agents SDK...
 ```
 
-### 27. Import tools from an OpenAPI document (or an MCP server) → `import_openapi` (or `import_mcp`)
+### 29. Import tools from an OpenAPI document (or an MCP server) → `import_openapi` (or `import_mcp`)
 
 ```python
 from agent_adapter.integrations.openapi import import_openapi
@@ -400,7 +437,7 @@ import_openapi(registry, **api, operations=["getForecast"])  # reads: no approva
 import_openapi(registry, **api, operations=["cancelBooking"], confirm=True)
 ```
 
-### 28. Serve tools from FastAPI → `await executor.run()` in an async route
+### 30. Serve tools from FastAPI → `await executor.run()` in an async route
 
 ```python
 from fastapi import FastAPI
@@ -413,7 +450,7 @@ async def weather(city: str) -> str:
     return await executor.run("get_weather", {"city": city})
 ```
 
-### 29. Serve tools from Flask → `executor.run_sync()` in a view
+### 31. Serve tools from Flask → `executor.run_sync()` in a view
 
 ```python
 from flask import Flask
@@ -426,7 +463,7 @@ def weather(city: str) -> str:
     return executor.run_sync("get_weather", {"city": city}, timeout=30)
 ```
 
-### 30. Serve tools from Django → `await executor.run()` in an async view (`run_sync` in a sync one)
+### 32. Serve tools from Django → `await executor.run()` in an async view (`run_sync` in a sync one)
 
 ```python
 from django.http import JsonResponse
@@ -436,7 +473,7 @@ async def weather(request, city: str) -> JsonResponse:
     return JsonResponse({"text": await executor.run("get_weather", {"city": city})})
 ```
 
-### 31. Run tools in a Celery task → `executor.run_sync()` in the task
+### 33. Run tools in a Celery task → `executor.run_sync()` in the task
 
 ```python
 from celery import Celery
@@ -449,7 +486,7 @@ def weather(city: str) -> str:
     return executor.run_sync("get_weather", {"city": city}, timeout=30)
 ```
 
-### 32. Run tools in AWS Lambda (SQS, EventBridge, direct) → `tool_handler`
+### 34. Run tools in AWS Lambda (SQS, EventBridge, direct) → `tool_handler`
 
 ```python
 from agent_adapter.handlers import tool_handler
@@ -457,7 +494,7 @@ from agent_adapter.handlers import tool_handler
 handler = tool_handler(executor, tools={"get_weather"}, timeout=30)  # entry point
 ```
 
-### 33. Run tools from any queue (RabbitMQ, Kafka, Pub/Sub) → `handle_envelope`
+### 35. Run tools from any queue (RabbitMQ, Kafka, Pub/Sub) → `handle_envelope`
 
 ```python
 from agent_adapter.handlers import handle_envelope
@@ -466,7 +503,7 @@ body = {"tool": "get_weather", "arguments": {"city": "Oslo"}}  # the message bod
 reply = await handle_envelope(executor, body, tools={"get_weather"}, message_id="m1")
 ```
 
-### 34. Build a flow (steps, branches, fan-out, pauses) → `aa.Flow`, `aa.FlowRunner`, `Call` / `Route` / `Map` / `Join`
+### 36. Build a flow (steps, branches, fan-out, pauses) → `aa.Flow`, `aa.FlowRunner`, `Call` / `Route` / `Map` / `Join`
 
 ```python
 from pydantic import BaseModel
@@ -483,7 +520,7 @@ flow = aa.Flow("trip", state=Trip).node("look", look).end("look")
 result = await aa.FlowRunner(executor).run(flow, {"city": "Oslo"})
 ```
 
-### 35. Serve tools over MCP → `streamable_http_app`
+### 37. Serve tools over MCP → `streamable_http_app`
 
 ```python
 from agent_adapter.integrations.mcp import streamable_http_app
@@ -492,7 +529,7 @@ app = streamable_http_app(registry, executor=executor)  # ASGI app at /mcp
 # no auth= + token_verifier=: anonymous, so it serves loopback clients only
 ```
 
-### 36. Serve tools over HTTP for other languages → `create_app`
+### 38. Serve tools over HTTP for other languages → `create_app`
 
 ```python
 from agent_adapter.server import Principal, bearer_auth, create_app
@@ -501,7 +538,7 @@ auth = bearer_auth({"s3cret": Principal(id="web-app")})  # tokens from a vault
 app = create_app(registry, executor=executor, authenticate=auth)  # uvicorn mod:app
 ```
 
-### 37. Serve tools as an A2A agent → `a2a_app`
+### 39. Serve tools as an A2A agent → `a2a_app`
 
 ```python
 from agent_adapter.integrations.a2a import a2a_app, static_bearer
@@ -517,7 +554,7 @@ app = a2a_app(
 )
 ```
 
-### 38. Improve tool descriptions and prompts against eval cases → `CallableHost`, `optimise` (or the optimiser CLI)
+### 40. Improve tool descriptions and prompts against eval cases → `CallableHost`, `optimise` (or the optimiser CLI)
 
 ```python
 from agent_adapter.optimiser import CallableHost, OptimiserConfig, load_cases, optimise
@@ -528,7 +565,7 @@ result = await optimise(host, OptimiserConfig(), proposer=model, model=model)
 print(result.patch)  # a reviewable diff; nothing is applied
 ```
 
-### 39. See runs in a browser (timeline, flow graph, approvals) → `agent_adapter.viewer.record()`, then `agent-adapter ui`
+### 41. See runs in a browser (timeline, flow graph, approvals) → `agent_adapter.viewer.record()`, then `agent-adapter ui`
 
 ```python
 from agent_adapter.viewer import record
@@ -537,7 +574,7 @@ record(executor)  # every run goes to .agent_adapter/runs
 # then, in a terminal: agent-adapter ui
 ```
 
-### 40. Chat with any agent or model in a local page → `viewer.serve(...)` or `agent-adapter ui --agent`
+### 42. Chat with any agent or model in a local page → `viewer.serve(...)` or `agent-adapter ui --agent`
 
 ```python
 from agent_adapter.viewer import ChatMessage, ChatSession, serve
@@ -551,6 +588,21 @@ if __name__ == "__main__":
     serve(agent=chat)  # or serve(model=model, registry=registry)
 # CLI: agent-adapter ui --agent app:chat
 ```
+
+### More recipes: code in the full guide (`agent-adapter guide --full`)
+
+- Hand the conversation to another agent
+- Send spans to Langfuse, Phoenix or any OTLP backend
+- Wrap a vendor SDK (Bedrock, Azure OpenAI, Mistral, Groq, OpenRouter)
+- Use a known model's context window
+- Remember facts per user across chats (recall, forget, export, erase)
+- Let the model search your documents and cite sources (RAG)
+- Remember a chat user across chats (recall each turn, save facts or a summary)
+- Show reviewers similar past approvals; propose confirm rules a person accepts
+- Run a flow inside a flow, or cache a node
+- Evaluate an agent on eval cases (scores, JUnit for CI, regressions)
+
+More features (full recipes in llms-full.txt): durable runs, Temporal and DBOS, sandboxed code, team budgets, streaming deltas, viewer search, tags and OTLP import, framework templates and migrate, policy file, audit log, evals from production, cost advisor.
 
 ## Common errors → fixes
 
@@ -582,6 +634,10 @@ Every error subclasses `AdapterError` and carries a stable `kind`.
 | `FlowDefinitionError` | Fix each item in `.problems` |
 | `FlowCompileError` | Drop what `.target` does not support, or run the flow with `FlowRunner` |
 | `FlowLoopExceeded` | Fix the route that loops, or raise the node's loop limit |
+| `CheckpointNotFound` | Check the run id and that the runner uses the store the run was saved in |
+| `CheckpointConflict` | Leave the run to the worker that holds it; a run that ended needs no recovery (Durable runs) |
+| `CheckpointStoreCorrupt` | Check `checkpoint_key` is the one the run was saved with; else treat it as tampering and delete the run |
+| `RecoveryNeedsDecision` | Check each call in `.calls` at its system, then recover with `rerun_in_doubt=True`, or mark the tool `idempotent=True` |
 | `ConfigError` | Fix the setting the message names |
 | `IntegrationError` | Check the integration name and the framework version |
 | `AuthError` | Catch it to handle both subclasses below |
@@ -603,9 +659,14 @@ Symptoms and their fixes: <https://agent-adapter.veloceai.in/troubleshooting/>.
 ## CLI commands
 
 - `agent-adapter init fastapi my-service`: write a starter project from a tested template
-- `agent-adapter doctor`: check Python, extras, integrations and the pip index
+- `agent-adapter doctor`: check Python, extras, optional backends, integrations and the pip index
 - `agent-adapter guide --out docs/agent-adapter.md`: print the guide for AI coding agents (AGENTS.md)
 - `agent-adapter ui`: browse recorded runs, or chat with an agent, in a local web page
+- `agent-adapter eval app.chat:agent eval_cases.jsonl --min-score 0.9 --junit evals.xml`: run eval cases on an agent, grade them, and fail below a score
+- `agent-adapter migrate src/ --diff`: list framework tool definitions and suggest registry code (read-only)
+- `agent-adapter policy check policy.yaml --env prod`: validate a policy file and print the rules it sets
+- `agent-adapter audit verify .agent_adapter/audit`: verify a signed audit log, or export it as JSONL or CSV
+- `agent-adapter eval app:agent cases.jsonl --save`: also save the report; `agent-adapter ui` shows it under Evals (`--evals FOLDER`)
 - `agent-adapter guide --full`: the guide plus every public signature
 - `python -m agent_adapter guide --section recipes`: the same CLI without the script
 - `python -m agent_adapter.server --registry mypkg.tools:registry`: serve a registry over HTTP (tokens from `AGENT_ADAPTER_TOKENS`)

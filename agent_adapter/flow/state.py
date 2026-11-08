@@ -14,7 +14,11 @@ S = TypeVar("S", bound=BaseModel)
 
 @runtime_checkable
 class MergeRule(Protocol):
-    """Combines the updates one superstep makes to a field; `updates` are in deterministic order."""
+    """Combines the updates one superstep makes to a field; `updates` are in deterministic order.
+
+    A rule that adds a write onto the current value (like `append` or `sum`) should also set
+    `additive = True`; sub-flows then start the field empty and refuse to map it in and back.
+    """
 
     name: str
 
@@ -38,6 +42,7 @@ class _Replace:
 
 class _Append:
     name = "append"
+    additive = True
 
     def merge(self, current: Any, updates: Sequence[Any]) -> Any:
         merged = list(current or [])
@@ -48,6 +53,7 @@ class _Append:
 
 class _Sum:
     name = "sum"
+    additive = True
 
     def merge(self, current: Any, updates: Sequence[Any]) -> Any:
         total = current or 0
@@ -99,6 +105,11 @@ class Merge:
 
 
 keyed = Merge.keyed
+
+
+def is_additive(rule: MergeRule) -> bool:
+    """True for a rule that adds writes onto the current value (`additive = True`)."""
+    return getattr(rule, "additive", False) is True
 
 
 def merge_rules(model: type[BaseModel]) -> dict[str, MergeRule]:

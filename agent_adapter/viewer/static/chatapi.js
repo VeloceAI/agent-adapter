@@ -218,6 +218,8 @@
     replay: (turnId) => call("POST", "api/chat/turns/" + seg(turnId) + "/replay", {}),
     decide: (approvalId, approved, reason) => call("POST", "api/chat/approvals/" + seg(approvalId) + "/decide", { approved: approved, reason: reason || "" }),
     evalCase: (turnId, body) => call("POST", "api/chat/turns/" + seg(turnId) + "/eval-case", body),
+    memory: () => call("GET", "api/chat/memory"),
+    forget: (ids) => call("POST", "api/chat/memory/delete", { ids: ids }),
     upload: upload,
     uploadProblem: uploadProblem,
     fileBlob: fileBlob,

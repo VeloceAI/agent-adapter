@@ -11,7 +11,16 @@ from agent_adapter.viewer.lanes import END_TYPES, SPAN_FAMILIES, span_identity
 
 LIVE_S = 120.0  # a run without an end, written to this recently, is "running"
 _PENDING = frozenset({"tool.pending", "node.paused"})
-_FAILED = frozenset({"tool.failed", "llm.failed", "node.failed", "embedding.failed"})
+_FAILED = frozenset(
+    {
+        "tool.failed",
+        "llm.failed",
+        "node.failed",
+        "embedding.failed",
+        "retrieval.failed",
+        "sandbox.failed",
+    }
+)
 
 
 def valid_event(record: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -41,8 +50,11 @@ class Fold:
     providers: set[str] = field(default_factory=set)
     finished: list[bool] = field(default_factory=list)
     scoped: bool = False
+    recovered: bool = False  # a `run.recovered` event: the run went on after a crash
+    budget_exceeded: bool = False  # a `budget.exceeded` event: a call was refused for spend
     pending: dict[str, bool] = field(default_factory=dict)  # call -> waiting (last state)
     spans: dict[str, bool] = field(default_factory=dict)  # span -> still open (last state)
+    memory: int = 0  # memory.* events (recall, remember, forget, export)
 
     def add(self, record: Mapping[str, Any]) -> None:
         """Fold one parsed line in."""
@@ -69,12 +81,18 @@ class Fold:
             self.top_failures += 1
         if kind == "flow.started":
             self.flows.add(str(data.get("flow", "")))
-        if not self.framework:
+        if kind.startswith("memory."):
+            self.memory += 1  # its `backend` names a memory store, not the run's framework
+        elif not self.framework and not kind.startswith("retrieval."):  # a retriever backend
             self.framework = str(data.get("framework") or data.get("backend") or "")
         if kind == "llm.started" and data.get("provider"):
             self.providers.add(str(data["provider"]))
         if kind == "run.started":
             self.scoped = True
+        elif kind == "run.recovered":
+            self.recovered = True
+        elif kind == "budget.exceeded":
+            self.budget_exceeded = True
         elif kind == "run.finished":
             self.finished.append(bool(data.get("ok")))
         if kind in _PENDING:
@@ -114,7 +132,10 @@ def summarise(key: str, folds: list[Fold], mtime: float, pids: set[int]) -> dict
         "flows": sorted(set().union(*(f.flows for f in folds))),
         "events": sum(f.events for f in folds),
         "errors": sum(f.errors for f in folds),
+        "memory": sum(f.memory for f in folds),
         "processes": len(pids),
+        **({"recovered": True} if any(f.recovered for f in folds) else {}),
+        **({"budget_exceeded": True} if any(f.budget_exceeded for f in folds) else {}),
     }
 
 

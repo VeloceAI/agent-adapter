@@ -342,3 +342,11 @@ async def test_several_gates_in_one_superstep_need_a_store_backed_port():
         with pytest.raises(ToolUsageError, match="several gates in one superstep"):
             await run_compiled(app, answer, cfg)
     assert (await app.aget_state(cfg)).values["log"] == ["start"]  # nothing of it ran
+
+
+def test_compile_flow_refuses_a_subflow_node():
+    from tests.flow.subflow_helpers import child_flow, parent_flow
+
+    with pytest.raises(FlowCompileError, match="SubFlow") as caught:
+        compile_flow(parent_flow(child_flow()), executor=Executor(registry))
+    assert caught.value.target == "langgraph"

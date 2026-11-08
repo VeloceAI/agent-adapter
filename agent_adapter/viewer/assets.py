@@ -24,6 +24,7 @@ SCRIPTS = (
     "compare.js",
     "panels.js",
     "views.js",
+    "runsearch.js",
     "app.js",
 )
 STYLES = ("viewer.css", "graph.css", "tabs.css")
@@ -32,6 +33,7 @@ CHAT_SCRIPTS = (
     "chatapi.js",
     "markdown.js",
     "chatcards.js",
+    "chatmemory.js",
     "inspector.js",
     "chatextras.js",
     "chatsessions.js",
@@ -39,17 +41,28 @@ CHAT_SCRIPTS = (
     "chat.js",
 )
 CHAT_STYLES = ("chat.css",)
+# The Evals view and saving runs as cases: served live, left out of every export (server-backed).
+EVAL_SCRIPTS = ("evals.js", "evalscards.js", "evalsview.js", "runcases.js")
+EVAL_STYLES = ("evals.css",)
 # The docs' recorded chat demo: stands in for the chat API; only in `export_chat_demo_html`.
 DEMO_SCRIPTS = ("chatdemo.js",)
 # The browser-tab icon: a copy of docs/assets/favicon.svg (a test keeps the two identical).
 ICONS = ("favicon.svg",)
-# The chat page's tags with their line end (LF or CRLF), for removal from an export.
-_CHAT_TAGS = re.compile(
-    r'(?:<script src="static/(?:{})"></script>|<link rel="stylesheet" href="static/(?:{})">)'
-    r"[ \t]*(?:\r?\n)?".format(
-        "|".join(map(re.escape, CHAT_SCRIPTS)), "|".join(map(re.escape, CHAT_STYLES))
+_LIVE = (*SCRIPTS, *STYLES, *CHAT_SCRIPTS, *CHAT_STYLES, *EVAL_SCRIPTS, *EVAL_STYLES, *ICONS)
+
+
+def _tags(scripts: tuple[str, ...], styles: tuple[str, ...]) -> re.Pattern[str]:
+    """The page's tags for these files with their line end (LF or CRLF), to drop from an export."""
+    return re.compile(
+        r'(?:<script src="static/(?:{})"></script>|<link rel="stylesheet" href="static/(?:{})">)'
+        r"[ \t]*(?:\r?\n)?".format(
+            "|".join(map(re.escape, scripts)), "|".join(map(re.escape, styles))
+        )
     )
-)
+
+
+_CHAT_TAGS = _tags(CHAT_SCRIPTS, CHAT_STYLES)
+_EVAL_TAGS = _tags(EVAL_SCRIPTS, EVAL_STYLES)
 _TYPES = {
     ".css": "text/css; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
@@ -76,7 +89,7 @@ def _read(name: str) -> str:
 
 def static_file(name: str) -> tuple[bytes, str] | None:
     """A static file's bytes and content type; None for anything not shipped with the page."""
-    if name not in (*SCRIPTS, *STYLES, *CHAT_SCRIPTS, *CHAT_STYLES, *ICONS):
+    if name not in _LIVE:
         return None
     return _read(name).encode("utf-8"), _TYPES[Path(name).suffix]
 
@@ -92,7 +105,7 @@ def page(csrf: str, *, approvals: bool, chat: str = "") -> str:
 def export_html(data: dict[str, Any]) -> str:
     """One self-contained HTML file: styles, scripts and run data inline, no external URL."""
     html = _inline(page("", approvals=False), data, SCRIPTS, STYLES)
-    return _CHAT_TAGS.sub("", html)
+    return _EVAL_TAGS.sub("", _CHAT_TAGS.sub("", html))
 
 
 def export_chat_demo_html(data: dict[str, Any]) -> str:
@@ -107,7 +120,8 @@ def export_chat_demo_html(data: dict[str, Any]) -> str:
     api = '<script src="static/chatapi.js"></script>'
     demo = "".join(f'\n<script src="static/{name}"></script>' for name in DEMO_SCRIPTS)
     html = html.replace(api, api + demo)
-    return _inline(html, data, (*SCRIPTS, *CHAT_SCRIPTS, *DEMO_SCRIPTS), (*STYLES, *CHAT_STYLES))
+    html = _inline(html, data, (*SCRIPTS, *CHAT_SCRIPTS, *DEMO_SCRIPTS), (*STYLES, *CHAT_STYLES))
+    return _EVAL_TAGS.sub("", html)
 
 
 def _inline(

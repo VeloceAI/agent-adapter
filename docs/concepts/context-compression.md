@@ -43,7 +43,7 @@ All imports below come from `agent_adapter.context`.
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `model_max_tokens` | the model's `context_window` cap | the window the percents apply to |
+| `model_max_tokens` | the caps' `context_window` less `max_output_tokens` | the window the percents apply to |
 | `start_when_full_percent` / `shrink_to_percent` | 90 / 60 | compress at 90% full, down to 60% |
 | `start_when_tokens_over` / `shrink_to_tokens` | — | the same in tokens (not mixed with percents) |
 | `steps` | see below | run in order; each stops once under the target |
@@ -57,10 +57,10 @@ Without `steps`: `ShrinkToolResults()`, `RemoveOldMessages(keep_first=1, keep_la
 then `Summarize(model=summary_model)` if given. A skipped step is in
 `CompressionReport.steps_failed`; a `ConfigError` (bad setting or step output) always raises.
 
-**The context window.** A percent policy needs it: `model_max_tokens`, else
-`ModelCaps.context_window` from the price table. The shipped price table has no
-`context_window` caps yet, so for built-in models set `model_max_tokens` (or use token
-counts) today. Without a window you get a `ConfigError`: before the first call for
+**The context window.** A percent policy needs it: `model_max_tokens`, else the price
+table's `context_window` less `max_output_tokens` (room for the reply). The packaged rows
+have both, so their models need no setting; for others set `model_max_tokens` or use token
+counts. Without a window you get a `ConfigError`: before the first call for
 `CompressingModel` and `run_tool_loop`, at the call for `LLMRequest.compression`.
 
 **Token counts.** The estimate also counts provider items a port replays (thinking,

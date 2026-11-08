@@ -8,6 +8,7 @@ import { DEFAULT_MAX_EVENT_SIZE, readEventStream, SseParser } from "./sse.ts";
 import type { SseMessage } from "./sse.ts";
 import type {
   Approval,
+  Budget,
   ClientOptions,
   DecideInput,
   DecideOptions,
@@ -263,6 +264,25 @@ export class ToolClient implements ToolInvoker {
       signal: options.signal,
     });
     return expectRecord(res, "GET /runs/{run_id}/cost");
+  }
+
+  /**
+   * `GET /budget` (or `/budget/{scope}`): the caller's own user and team budgets. `key` reads
+   * another user's or team's budget and needs the approver scope (403 otherwise).
+   */
+  async budget(
+    options: { scope?: Budget["scope"] | undefined; key?: string | undefined; signal?: AbortSignal | undefined } = {},
+  ): Promise<Budget[]> {
+    const path = options.scope === undefined ? "/budget" : `/budget/${encodeURIComponent(options.scope)}`;
+    const res = await this.#http.request<unknown>({
+      method: "GET",
+      path,
+      query: { key: options.key },
+      signal: options.signal,
+    });
+    const body = expectRecord(res, "GET /budget");
+    if (!Array.isArray(body["budgets"])) throw new ToolProtocolError("GET /budget: no budgets list", res.status);
+    return body["budgets"] as Budget[];
   }
 
   /** Framework-neutral tool definitions whose `execute` invokes through this client. */

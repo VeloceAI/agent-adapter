@@ -26,3 +26,14 @@ def test_first_flow_routes_each_ticket(capsys):
         "{'classify': 1, 'policy': 1}",
         "other | A person will contact you today.",
     ]
+
+
+def test_flow_subflows_pauses_inside_the_child_and_caches_the_quote(capsys):
+    lines = _run("flow_subflows.py", capsys)
+    assert lines == [
+        "paused node:packing.label {'boxes': 2}",
+        "done ['quoted mug', 'shipped 2 box(es) of mug for 16']",
+        "paused node:packing.label {'boxes': 2}",
+        "done ['quoted mug', 'shipped 2 box(es) of mug for 16']",
+        "quote ran 1 time(s)",
+    ]

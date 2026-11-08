@@ -24,7 +24,7 @@ hide:
 
 ## What it is
 
-Agent Adapter is an open-source (Apache-2.0), framework-independent Python SDK (version **1.0.0**). It
+Agent Adapter is an open-source (Apache-2.0), framework-independent Python SDK (version **1.1.0**). It
 turns your functions into LLM tools, checks their schemas once at startup, and runs every
 call through one executor that applies approval, budgets, guards, caching and cost
 tracking. The core depends only on pydantic; every framework is an optional extra.

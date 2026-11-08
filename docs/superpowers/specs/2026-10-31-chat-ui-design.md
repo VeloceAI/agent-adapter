@@ -49,7 +49,8 @@ The same from Python, so no import strings are needed:
 
 ```python
 from agent_adapter.viewer import serve
-serve(agent=chat)                         # or serve(model=model, registry=registry)
+
+serve(agent=chat)  # or serve(model=model, registry=registry)
 ```
 
 `serve(...)` blocks, prints the link, and accepts the same options as the CLI (`registry=`

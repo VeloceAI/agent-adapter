@@ -1,12 +1,12 @@
 # Next steps (maintainers)
 
-What is still open after 1.0.0, ordered by priority. This file is for maintainers; it is
+What is still open after 1.1.0, ordered by priority. This file is for maintainers; it is
 not part of the docs site or the sdist. The public plan is the Roadmap page
 (`docs/roadmap.md`).
 
 ```mermaid
 flowchart LR
-  T["Trusted publisher<br/>on PyPI"] --> P["Tag v1.0.0<br/>→ PyPI"]
+  T["Trusted publisher<br/>on PyPI"] --> P["Tag v1.1.0<br/>→ PyPI"]
   D["Host the docs<br/>agent-adapter.veloceai.in"] --> A["Adopt in the<br/>first production pipeline"]
   P --> A
 ```
@@ -16,7 +16,7 @@ flowchart LR
 | Task | Why | Done when |
 |---|---|---|
 | Add the PyPI trusted publisher (owner `VeloceAI`, repo `agent-adapter`, workflow `release.yml`, no environment) | `release.yml` uploads with OIDC; no token is stored | a pending publisher exists for `agent-adapter` |
-| Push tag `v1.0.0` | runs `release.yml`: build, `twine check --strict`, upload | `pip install agent-adapter==1.0.0` works in a fresh venv |
+| Push tag `v1.1.0` | runs `release.yml`: build, `twine check --strict`, upload | `pip install agent-adapter==1.1.0` works in a fresh venv |
 | Host the docs at `https://agent-adapter.veloceai.in/` | `site_url`, the PyPI project links and the agent guide point there | `mkdocs build --strict` output is served on that host |
 | Absolute logo and screenshot URLs in `README.md` | PyPI shows relative images as broken; GitHub is fine | the images load on the PyPI page |
 

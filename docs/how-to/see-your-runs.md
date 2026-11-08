@@ -64,6 +64,7 @@ agent-adapter ui path/to/runs --port 9000
 agent-adapter ui runs --approvals approvals.db --reviewer ana
 agent-adapter ui runs --export report.html        # one offline file, then exit
 agent-adapter ui runs --export one.html --run KEY # one run only
+agent-adapter ui runs --import traces.json        # add OTLP JSON traces as runs, then serve
 ```
 
 It prints `http://127.0.0.1:PORT/#token=...`: open that address. New runs from any process
@@ -74,7 +75,7 @@ every flow and node, then the latest 5,000 calls.
 
 | Part | Shows |
 |---|---|
-| Runs | time, status (`ok`, `failed`, `paused`, `running`, `unfinished`), duration, cost, framework or backend; a call made outside `run_scope` is a run that ends with its last call |
+| Runs | time, status (`ok`, `failed`, `paused`, `running`, `unfinished`), duration, cost, framework or backend, tags; a search box and a tag filter ([Search and tag runs](search-your-runs.md)); a call made outside `run_scope` is a run that ends with its last call |
 | Flow graph | the `Flow` a `FlowRunner` ran, with live status per node (`stopped` ■ for one cancelled when its flow or run ended): zoom, pan, minimap, search, replay, node panel ([Navigate the graph](navigate-the-graph.md)) |
 | Timeline | one lane per concurrent call; retries, timeouts, cache hits, cost, `context.compressed` tokens before → after, error kinds |
 | Events, State, Compare | every event, filterable, with its raw JSON; each node's changed fields (values when traced); two runs side by side |
@@ -112,7 +113,7 @@ server parked (it re-checks the caller itself).
 | binds `127.0.0.1` only, exclusively; any other `--host` is refused | run data never leaves the machine; no second program shares the port |
 | an access token, new on every start, after `#` in the printed address; the page moves it to this tab's `sessionStorage`, removes it from the address bar, and sends it as `X-AA-Token` on every data request; no cookie | other users and programs on the machine get no data without the address; the token never reaches a server log, a Referer or another port |
 | `Host` header must be `127.0.0.1:PORT` or `localhost:PORT` | blocks DNS rebinding |
-| decide: POST only, JSON body, `Origin` of this page, a CSRF token new on every start | another site cannot decide for you |
+| decide and tag: POST only, JSON body, `Origin` of this page, a CSRF token new on every start | another site cannot decide or tag for you |
 | a decided record is refused (409) | each decision is made once |
 | strict `Content-Security-Policy`; data shown as text, never as HTML | recorded data cannot run script |
 | `--export` file: data inline, no external URL, CSP `default-src 'none'` | safe to open offline |

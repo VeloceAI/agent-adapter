@@ -164,6 +164,15 @@ class ToolCallDelta(BaseModel):
     arguments_delta: str = ""
 
 
+class PartialOutput(BaseModel):
+    """The structured output parsed so far (streams with `output_schema` only); not validated."""
+
+    model_config = _FROZEN
+
+    type: Literal["partial_output"] = "partial_output"
+    value: Any  # a JSON value: open strings keep their prefix, unfinished members are left out
+
+
 class StreamDone(BaseModel):
     """The last stream item: the assembled response."""
 
@@ -173,4 +182,4 @@ class StreamDone(BaseModel):
     response: LLMResponse
 
 
-StreamEvent = TextDelta | ToolCallDelta | StreamDone
+StreamEvent = TextDelta | ToolCallDelta | PartialOutput | StreamDone

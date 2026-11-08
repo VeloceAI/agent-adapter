@@ -12,7 +12,9 @@ from typing import TextIO
 from agent_adapter.core.errors import ConfigError
 from agent_adapter.core.ports import LLMPort
 from agent_adapter.core.registry import Registry
+from agent_adapter.evals.store import DEFAULT_EVALS_FOLDER
 from agent_adapter.exec.executor import Executor
+from agent_adapter.memory import GuardedMemory
 from agent_adapter.viewer._files import DEFAULT_FOLDER
 from agent_adapter.viewer.chat.contract import ChatAgent
 from agent_adapter.viewer.chat.setup import DEFAULT_CHAT_DIR, build_host
@@ -46,6 +48,12 @@ def make_chat_server(
     approvals_reviewer: str = "",
     agent_name: str = "",
     stream: bool = True,
+    evals: str | os.PathLike[str] = DEFAULT_EVALS_FOLDER,
+    user_id: str = "",
+    memory: GuardedMemory | None = None,
+    memory_save: str = "none",
+    memory_every: int = 1,
+    recall_k: int = 5,
 ) -> ViewerServer:
     """A bound viewer server with chat on; logs the start-up WARNING chat mode needs.
 
@@ -68,6 +76,11 @@ def make_chat_server(
         chat_dir=chat_dir,
         agent_name=agent_name,
         stream=stream,
+        user_id=user_id,
+        memory=memory,
+        memory_save=memory_save,
+        memory_every=memory_every,
+        recall_k=recall_k,
     )
     try:
         server = make_server(
@@ -77,6 +90,7 @@ def make_chat_server(
             approvals=Path(approvals) if approvals is not None else None,
             reviewer=approvals_reviewer,
             chat=chat,
+            evals=Path(evals),
         )
     except BaseException:
         chat.close()
@@ -99,6 +113,12 @@ def run_server(server: ViewerServer, out: TextIO, *, open_browser: bool = False)
             f"  chat is on ({server.chat.options.agent_name}): it runs your agent and tools here; "
             f"anyone with the link decides approvals as {server.chat.options.reviewer!r}\n"
         )
+        memory = server.chat.memory
+        if memory is not None:
+            out.write(
+                f"  memory is on for user {memory.user_id!r} ({memory.memory.backend}, "
+                f"save: {memory.save}); anyone with the link can read and delete it\n"
+            )
     out.flush()
     if open_browser:
         open_in_browser(server)
@@ -132,13 +152,22 @@ def serve(
     reviewer: str = "local",
     chat_dir: str | os.PathLike[str] = DEFAULT_CHAT_DIR,
     stream: bool = True,
+    evals: str | os.PathLike[str] = DEFAULT_EVALS_FOLDER,
+    user_id: str = "",
+    memory: GuardedMemory | None = None,
+    memory_save: str = "none",
+    memory_every: int = 1,
+    recall_k: int = 5,
     out: TextIO | None = None,
 ) -> None:
     """Chat with `agent` (or the built-in loop over `model` and `registry`) in the viewer.
 
     Blocks until Ctrl+C. Turns are recorded into `folder`, so the Runs view shows them.
     `open_browser` opens a one-use launch link (valid 60 s); `stream=False`
-    makes the built-in loop call `generate` (so an LLM response cache applies).
+    makes the built-in loop call `generate` (so an LLM response cache applies). The Evals
+    view lists the reports saved in `evals`. `user_id` owns the chats; with `memory`, turns
+    recall that user's records across chats and `memory_save` ("summary", "facts" or the
+    default "none") saves new ones every `memory_every` turns.
 
     Raises:
         ConfigError: neither or both of `agent` and `model`, or a bad option.
@@ -160,5 +189,11 @@ def serve(
         reviewer=reviewer,
         chat_dir=chat_dir,
         stream=stream,
+        evals=evals,
+        user_id=user_id,
+        memory=memory,
+        memory_save=memory_save,
+        memory_every=memory_every,
+        recall_k=recall_k,
     )
     run_server(server, out or sys.stdout, open_browser=open_browser)

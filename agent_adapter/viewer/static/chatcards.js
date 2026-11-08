@@ -3,7 +3,7 @@
 
 (function () {
   const AA = (window.AA = window.AA || {});
-  const ICONS = { running: "▶", ok: "✓", done: "✓", failed: "✕", pending: "⏸", approved: "✓", denied: "✕", "timed-out": "⏱", stopped: "■" };
+  const ICONS = { streaming: "…", running: "▶", ok: "✓", done: "✓", failed: "✕", pending: "⏸", approved: "✓", denied: "✕", "timed-out": "⏱", stopped: "■" };
   const LABELS = { done: "done", failed: "failed", stopped: "stopped", "timed-out": "timed out", running: "running", lost: "connection lost" };
 
   function usageOf(turn) {
@@ -46,14 +46,20 @@
     } else if (ev.type === "tool") {
       if (!model.tools[ev.call_id]) model.segments.push({ kind: "tool", id: ev.call_id });
       model.tools[ev.call_id] = ev;
+    } else if (ev.type === "tool_draft") {
+      return draft(model, ev);
     } else if (ev.type === "approval") {
       if (!model.approvals[ev.approval_id]) model.segments.push({ kind: "approval", id: ev.approval_id });
       model.approvals[ev.approval_id] = ev;
     } else if (ev.type === "state") {
       model.state = ev.state;
+    } else if (ev.type === "memory") {
+      if (Array.isArray(ev.recalled)) model.memories = ev.recalled;
+      if (typeof ev.saved === "number") model.memorySaved = { saved: ev.saved, error: ev.error || "" };
     } else if (ev.type === "usage") {
       model.usage = { input_tokens: ev.input_tokens || 0, output_tokens: ev.output_tokens || 0, cost_usd: ev.cost_usd || 0 };
     } else if (ev.type === "done" || ev.type === "error") {
+      dropDrafts(model);
       model.status = ev.status;
       if (ev.turn) {
         model.turn = ev.turn;
@@ -62,6 +68,33 @@
       model.error = ev.type === "error" ? { kind: ev.kind || "", message: ev.message || "" } : null;
     } else return false;
     return true;
+  }
+
+  // A tool call still streaming its arguments: a card keyed by stream index until the call
+  // runs (the card becomes that call's) or the turn ends (the card goes).
+  const DRAFT = "draft:";
+
+  function draft(model, ev) {
+    const id = DRAFT + ev.index;
+    const seg = model.segments.find((s) => s.kind === "tool" && s.id === id);
+    if (ev.closed) {
+      if (!seg) return false;
+      const old = model.tools[id];
+      delete model.tools[id];
+      if (ev.call_id && !model.tools[ev.call_id]) {
+        seg.id = ev.call_id;
+        model.tools[ev.call_id] = Object.assign({}, old, { call_id: ev.call_id, status: "running" });
+      } else model.segments.splice(model.segments.indexOf(seg), 1);
+      return true;
+    }
+    if (!seg) model.segments.push({ kind: "tool", id: id });
+    model.tools[id] = { call_id: id, name: String(ev.name || ""), status: "streaming", ms: null, arguments: ev.arguments ? String(ev.arguments) : undefined };
+    return true;
+  }
+
+  function dropDrafts(model) {
+    model.segments = model.segments.filter((s) => !(s.kind === "tool" && String(s.id).indexOf(DRAFT) === 0));
+    Object.keys(model.tools).filter((id) => id.indexOf(DRAFT) === 0).forEach((id) => delete model.tools[id]);
   }
 
   // The answer text as the user saw it (all text segments).
@@ -105,13 +138,13 @@
     parts[0].textContent = ICONS[status] || "•";
     parts[1].textContent = tool.name || "tool";
     parts[2].className = "status " + status;
-    parts[2].textContent = status === "pending" ? "waiting for approval" : status;
+    parts[2].textContent = status === "pending" ? "waiting for approval" : status === "streaming" ? "draft: not run yet" : status;
     parts[3].textContent = [tool.ms !== null && tool.ms !== undefined ? AA.fmt.ms(tool.ms) : "", tool.cached ? "cached" : ""].filter(Boolean).join(" · ");
     const body = AA.clear(card.lastChild);
     if (tool.arguments !== undefined) body.appendChild(AA.el("div", { class: "tc-part" }, [AA.el("span", { class: "muted", text: "arguments" }), AA.el("pre", { text: pretty(tool.arguments) })]));
     if (tool.output !== undefined) body.appendChild(AA.el("div", { class: "tc-part" }, [AA.el("span", { class: "muted", text: "output" }), AA.el("pre", { text: pretty(tool.output) })]));
     if (tool.error_kind) body.appendChild(AA.el("p", { class: "notice bad", text: "error: " + tool.error_kind }));
-    if (!body.firstChild) body.appendChild(AA.el("p", { class: "muted", text: "no arguments recorded yet" }));
+    if (!body.firstChild) body.appendChild(AA.el("p", { class: "muted", text: status === "streaming" ? "arguments arriving..." : "no arguments recorded yet" }));
   }
 
   // `onDecide(approval, approved, reason)` returns a Promise of the decided approval. One
@@ -148,6 +181,7 @@
       actions,
       AA.el("p", { class: "ac-result" }),
       notice,
+      AA.el("div", { class: "ac-memory" }),
     ]);
     paintApproval(card, approval);
     return card;
@@ -172,6 +206,9 @@
     const text = { approved: "Approved" + who + why, denied: "Denied" + who + why, "timed-out": "Timed out: the call was denied", stopped: "The turn stopped: the call was denied" }[status];
     result.textContent = text || status;
     result.className = "ac-result " + (status === "approved" ? "good" : "bad");
+    const memory = AA.clear(card.childNodes[5]);
+    const seen = AA.approvalContext ? AA.approvalContext(approval.context) : null;
+    if (seen) memory.appendChild(seen);
   }
 
   // The footer, built once and updated in place (no restarted animation, no repeated alert).

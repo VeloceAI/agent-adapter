@@ -124,9 +124,8 @@ def _settle(
         ]
         USER_NODE_MEMO.put(key, _Kept(data, tuple(asked)))
         logger.debug("one_use node %s paused with %d finished calls", key[1], len(finished))
-    elif not rerun_follows(exc):
-        if kept is not None:
-            USER_NODE_MEMO.drop_if(key, kept)
+    elif not rerun_follows(exc) and kept is not None:
+        USER_NODE_MEMO.drop_if(key, kept)
     # an invalid resume value: the re-run starts from what this execution loaded
 
 

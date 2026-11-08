@@ -111,7 +111,7 @@ def test_config_round_trip_and_schema():
     assert hook.config() == {"max_usd": 2.0, "on_exceed": "warn", "scope": "thread"}
     schema = BudgetHook.config_schema()
     assert schema["required"] == ["max_usd"] and schema["additionalProperties"] is False
-    assert set(schema["properties"]) == {"max_usd", "on_exceed", "scope"}
+    assert set(schema["properties"]) == {"max_usd", "on_exceed", "scope", "per"}
     changed = hook.with_config({"max_usd": 5})
     assert isinstance(changed, Hook) and changed is not hook
     assert changed.config() == {"max_usd": 5, "on_exceed": "warn", "scope": "thread"}

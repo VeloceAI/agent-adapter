@@ -56,6 +56,7 @@ Targets are `module.path:attribute`, imported from the current folder. Options:
 (default `.agent_adapter/chats`). Without `--agent` or `--model`, the Chat tab says how to
 add one. `serve(...)` takes the same options (`registry=` is `--tools`; also `folder=`, `port=8780`,
 `open_browser=True`, `stream=True`), prints the link and blocks until Ctrl+C.
+To recall what a user said in earlier chats, see [Remember users across chats](chat-memory.md).
 
 ## The agent contract
 
@@ -142,5 +143,5 @@ of [See your runs](see-your-runs.md#security) apply to every request.
 | File | Does |
 |---|---|
 | `examples/chat_minimal.py`, `chat_builtin.py`, `chat_any_agent.py`, `chat_flows.py`, `chat_wrappers.py` | the smallest agent; a scripted model with a tool to approve (`--check` runs one turn offline); a plain agent running a flow; the demo's help desk, one flow per pattern; framework wrappers || `agent_adapter/viewer/serving.py`, `launch.py` | `serve(...)`; one-use launch links |
-| `agent_adapter/viewer/chat/` | contract, built-in agent, turn host, sessions, files, approvals, routes |
+| `agent_adapter/viewer/chat/` | contract, built-in agent, turn host, sessions, files, approvals, memory, routes |
 | `agent_adapter/viewer/static/chat*.js`, `markdown.js`, `inspector.js` | the page: conversation, stream reader, safe Markdown, inspector |

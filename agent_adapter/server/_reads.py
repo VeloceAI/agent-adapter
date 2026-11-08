@@ -6,6 +6,7 @@ import logging
 import time
 from collections.abc import Callable
 
+from agent_adapter.approval.memory import approval_context
 from agent_adapter.approval.store import STATUSES, ApprovalRecord
 from agent_adapter.cost.summary import summarise
 from agent_adapter.server import _sse
@@ -49,8 +50,13 @@ async def list_approvals(
 
 
 async def get_approval(state: State, principal: Principal, approval_id: str) -> ServiceResponse:
+    """One approval; an approver also gets `context`: similar past decisions, advice only."""
     record: ApprovalRecord = await visible_record(state, principal, approval_id)
-    return json_response(200, approval_payload(record))
+    payload = approval_payload(record)
+    if APPROVER_SCOPE in principal.scopes:
+        history = await state.store.list(limit=SCAN_LIMIT)
+        payload["context"] = approval_context(record.request, history).view()
+    return json_response(200, payload)
 
 
 async def run_events(

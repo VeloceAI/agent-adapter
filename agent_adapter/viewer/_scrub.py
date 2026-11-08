@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Mapping
 from typing import Any
 
+from agent_adapter.core.errors import log_failure
 from agent_adapter.core.registry import Registry
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.core.types import to_jsonable
+from agent_adapter.exec._settings import ToolPolicy
 from agent_adapter.hooks.builtin.logging import is_secret_name, redact_secrets
 from agent_adapter.tracing.sinks import CONTENT_KEYS
 
@@ -15,7 +18,10 @@ MAX_TEXT = 2_000  # characters kept of one string value
 MAX_ITEMS = 200  # items kept of one list or mapping
 MAX_DEPTH = 12
 _VALUE_KEYS = ("default", "examples", "example", "const", "enum")
-STATE_KEYS = frozenset({"updates"})  # node.finished state values (FlowRunner(trace_state=))
+STATE_KEYS = frozenset({"updates"})
+MAX_POLICY_LINES = 40
+
+logger = logging.getLogger(__name__)  # node.finished state values (FlowRunner(trace_state=))
 
 
 def scrub_data(
@@ -55,9 +61,22 @@ def _clip(value: Any, depth: int) -> Any:
     return value
 
 
-def catalogue(registry: Registry) -> list[dict[str, Any]]:
-    """Each tool's name, schema and run settings; example values of secret fields dropped."""
-    return [_tool(spec) for spec in registry]
+def catalogue(registry: Registry, policy: ToolPolicy | None = None) -> list[dict[str, Any]]:
+    """Each tool's name, schema and run settings (under `policy`, with its rules listed)."""
+    return [_with_policy(spec, policy) for spec in registry]
+
+
+def _with_policy(spec: ToolSpec, policy: ToolPolicy | None) -> dict[str, Any]:
+    if policy is None:
+        return _tool(spec)
+    try:
+        shown = _tool(policy.effective(spec))
+        lines = policy.describe(spec)
+    except Exception as exc:  # the catalogue must never stop a run from being recorded
+        log_failure(logger, logging.WARNING, exc, "policy lines for tool %s not written", spec.name)
+        return _tool(spec)
+    shown["policy"] = [str(line)[:MAX_TEXT] for line in lines[:MAX_POLICY_LINES]]
+    return shown
 
 
 def _tool(spec: ToolSpec) -> dict[str, Any]:

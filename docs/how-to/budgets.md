@@ -101,7 +101,7 @@ max_calls reached after 9 geocodes
 |---|---|
 | No ledger, no budget | `BudgetHook` without a ledger does nothing and warns once |
 | Cache hits are free | a response- or tool-cache hit is recorded at $0 ([Caching](caching.md)) |
-| Several processes | the in-memory `Ledger` counts one process; for a shared cap, sum a `CallbackSink` in your database and check it in a custom hook ([Cap spend per user](../cookbook/spend-per-user.md)) |
+| Several processes, users, teams, days | the in-memory `Ledger` counts one process; for caps per user or team, per day or month, shared by every worker, see [Team budgets](team-budgets.md) |
 | Reports | `ledger.summary(run_id)`: totals by stage and kind, cache hit rates, parallelism |
 
 ## Files

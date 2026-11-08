@@ -2,7 +2,7 @@ import agent_adapter
 
 
 def test_package_exposes_version():
-    assert agent_adapter.__version__ == "1.0.0"
+    assert agent_adapter.__version__ == "1.1.0"
 
 
 def test_all_extra_never_pulls_in_litellm():
@@ -38,7 +38,7 @@ def test_built_wheel_and_sdist_ship_both_agent_guides(tmp_path):
     assert concise == (root / "AGENTS.md").read_text(encoding="utf-8")
     assert full == (root / "docs" / "llms-full.txt").read_text(encoding="utf-8")
     for name in ("AGENTS.md", "llms-full.txt"):
-        assert f"agent_adapter-1.0.0/agent_adapter/_guide/{name}" in names
+        assert f"agent_adapter-1.1.0/agent_adapter/_guide/{name}" in names
 
 
 def test_built_wheel_and_sdist_ship_the_viewer_page(tmp_path):
@@ -59,4 +59,4 @@ def test_built_wheel_and_sdist_ship_the_viewer_page(tmp_path):
         in_sdist = set(source.getnames())
     for name in static:
         assert f"agent_adapter/viewer/static/{name}" in in_wheel
-        assert f"agent_adapter-1.0.0/agent_adapter/viewer/static/{name}" in in_sdist
+        assert f"agent_adapter-1.1.0/agent_adapter/viewer/static/{name}" in in_sdist

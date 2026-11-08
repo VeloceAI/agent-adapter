@@ -35,7 +35,8 @@ def compile_flow(
 
     Raises:
         FlowDefinitionError: the flow is invalid.
-        FlowCompileError: `executor` is not an `Executor`, or `name` is not an identifier.
+        FlowCompileError: `executor` is not an `Executor`, `name` is not an identifier, or a
+            node is a `SubFlow` (run those flows with `FlowRunner`).
         ToolUsageError: `max_steps` is not an int >= 1.
     """
     require_adk()
@@ -43,6 +44,12 @@ def compile_flow(
     runner = runner_for(executor)
     workflow_name = graph.name if name is None else name
     problems = _problems(runner, workflow_name)
+    problems.extend(
+        f"node {name!r} is a SubFlow, which the ADK compiler does not support yet; "
+        "run this flow with FlowRunner"
+        for name, spec in graph.nodes.items()
+        if spec.kind == "subflow"
+    )
     if problems or not isinstance(runner, Executor):
         raise FlowCompileError(TARGET, problems, flow=graph.name)
     if not isinstance(max_steps, int) or isinstance(max_steps, bool) or max_steps < 1:

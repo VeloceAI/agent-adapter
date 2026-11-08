@@ -17,6 +17,8 @@ from agent_adapter.viewer.assets import (
     CHAT_SCRIPTS,
     CHAT_STYLES,
     DEMO_SCRIPTS,
+    EVAL_SCRIPTS,
+    EVAL_STYLES,
     ICONS,
     SCRIPTS,
     STATIC,
@@ -97,7 +99,17 @@ def test_static_file_lookup_serves_only_shipped_names() -> None:
     assert static_file("app.js") is not None
     for name in ("index.html", "../server.py", "missing.js", ""):
         assert static_file(name) is None
-    shipped = {*SCRIPTS, *STYLES, *CHAT_SCRIPTS, *CHAT_STYLES, *DEMO_SCRIPTS, *ICONS, "index.html"}
+    shipped = {
+        *SCRIPTS,
+        *STYLES,
+        *CHAT_SCRIPTS,
+        *CHAT_STYLES,
+        *EVAL_SCRIPTS,
+        *EVAL_STYLES,
+        *DEMO_SCRIPTS,
+        *ICONS,
+        "index.html",
+    }
     assert {p.name for p in STATIC.iterdir()} == shipped
     assert all(static_file(name) is not None for name in (*CHAT_SCRIPTS, *CHAT_STYLES))
 
@@ -143,6 +155,6 @@ def test_chat_tags_leave_an_export_whatever_the_line_ends(monkeypatch: pytest.Mo
         assets, "_read", lambda name: crlf if name == "index.html" else assets_read(name)
     )
     html = assets.export_html({"runs": [], "details": {}})
-    assert "static/chat" not in html
+    assert "static/chat" not in html and "static/evals" not in html
     assert "AA.chatApi" not in html and ".chat-shell" not in html
     assert "AA.renderTimeline" in html, "the Runs view is still inlined"

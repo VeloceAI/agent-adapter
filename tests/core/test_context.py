@@ -19,6 +19,7 @@ def test_first_four_fields_stay_positional():
         "cache",
         "sink",
         "approval",
+        "user_id",
     ]
     ctx = ToolContext("r", "c", {"a": 1}, {"x": 2})
     assert (ctx.run_id, ctx.call_id, ctx.state, ctx.extras) == ("r", "c", {"a": 1}, {"x": 2})
@@ -76,3 +77,9 @@ def test_child_accepts_changes_and_explicit_approval():
     assert child.run_id == "r2" and child.approval is decision
     extras = {"only": True}
     assert ToolContext(extras={"a": 1}).child(call_id="c", extras=extras).extras is extras
+
+
+def test_user_id_defaults_empty_and_children_keep_it():
+    ctx = ToolContext(run_id="r", user_id="u1")
+    assert ToolContext().user_id == ""
+    assert ctx.child(call_id="kid").user_id == "u1"

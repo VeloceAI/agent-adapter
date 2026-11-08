@@ -32,14 +32,17 @@ def new_key(prefix: str) -> str:
 
 
 class SessionStore:
-    """Thread-safe sessions; every change is saved by `save` from the thread that made it.
+    """Thread-safe sessions of one user; every change is saved by `save` from its thread.
+
+    Session files of other users stay on disk, unseen: never loaded, listed or changed.
 
     Raises:
         ConfigError: the chat folder cannot be made or listed.
     """
 
-    def __init__(self, folder: str | os.PathLike[str]) -> None:
+    def __init__(self, folder: str | os.PathLike[str], *, user_id: str = "") -> None:
         self.folder = Path(folder).resolve()
+        self.user_id = user_id
         try:
             self.folder.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
@@ -54,6 +57,7 @@ class SessionStore:
             names = sorted(p for p in self.folder.iterdir() if SESSION_FILE.match(p.name))
         except OSError as exc:
             raise ConfigError(f"cannot list the chat folder {self.folder}: {exc}") from exc
+        skipped = 0
         for path in names:
             try:
                 session, interrupted = session_from_dict(json.loads(path.read_text("utf-8")))
@@ -65,9 +69,14 @@ class SessionStore:
             if f"{session.id}.json" != path.name:
                 logger.warning("chat: skipped %s: it holds session %s", path.name, session.id)
                 continue
+            if session.user_id != self.user_id:
+                skipped += 1
+                continue
             self._sessions[session.id] = session
             if interrupted:
                 self.save(session)
+        if skipped:
+            logger.info("chat: %d session(s) of other users left unseen", skipped)
         logger.info("chat: %d session(s) loaded from %s", len(self._sessions), self.folder)
 
     def create(
@@ -92,6 +101,7 @@ class SessionStore:
                 state=copy.deepcopy(saved),
                 saved_state=saved,
                 parent=parent,
+                user_id=self.user_id,
             )
             self._sessions[session.id] = session
         self.save(session)
@@ -135,6 +145,13 @@ class SessionStore:
                     return ref
         raise Refused(HTTPStatus.NOT_FOUND, "no such file")
 
+    def approval_views(self) -> list[dict[str, Any]]:
+        """The stored approvals of every turn, newest turn first (for approval memory)."""
+        with self.lock:
+            turns = [turn for session in self._sessions.values() for turn in session.turns]
+            turns.sort(key=lambda turn: turn.started, reverse=True)
+            return [dict(item) for turn in turns for item in turn.approvals]
+
     def summaries(self) -> list[dict[str, Any]]:
         """Every session's summary, most recently updated first."""
         with self.lock:
@@ -170,6 +187,7 @@ class SessionStore:
             for turn in turns:
                 turn.session_id = branch.id
             branch.turns, branch.files = turns, files
+            branch.memory_upto = min(session.memory_upto, index)
         self.save(branch)
         return branch
 

@@ -41,6 +41,11 @@ and a test keeps the two equal, so a template cannot drift from what the tests r
 | `langgraph` | `graph.py` | `python graph.py` | `examples/template_langgraph.py` |
 | `openai-agents` | `agent.py` | `python agent.py` | `examples/template_openai_agents.py` |
 | `mcp-server` | `server.py` | `python server.py` | `examples/template_mcp_server.py` |
+| `pydantic-ai` | `agent.py` | `python agent.py` | `examples/template_pydantic_ai.py` |
+| `adk` | `agent.py` | `python agent.py` | `examples/template_adk.py` |
+| `agno` | `agent.py` | `python agent.py` | `examples/template_agno.py` |
+| `strands` | `agent.py` | `python agent.py` | `examples/template_strands.py` |
+| `crewai` | `crew.py` | `python crew.py` | `examples/template_crewai.py` |
 
 `requirements.txt` pins `agent-adapter~=X.Y` (this CLI's version) with the extra the
 template needs, plus the web framework or queue for `fastapi`, `flask` and `celery`.
@@ -50,6 +55,10 @@ no approval port, a `confirm=True` tool is denied (fails closed).
 The `openai-agents` template uses [`attach`](../how-to/attach-anywhere.md). It prints its
 tools when `OPENAI_API_KEY` is not set, and runs the agent when it is. The others run
 offline as written: `celery` runs its task in-process, with no worker.
+
+The five framework templates (`pydantic-ai` to `crewai`) add an approval port, a budget
+and the run recorder; they run the agent when `AGENT_MODEL` is set. To move existing
+framework tools onto a registry, see [`agent-adapter migrate`](../migration/migrate-command.md).
 
 ## `agent-adapter doctor`
 
@@ -65,6 +74,7 @@ Prints `[level] topic: message` lines, then a count. Exit code: 1 when any line 
 | `python` | Python 3.11 or later; a virtual environment is active | error; warn |
 | `agent-adapter` | the installed metadata matches the imported code (stale editable installs miss new entry points) | warn |
 | `extras` | the extras whose packages are all installed | ok (always) |
+| `guard presidio`, `guard nemo`, `otel export` | optional backends: ready with versions, or the `pip install` line; OTel needs the SDK and an OTLP exporter | info; warn when half installed (OTel: info) |
 | `integrations` | an entry point that failed to load, with the reason | warn |
 | `integration NAME` | ready with the package versions, or the `pip install` line | ok / info |
 | `shadowing` | a local `mcp.py`, `agents/` or similar hides the installed SDK | warn |
@@ -130,6 +140,7 @@ page (it stays in that browser tab only): anyone with the address can read the r
 | `agent_adapter/cli/scaffold.py` | the template table; writes the file and `requirements.txt` |
 | `agent_adapter/cli/templates/` | packaged copies of `examples/template_*.py` |
 | `agent_adapter/cli/doctor.py` | Python, package, extras, integrations and shadowing checks |
+| `agent_adapter/cli/doctor_features.py` | `FEATURES`: one row per optional backend (guards, OTel, later more) |
 | `agent_adapter/cli/pipindex.py` | reads pip's index settings; redacts URLs |
 | `agent_adapter/cli/guide.py` | prints, writes or slices the packaged `_guide/AGENTS.md` (concise) and `_guide/llms-full.txt` (full) |
 | `agent_adapter/cli/ui.py` | the `ui` arguments; serves `agent_adapter.viewer` or exports one file |

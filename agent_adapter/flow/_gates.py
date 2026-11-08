@@ -52,6 +52,7 @@ async def check_gates(
     port: ApprovalPort | None,
     granted: Mapping[str, ApprovalDecision],
     encoder: Encoder | None = None,
+    scope: str = "",
 ) -> GateOutcome:
     """Ask each paused node's gate in order; stop at the first pending or denied one.
 
@@ -66,7 +67,7 @@ async def check_gates(
         decision = granted.get(node.name)
         if decision is None:
             visit = visits.get(node.name, 0) + 1
-            request = _request(flow, node, state, ctx, visit)
+            request = _request(flow, node, state, ctx, visit, scope)
             check_sealable(flow, encoder, state=state, pending=request, decisions=decisions)
             answer = await _ask(flow, node, request, port)
             if isinstance(answer, ApprovalRequest):
@@ -80,17 +81,20 @@ async def check_gates(
 
 
 def _request(
-    flow: str, node: NodeSpec, state: BaseModel, ctx: ToolContext, visit: int
+    flow: str, node: NodeSpec, state: BaseModel, ctx: ToolContext, visit: int, scope: str = ""
 ) -> ApprovalRequest:
+    metadata: dict[str, Any] = {"flow": flow, "node": node.name, "visit": visit}
+    if scope:
+        metadata["scope"] = scope
     return ApprovalRequest(
         approval_id=new_id("apr_"),
         run_id=ctx.run_id,
-        call_id=node_call_id(flow, node.name, visit),
+        call_id=node_call_id(flow, node.name, visit, scope),
         tool=f"node:{flow}.{node.name}",
         arguments=_payload(flow, node, state),
         kind="node",
         hint=f"approve node {node.name!r} of flow {flow!r}",
-        metadata={"flow": flow, "node": node.name, "visit": visit},
+        metadata=metadata,
         created_at=time.time(),
     )
 

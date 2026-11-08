@@ -38,7 +38,8 @@ def compile_flow(
 
     Raises:
         FlowDefinitionError: the flow is invalid.
-        FlowCompileError: a node name LangGraph reserves (`__start__`, `__end__`).
+        FlowCompileError: a node name LangGraph reserves (`__start__`, `__end__`), or a
+            `SubFlow` node (run those flows with `FlowRunner`).
         ToolUsageError: `flow` is not a Flow, `executor` is not an Executor, or a bad key.
         MissingDependency: langgraph is not installed.
     """
@@ -56,6 +57,12 @@ def compile_flow(
         for name in _RESERVED_NODES
         if name in graph.nodes
     ]
+    problems.extend(
+        f"node {name!r} is a SubFlow, which the LangGraph compiler does not support yet; "
+        "run this flow with FlowRunner"
+        for name, spec in graph.nodes.items()
+        if spec.kind == "subflow"
+    )
     if problems:
         raise FlowCompileError(TARGET, problems, flow=graph.name)
     port = runner.approval

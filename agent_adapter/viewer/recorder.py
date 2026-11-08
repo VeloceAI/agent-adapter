@@ -16,9 +16,11 @@ from typing import Any
 from agent_adapter.core.errors import ConfigError, log_failure
 from agent_adapter.core.registry import Registry
 from agent_adapter.core.types import Event
+from agent_adapter.exec._settings import ToolPolicy
 from agent_adapter.exec.defaults import add_default_sink, default_executor, remove_default_sink
 from agent_adapter.exec.executor import Executor
 from agent_adapter.runtime._fork import ForkSafeLock
+from agent_adapter.tracing._content import ContentEvent, content_data
 from agent_adapter.tracing.sinks import members
 from agent_adapter.viewer._files import DEFAULT_FOLDER, append
 from agent_adapter.viewer._segments import Options, Segments
@@ -30,6 +32,7 @@ _WARN_EVERY = 1_000  # after the first problem, warn once per this many
 _STOP = object()
 _LIVE: weakref.WeakSet[Recorder] = weakref.WeakSet()
 RegistrySource = Registry | Callable[[], Registry] | None
+PolicySource = Callable[[], ToolPolicy | None] | None
 
 
 class Recorder:
@@ -50,11 +53,13 @@ class Recorder:
         folder: str | os.PathLike[str] = DEFAULT_FOLDER,
         *,
         capture_content: bool = False,
+        capture_confirm_content: bool = False,
         keep_runs: int = 200,
         max_events_per_run: int = 50_000,
         max_queue: int = 10_000,
         registry: RegistrySource = None,
         source: str = "",
+        policy: PolicySource = None,
     ) -> None:
         limits = (
             ("keep_runs", keep_runs),
@@ -70,11 +75,15 @@ class Recorder:
         except OSError as exc:
             raise ConfigError(f"cannot create the runs folder {self.folder}: {exc}") from exc
         self.capture_content = bool(capture_content)
+        if capture_confirm_content and not capture_content:
+            raise ConfigError("capture_confirm_content=True needs capture_content=True")
+        self.capture_confirm_content = bool(capture_confirm_content)
         self.keep_runs = keep_runs
         self.max_events_per_run = max_events_per_run
         self.max_queue = max_queue
         self.source = str(source)
         self._registry = registry
+        self._policy = policy  # the executor's policy, shown per tool in the Tools tab
         self._lock = ForkSafeLock()
         self._pid = -1
         self._queue: queue.Queue[Any] = queue.Queue(max_queue)
@@ -86,6 +95,9 @@ class Recorder:
         _LIVE.add(self)
 
     def emit(self, event: Event) -> None:
+        if isinstance(event, ContentEvent):
+            data = content_data(event, self)
+            event = Event(event.type, event.run_id, event.call_id, event.parent_id, event.ts, data)
         self._put(event)
 
     def take_flow_graph(self, run_id: str, flow: str, graph: dict[str, Any]) -> None:
@@ -126,6 +138,16 @@ class Recorder:
         logger.info("stopped recording runs to %s", self.folder)
         return done
 
+    @property
+    def wants_content(self) -> bool:
+        """Asks native calls for their content (arguments, results, messages, flow state)."""
+        return self.capture_content
+
+    @property
+    def wants_confirm_content(self) -> bool:
+        """Also asks for `confirm` tools' results (opt-in on top of `capture_content`)."""
+        return self.capture_confirm_content
+
     def registry(self) -> Registry | None:
         """The registry whose catalogue each run file starts with."""
         source = self._registry
@@ -165,6 +187,7 @@ class Recorder:
                     self.max_events_per_run,
                     self.registry,
                     self.source,
+                    self._policy,
                 )
                 thread = threading.Thread(
                     target=self._run,
@@ -261,6 +284,7 @@ def record(
     capture_content: bool = False,
     keep_runs: int = 200,
     source: str = "",
+    capture_confirm_content: bool = False,
 ) -> Recorder:
     """Record every run of `executor` under `folder`.
 
@@ -279,8 +303,9 @@ def record(
         None,
     )
     if existing is not None:
-        wanted = (capture_content, keep_runs, str(source))
-        if (existing.capture_content, existing.keep_runs, existing.source) != wanted:
+        wanted = (capture_content, keep_runs, str(source), capture_confirm_content)
+        have = (existing.capture_content, existing.keep_runs, existing.source)
+        if (*have, existing.capture_confirm_content) != wanted:
             raise ConfigError(
                 f"runs in {resolved} are already recorded with capture_content="
                 f"{existing.capture_content}, keep_runs={existing.keep_runs}, "
@@ -293,9 +318,11 @@ def record(
     recorder = Recorder(
         resolved,
         capture_content=capture_content,
+        capture_confirm_content=capture_confirm_content,
         keep_runs=keep_runs,
         registry=registry,
         source=source,
+        policy=(lambda: target.policy) if executor is not None else _default_policy,
     )
     if executor is None:
         add_default_sink(recorder)
@@ -305,3 +332,8 @@ def record(
         recorder._executors.append(weakref.ref(executor))
     logger.info("recording runs to %s", resolved)
     return recorder
+
+
+def _default_policy() -> ToolPolicy | None:
+    """The default executor's policy, read at each catalogue (configure may replace it)."""
+    return default_executor().policy

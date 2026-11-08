@@ -75,6 +75,7 @@
 .tc-ok { border-left-color: var(--ok); }
 .tc-failed { border-left-color: var(--error); }
 .tc-pending { border-left-color: var(--paused); }
+.tc-streaming { border-style: dashed; border-left-color: var(--muted); opacity: 0.85; }
 .tc-icon { width: 1em; text-align: center; }
 .tc-running .tc-icon { color: var(--running); } .tc-ok .tc-icon { color: var(--ok); }
 .tc-failed .tc-icon { color: var(--error); } .tc-pending .tc-icon { color: var(--paused); }
@@ -144,3 +145,8 @@ button.chip { cursor: pointer; }
   .chat-demo .chat-main { order: -1; } /* conversation and questions first, in view in a docs frame */
   .chat-demo .chat-sessions .run-list { max-height: 120px; }
 }
+
+.mem-list { list-style: none; margin: 4px 0 12px; padding: 0; }
+.mem-row { border-bottom: 1px solid var(--line); padding: 6px 0; }
+.mem-facts { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.mem-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }

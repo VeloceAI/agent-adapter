@@ -94,6 +94,33 @@ Each provider page shows the exact shapes:
 - [Gemini](../integrations/gemini.md)
 - [Anthropic](../integrations/anthropic.md)
 
+## Or start from a template
+
+`agent-adapter init` writes a tested starter file and a `requirements.txt`:
+
+```bash
+agent-adapter init pydantic-ai my-agent   # also: adk, agno, strands, crewai
+cd my-agent
+pip install -r requirements.txt
+python agent.py                           # crewai writes crew.py: python crew.py
+```
+
+```mermaid
+flowchart LR
+  T["agent.py"] --> R[("Registry: shipping_rate, refund_order")]
+  R --> B["framework tools<br/>(the integration bridge)"]
+  B --> E["Executor"]
+  E --> A["approval port: review()"]
+  E --> G["BudgetHook: 1 USD"]
+  E --> V["recorder: .agent_adapter/runs"]
+```
+
+Each framework template has two tools, one with `confirm=True`, an approval port, a
+budget and the run recorder. The budget counts model calls made through
+`executor.model(...)`, not the framework's own model calls. Without `AGENT_MODEL` it runs offline: it prints the tools
+and makes one approved call. Set `AGENT_MODEL` (the framework's own model name) to run
+the agent. Then run `agent-adapter ui` to see the run. Every template: [CLI](../reference/cli.md).
+
 ## Next
 
 - [Wrap existing code](wrap-existing-code.md): methods, partials, rename, hide.

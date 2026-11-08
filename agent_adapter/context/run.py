@@ -37,9 +37,10 @@ def check_policy(policy: object) -> CompressionPolicy:
 def context_window(
     policy: CompressionPolicy, model: str, caps: CapabilityLookup | None = None
 ) -> int | None:
-    """The token window a percent policy applies to: its own, else the model's caps.
+    """The token window a percent policy applies to: its own, else the model's prompt window.
 
-    Returns None for a policy given in tokens (`start_when_tokens_over`), which needs none.
+    The prompt window is the caps' `context_window` less `max_output_tokens` (room for the
+    reply). Returns None for a policy given in tokens (`start_when_tokens_over`).
 
     Raises:
         ConfigError: a percent policy without `model_max_tokens` for a model whose caps
@@ -48,7 +49,7 @@ def context_window(
     if policy.model_max_tokens is not None or policy.start_when_tokens_over is not None:
         return policy.model_max_tokens
     lookup = caps if caps is not None else Prices.default().caps
-    window = lookup(model).context_window
+    window = lookup(model).prompt_window()
     if window is None:
         raise ConfigError(
             f"no context window is known for model {model!r}: set "

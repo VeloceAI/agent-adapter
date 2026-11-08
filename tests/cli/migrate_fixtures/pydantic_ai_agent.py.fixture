@@ -1,0 +1,15 @@
+from pydantic_ai import Agent, RunContext
+
+agent = Agent("a-model")
+
+
+@agent.tool
+def order_total(ctx: RunContext[str], order_id: str) -> float:
+    """Total of an order."""
+    return 40.0
+
+
+@agent.tool_plain
+def store_hours() -> str:
+    """When the store is open."""
+    return "9-17"

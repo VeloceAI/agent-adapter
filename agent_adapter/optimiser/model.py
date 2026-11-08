@@ -8,9 +8,13 @@ import json
 from collections.abc import Mapping
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from agent_adapter.cost.summary import LedgerSummary
+
+# Re-exported: the optimiser's cases and scores are the evals ones.
+from agent_adapter.evals.model import EvalCase as EvalCase
+from agent_adapter.evals.model import Score as Score
 
 _FROZEN = ConfigDict(frozen=True)
 
@@ -94,27 +98,6 @@ class SurfaceCaps(BaseModel):
     max_chars: dict[str, int]  # keyed by pattern, e.g. "tool/*/description", "prompt/system"
     kinds: frozenset[str]
     hook_schemas: dict[str, dict[str, Any]] = {}
-
-
-class EvalCase(BaseModel):
-    """One evaluation input; `expected` is for the host's judge only."""
-
-    model_config = _FROZEN
-
-    id: str
-    input: Any
-    tags: tuple[str, ...] = ()
-    expected: Any = None
-
-
-class Score(BaseModel):
-    """A judge's verdict on one case run; `value` is in [0, 1]."""
-
-    model_config = _FROZEN
-
-    value: float = Field(ge=0.0, le=1.0)
-    passed: bool | None = None
-    notes: str = ""
 
 
 class Edit(BaseModel):

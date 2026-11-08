@@ -229,6 +229,8 @@
     replay: () => notHere("Replay"),
     decide: () => notHere("Deciding an approval"), // the recording decides; the card says so
     evalCase: () => notHere("Saving an eval case"),
+    memory: async () => ({ memory: { enabled: false }, records: [] }),
+    forget: () => notHere("Memory"),
     upload: () => notHere("Attaching files"),
     uploadProblem: () => "attaching files is not part of the recorded demo",
     fileBlob: () => notHere("Files"),

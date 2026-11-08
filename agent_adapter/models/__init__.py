@@ -4,7 +4,14 @@ The provider ports import their SDK only when used (`pip install "agent-adapter[
 `[gemini]`, `[anthropic]`).
 """
 
-from agent_adapter.core.messages import OutputSchema
+from agent_adapter.core.messages import (
+    OutputSchema,
+    PartialOutput,
+    StreamDone,
+    StreamEvent,
+    TextDelta,
+    ToolCallDelta,
+)
 from agent_adapter.core.ports import CapabilityLookup, LLMPort, PromptCachePlugin
 from agent_adapter.core.types import ModelCaps
 from agent_adapter.models.anthropic import AnthropicModel
@@ -34,7 +41,12 @@ __all__ = [
     "ModelCaps",
     "OpenAIModel",
     "OutputSchema",
+    "PartialOutput",
     "PromptCachePlugin",
+    "StreamDone",
+    "StreamEvent",
+    "TextDelta",
+    "ToolCallDelta",
     "normalise_usage",
     "usage_anthropic",
     "usage_gemini",

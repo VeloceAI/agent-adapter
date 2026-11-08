@@ -14,6 +14,7 @@ flowchart LR
 
 | From | Guide |
 |---|---|
+| tools of LangChain, CrewAI, ADK, Pydantic AI and other frameworks, found for you | [`agent-adapter migrate`](migrate-command.md): a read-only report and a suggested diff |
 | raw OpenAI or Anthropic tool calling (JSON schemas and a dispatch dict) | [Raw tool calling](raw-tool-calling.md) |
 | LangChain `@tool` functions | [LangChain tools](langchain-tools.md) |
 | a "needs approval" table you wrote yourself | [Hand-rolled approval](hand-rolled-approval.md) |

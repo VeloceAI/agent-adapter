@@ -37,6 +37,7 @@ async def withdraw(
             tool=request.tool,
             approval_id=request.approval_id,
             approved=False,
+            edited=False,
             withdrawn=done,
             reason=reason,
         )

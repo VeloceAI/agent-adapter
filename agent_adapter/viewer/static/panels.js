@@ -9,10 +9,14 @@
     return el("span", { class: "status " + value, text: value });
   }
 
-  AA.renderRuns = function (container, runs, selected, onSelect) {
+  function tagChips(tags) {
+    return tags && tags.length ? el("span", { class: "chips run-chips" }, tags.map((tag) => el("span", { class: "chip tag", text: String(tag) }))) : null;
+  }
+
+  AA.renderRuns = function (container, runs, selected, onSelect, filtered) {
     AA.clear(container);
     if (!runs.length) {
-      container.appendChild(el("p", { class: "muted", text: "No runs yet. Call record() in your app, then run it." }));
+      container.appendChild(el("p", { class: "muted", text: filtered ? "No run matches this search." : "No runs yet. Call record() in your app, then run it." }));
       return;
     }
     runs.forEach((run) => {
@@ -23,7 +27,7 @@
         class: "run" + (run.key === selected ? " selected" : ""),
         title: run.run_id,
         on: { click: () => onSelect(run.key) },
-      }, [el("span", { class: "when", text: AA.fmt.time(run.started) }), status(run.status), el("span", { class: "meta", text: meta })]));
+      }, [el("span", { class: "when", text: AA.fmt.time(run.started) }), status(run.status), el("span", { class: "meta", text: meta }), tagChips(run.tags)]));
     });
   };
 
@@ -143,6 +147,15 @@
     return el("span", { class: "chip", text: name + (value === true ? "" : ": " + value) });
   }
 
+  // The effective policy of one tool (Policy.apply): plain text lines, never markup.
+  AA.toolPolicy = function (lines) {
+    if (!Array.isArray(lines) || !lines.length) return null;
+    return el("div", { class: "tool-policy" }, [
+      el("p", { class: "muted", text: "Policy" }),
+      el("ul", {}, lines.map((line) => el("li", { text: String(line) }))),
+    ]);
+  };
+
   AA.renderTools = function (container, tools) {
     AA.clear(container);
     if (!tools) {
@@ -170,9 +183,17 @@
           setting("once per run", tool.once_per_run),
           setting("tags", (tool.tags || []).join(", ")),
         ]),
+        AA.toolPolicy(tool.policy),
         el("pre", { text: AA.fmt.json(tool.schema) }),
       ]));
     });
+  };
+
+  // Approval memory: one line on similar past decisions; advice only, the call still waits.
+  AA.approvalContext = function (context) {
+    if (!context || typeof context !== "object" || !context.similar) return null;
+    const text = "Seen before: " + String(context.summary || context.similar + " similar") + ". History only: this call still needs a decision.";
+    return el("p", { class: "approval-memory muted", text: text });
   };
 
   AA.renderApprovals = function (container, approvals, onDecide) {
@@ -197,6 +218,7 @@
         el("div", { class: "card-head" }, [el("strong", { text: record.tool }), el("code", { text: record.approval_id })]),
         el("div", { class: "facts" }, [fact("run", record.run_id), fact("created", AA.fmt.time(record.created_at)), fact("hint", record.hint)]),
         el("pre", { text: AA.fmt.json(record.arguments) }),
+        AA.approvalContext(record.context),
         actions,
         notice,
       ]));

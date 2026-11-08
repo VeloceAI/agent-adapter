@@ -89,8 +89,15 @@ languages need no agent framework. Each one, how it attaches and what tests it:
 | `ag-ui` | `ag-ui-protocol>=1.0,<2` | yes | `contract-ag_ui`, `contract-all-compatible` |
 | `sqlalchemy` | `sqlalchemy[asyncio]>=2.0.30,<3` | yes | `contract-all-compatible` |
 | `dynamodb` | `aioboto3>=13,<16` | yes | `contract-all-compatible` |
+| `temporal` | `temporalio>=1.35,<2` | no | `contract-temporal` |
+| `dbos` | `dbos>=3.4,<4` | no | `contract-dbos` |
 | `server` | `starlette>=1.0,<2`, `uvicorn>=0.30,<1`, `h11>=0.16,<1`, extra `mcp` | yes | `docs-examples`, `server`, `ts`, `contract-all-compatible` |
 | `server-wsgi` | `a2wsgi>=1.10,<2`, extra `server` | yes | `docs-examples`, `server`, `contract-all-compatible` |
+| `presidio` | `presidio-analyzer>=2.2,<3`, `presidio-anonymizer>=2.2,<3` | no | none |
+| `nemo` | `nemoguardrails>=0.24,<1` | no | none |
+| `mem0` | `mem0ai>=2.2,<3` | no | none |
+| `zep` | `zep-cloud>=4.1,<5` | no | none |
+| `graphiti` | `graphiti-core>=0.31,<1` | no | none |
 <!-- support-matrix:end -->
 
 `openai` and `anthropic` render plain dicts, so their integrations need no extra; the

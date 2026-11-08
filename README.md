@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  Version 1.0.0 · Python 3.11+ · Apache-2.0 · 19 frameworks · Coverage gate 90%
+  Version 1.1.0 · Python 3.11+ · Apache-2.0 · 21 frameworks and engines · Coverage gate 90%
 </p>
 
 <p align="center">
@@ -30,9 +30,9 @@ LangChain, CrewAI or ADK help you build an agent. Agent Adapter makes every tool
 that agent makes safe, priced and traced, in any framework or in none.
 
 It is an open-source, framework-independent Python SDK. It turns your functions into LLM
-tools, checks their schemas once at startup, and runs every call through one executor that
-applies approval, budgets, guards, caching and cost tracking. The core depends only on
-pydantic. Every framework is an optional extra, imported lazily.
+tools, checks their schemas once at startup, and runs every call through one
+executor that applies approval, budgets, guards, caching and cost tracking. The core
+depends only on pydantic. Every framework is an optional extra, imported lazily.
 
 No agent framework is needed: a FastAPI service calling an LLM gets tools, approvals,
 budgets, cost, cache and context compression directly. The adapter can also be your
@@ -60,15 +60,14 @@ on the default registry; `aa.call` runs it through the default executor. From as
 
 ## Why Agent Adapter
 
-Agent frameworks are good at building agents. Each one has its own tool format, its own
-idea of approval, and no shared view of cost. Change framework, or run two, and the
-safety rules are rewritten each time. Agent Adapter keeps them in one place.
+Each framework has its own tool format, its own idea of approval and no shared view of cost.
+Change framework, or run two, and the rules are rewritten. Agent Adapter keeps them in one place.
 
 | You need | Without it | With Agent Adapter |
 |---|---|---|
 | A person to approve risky actions | each framework's own flag, easy to bypass | a one-use approval the executor checks on every call, from any source; it survives a restart |
-| A spending limit | prices added up by hand | `BudgetHook(0.50)` stops a run past $0.50; every call is priced in a ledger |
-| To see what happened | logs scattered across libraries | one event stream, OpenTelemetry spans and a local run viewer with a chat page |
+| Spending limits | prices added up by hand | `BudgetHook` per run, user or team, per day or month; every call priced in a ledger |
+| Rules you can prove | settings spread across code | one policy file for access, approvals, guards and budgets; a signed, hash-chained audit log |
 | To change framework | rewrite the tools | keep them: one module per framework, the same tools everywhere |
 
 ## How it works
@@ -250,13 +249,22 @@ replayable demo, and [Navigate the graph](docs/how-to/navigate-the-graph.md) a r
 | Tools | `@registry.tool`, `registry.wrap()`; shaping (`fixed=`, `hide=`, `rename=`); portable-schema check; typed errors under `AdapterError` |
 | Schemas | OpenAI (Chat, Responses, strict), Gemini and Anthropic renderers; strict-mode `null` means "use the default" |
 | Execution | `run`, `run_many`, `run_plan` waves, `parallel`, `as_completed`; retry, timeout, hooks, run guards |
-| Flows | a portable `Flow` (route, map, join, loop, pause) with a local runner; compiles to LangGraph and ADK |
+| Multi-agent | agents as tools (`agent_tool`, `LoopAgent`) and handoffs (`handoff`, `HandoffModel`) in one run, with a depth guard |
+| Guardrails | `PIIGuard` (emails, phones, cards, IBANs, secrets; no model), `CallableGuard`, Presidio, NeMo; block, redact or approve |
+| Policy file | access, approvals, guards, budgets and limits per tool, team and environment in one YAML, TOML or JSON file; `agent-adapter policy check` ([Policy file](docs/concepts/policy.md)) |
+| Audit log | a signed, hash-chained log of approvals, guard blocks, budget stops and memory erases; `agent-adapter audit verify` and export to CSV ([Audit log](docs/concepts/audit.md)) |
+| Flows | a portable `Flow` (route, map, join, loop, pause, sub-flows, node cache) with a local runner; compiles to LangGraph and ADK |
 | Approval | ports (`AutoApprove`, `CallbackApproval`, `DeferredApproval`), stores (SQLite, Redis, SQLAlchemy, DynamoDB), batch approval, framework bridges |
-| Cost and cache | priced ledger, usage normalisers; tool-result, LLM-response and provider prefix caches |
-| Models | `OpenAIModel`, `GeminiModel`, `AnthropicModel`, `CallableModel`, `FallbackModel`, `run_tool_loop` |
+| Cost and cache | priced ledger with context windows, usage normalisers; tool-result, LLM-response and provider prefix caches |
+| Models | `OpenAIModel`, `GeminiModel`, `AnthropicModel`, `CallableModel`, `FallbackModel`, `run_tool_loop`; recipes for Bedrock, Azure OpenAI, Mistral, Groq, OpenRouter |
 | Context compression | a `CompressionPolicy` (trim, cut, shrink tool results, de-duplicate, rank, summarise) with your own models; `compress_for` keeps every framework's own message type |
 | Cross-language | MCP server and importer, HTTP tool server (ASGI and WSGI), TypeScript client, A2A, AG-UI |
-| Observability | standard `logging`, an event catalogue, sinks, OpenTelemetry GenAI spans; the local run viewer and chat page |
+| Observability | standard `logging`, an event catalogue, sinks, OpenTelemetry GenAI spans (Langfuse, Phoenix, OpenLLMetry); the local run viewer and chat page |
+| Durability | crash-safe flows and tool loops (checkpoint stores, `recover`); Temporal or DBOS as the engine |
+| Sandboxed code | `code_tool` over Docker or a hosted sandbox; every run needs approval |
+| Memory and RAG | per-user memory (`SQLiteMemory`, Mem0, Zep, Graphiti) through `memory_tools`; `retriever_tool` with citations and host-set scope filters |
+| Evals | `run_eval` on any agent with graders (exact, regex, JSON schema, tools, cost, latency, LLM judge); JUnit, Markdown and JSON reports; `agent-adapter eval`; a pytest plugin; an Evals tab in the viewer |
+| Evals from production and cost advisor | recorded runs become eval cases ([Evals from production](docs/how-to/evals-from-production.md)); a cheaper model per flow node or stage that keeps the score ([Cut model costs per step](docs/how-to/cut-model-costs.md)) |
 | Optimiser | offline Propose → Probe → Compose loop over your eval cases that writes a reviewable diff |
 
 The full list, with a guide for each feature: [Features](docs/features.md). Next: the [Roadmap](docs/roadmap.md).
@@ -270,8 +278,6 @@ pip install agent-adapter                 # core (pydantic only)
 pip install "agent-adapter[openai]"       # + the extras you need
 ```
 
-From a checkout, use `pip install -e ".[openai]"` instead.
-
 | Extra | Adds |
 |---|---|
 | `openai`, `gemini`, `anthropic` | the provider SDK, for the model ports |
@@ -282,7 +288,10 @@ From a checkout, use `pip install -e ".[openai]"` instead.
 | `server`, `server-wsgi` | the HTTP tool server (Starlette + uvicorn; a2wsgi) |
 | `redis`, `otel` | Redis cache and stores; OpenTelemetry sink |
 | `sqlalchemy`, `dynamodb` | database approval stores |
-| `all` | every extra that co-installs; not `crewai`, `strands`, `semantic-kernel`, `adk`, `camel`, `dspy` |
+| `presidio`, `nemo` | the Presidio and NeMo Guardrails guards (not in `all`) |
+| `mem0`, `zep`, `graphiti` | memory backends (not in `all`) |
+| `temporal`, `dbos` | flows on Temporal or DBOS (not in `all`) |
+| `all` | every extra that co-installs; not `crewai`, `strands`, `semantic-kernel`, `adk`, `camel`, `dspy`, `presidio`, `nemo`, `mem0`, `zep`, `graphiti`, `temporal`, `dbos` |
 | `dev`, `docs` | tests, linters, nox; the docs site |
 
 Pins per extra: [Install](docs/get-started/install.md#extras), [Support matrix](docs/support-matrix.md).
@@ -291,9 +300,13 @@ Pins per extra: [Install](docs/get-started/install.md#extras), [Support matrix](
 
 | Command | Does |
 |---|---|
-| `agent-adapter init fastapi my-service` | writes a starter project from a tested template (`script`, `fastapi`, `flask`, `celery`, `langgraph`, `openai-agents`, `mcp-server`) |
-| `agent-adapter doctor` | checks Python, installed extras, integrations and the pip index |
+| `agent-adapter init fastapi my-service` | writes a starter project from a tested template (`script`, `fastapi`, `flask`, `celery`, `langgraph`, `openai-agents`, `mcp-server`, `pydantic-ai`, `adk`, `agno`, `strands`, `crewai`) |
+| `agent-adapter policy check policy.yaml --env prod` | checks a policy file and prints the effective rules per tool |
+| `agent-adapter audit verify .agent_adapter/audit` | checks the audit log's signatures and chain; `audit export` writes JSONL or CSV |
+| `agent-adapter migrate src/ --diff` | finds framework tools and prints a suggested patch to registry tools (read-only) |
+| `agent-adapter doctor` | checks Python, installed extras, optional backends (guards, OTel exporters), integrations and the pip index |
 | `agent-adapter ui` | the local run viewer; with `--agent` or `--model`, the chat page |
+| `agent-adapter eval app:agent cases.jsonl --min-score 0.9` | grades an agent on eval cases; exits 1 below the score or on a regression |
 | `agent-adapter guide` | prints the guide for AI coding agents (`AGENTS.md`); `--full` adds every signature |
 
 ## Project layout
@@ -312,13 +325,11 @@ everything lives, the rules, the gates and the generated files.
 
 ## Documentation
 
-```bash
-pip install -e ".[docs]"
-mkdocs serve          # http://127.0.0.1:8000
-mkdocs build --strict # what the gate runs
-```
-
-The site lives in `docs/` (MkDocs Material). Start with **How-to → Attach anywhere**.
+The site is [agent-adapter.veloceai.in](https://agent-adapter.veloceai.in/); its source is
+`docs/` (MkDocs Material, `mkdocs build --strict`). Start with **How-to → Attach anywhere**, or
+build a whole app with the [golden path tutorial](docs/tutorials/golden-path.md). Before
+production, read the [threat model](docs/guides/threat-model.md) and the
+[API stability policy](docs/contributing/stability.md).
 
 ## Development
 

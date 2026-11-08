@@ -94,12 +94,15 @@ class OTelSink:
             EventType.TOOL_RETRY: self._tool_note,
             EventType.APPROVAL_REQUESTED: self._tool_note,
             EventType.APPROVAL_DECIDED: self._tool_note,
+            EventType.APPROVAL_EXPIRED: self._tool_note,
+            EventType.GUARDRAIL_REDACTED: self._redaction_note,
             EventType.FLOW_STARTED: self._flow_started,
             EventType.FLOW_FINISHED: self._flow_finished,
             EventType.NODE_STARTED: self._node_started,
             EventType.NODE_FINISHED: lambda e: self._end_node(e, lambda _: ({}, None)),
             EventType.NODE_FAILED: lambda e: self._end_node(e, g.failed),
             EventType.NODE_PAUSED: lambda e: self._end_node(e, g.approval),
+            EventType.NODE_CACHED: self._node_note,
             EventType.CONTEXT_COMPRESSED: lambda e: self._close(
                 _CTX, e, self._context_started, g.context_finish
             ),
@@ -215,6 +218,14 @@ class OTelSink:
         if opened is not None:
             opened.span.add_event(event.type, attributes=g.note(event), timestamp=_ns(event.ts))
 
+    def _redaction_note(self, event: Event) -> None:
+        """A redaction is a span event on its tool span, or on the model call it rewrote."""
+        family = _TOOL if event.data.get("stage") == "result" else _LLM
+        with self._lock:
+            opened = self._open.get((family, event.run_id, event.call_id))
+        if opened is not None:
+            opened.span.add_event(event.type, attributes=g.note(event), timestamp=_ns(event.ts))
+
     # -- context compression ------------------------------------------------------------
 
     def _context_started(self, event: Event) -> _Open:
@@ -249,6 +260,13 @@ class OTelSink:
 
     def _end_node(self, event: Event, build: Callable[[Event], g.Built]) -> None:
         self._close(_NODE, event, self._node_started, build, self._node_id(event))
+
+    def _node_note(self, event: Event) -> None:
+        """A node cache hit becomes a span event on the open node span."""
+        with self._lock:
+            opened = self._open.get((_NODE, event.run_id, self._node_id(event)))
+        if opened is not None:
+            opened.span.add_event(event.type, attributes=g.note(event), timestamp=_ns(event.ts))
 
     # -- span bookkeeping --------------------------------------------------------------
 

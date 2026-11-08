@@ -6,7 +6,7 @@ Model ports, provider models and usage helpers. Concepts: [Model ports](../conce
 
 ::: agent_adapter.models
     options:
-      members: [AnthropicModel, CapabilityLookup, DEFAULT_FALL_ON, GeminiModel, InstrumentedModel, LLMPort, ModelCaps, OpenAIModel, OutputSchema, PromptCachePlugin, normalise_usage, usage_anthropic, usage_gemini, usage_openai_chat, usage_openai_responses, usage_voyage]
+      members: [AnthropicModel, CapabilityLookup, DEFAULT_FALL_ON, GeminiModel, InstrumentedModel, LLMPort, ModelCaps, OpenAIModel, OutputSchema, PartialOutput, PromptCachePlugin, StreamDone, StreamEvent, TextDelta, ToolCallDelta, normalise_usage, usage_anthropic, usage_gemini, usage_openai_chat, usage_openai_responses, usage_voyage]
 
 Also exported here, documented under the canonical path: [`CallableModel`](top-level.md#agent_adapter.CallableModel), [`FallbackModel`](top-level.md#agent_adapter.FallbackModel).
 

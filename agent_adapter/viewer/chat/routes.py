@@ -20,6 +20,8 @@ event (sent again when `since` is past it):
   "created_at"}`.
 - `state`: `{"state"}`, the session state (secret-named keys masked), at start and end.
 - `usage`: `{"input_tokens", "output_tokens", "cost_usd"}`, the turn's totals so far.
+- `memory`: `{"recalled": [record]}` at the start, `{"saved": n, "error"?}` after a save
+  (see `memory_routes`); approval events carry `context`, similar past decisions.
 - `done`: `{"status": "done", "turn"}`; `error`: `{"status": "failed|stopped|timed-out",
   "kind", "message", "turn"}`. `turn` is the stored turn (see `GET .../sessions/<sid>`).
 
@@ -38,8 +40,15 @@ from urllib.parse import quote, unquote
 
 from agent_adapter.core.errors import ApprovalAlreadyDecided, ApprovalNotFound
 from agent_adapter.hooks.builtin.logging import redact_secrets
+from agent_adapter.viewer._drain import drain
 from agent_adapter.viewer.chat.files import MAX_FILE
 from agent_adapter.viewer.chat.host import ChatHost
+from agent_adapter.viewer.chat.memory_routes import (
+    DELETE_PATH,
+    MEMORY_PATH,
+    memory_delete,
+    memory_listing,
+)
 from agent_adapter.viewer.chat.records import Refused
 from agent_adapter.viewer.chat.stream import stream_turn
 
@@ -65,6 +74,7 @@ class Exchange(Protocol):
     headers: Any
     rfile: BufferedIOBase
     wfile: BufferedIOBase
+    close_connection: bool
 
     def reply_json(self, status: int, payload: Any) -> None: ...
 
@@ -92,7 +102,9 @@ def handle_get(ex: Exchange, host: ChatHost | None, path: str, query: dict[str, 
 
 
 def _get(ex: Exchange, host: ChatHost, path: str, query: dict[str, list[str]]) -> None:
-    if path == "/api/chat/sessions":
+    if path == MEMORY_PATH:
+        ex.reply_json(HTTPStatus.OK, memory_listing(host))
+    elif path == "/api/chat/sessions":
         ex.reply_json(HTTPStatus.OK, {"sessions": host.store.summaries()})
     elif (match := _SESSION.match(path)) is not None:
         ex.reply_json(HTTPStatus.OK, session_detail(host, match.group(1)))
@@ -155,7 +167,9 @@ def handle_post(
 
 
 def _post(ex: Exchange, host: ChatHost, path: str, body: dict[str, Any]) -> None:
-    if path == "/api/chat/sessions":
+    if path == DELETE_PATH:
+        ex.reply_json(HTTPStatus.OK, memory_delete(host, body))
+    elif path == "/api/chat/sessions":
         title, state = body.get("title", ""), body.get("state", {})
         if not isinstance(title, str) or not isinstance(state, dict):
             raise Refused(HTTPStatus.BAD_REQUEST, 'send {"title"?: text, "state"?: object}')
@@ -223,6 +237,8 @@ def _read_body(ex: Exchange, cap: int) -> bytes:
     """
     length = _length(ex)
     if length > cap:
+        if not drain(ex.rfile, length):
+            ex.close_connection = True
         raise Refused(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, f"a request may hold {cap} bytes")
     if length <= 0:
         return b""

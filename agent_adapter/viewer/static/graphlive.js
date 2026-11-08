@@ -42,12 +42,28 @@
     return { succ: succ, pred: pred };
   }
 
-  // Node events of one flow, in order: what a replay steps through.
-  function replaySteps(events, flow) {
+  // A sub-flow's ids sit under its SubFlow node's visit: "<flow>:<node>:<n>/<child>:<node>:<n>".
+  function scopeOf(id) {
+    const text = String(id || "");
+    const at = text.lastIndexOf("/");
+    return at < 0 ? "" : text.slice(0, at);
+  }
+
+  // True when an id belongs to `graph`: top-level ids have no scope; a sub-flow view (with
+  // `parent: {flow, node}`) takes ids under a visit of that parent node.
+  function inScope(graph, id) {
+    const scope = scopeOf(id);
+    const parent = graph && graph.parent;
+    if (!parent) return scope === "";
+    return scope.slice(scope.lastIndexOf("/") + 1).indexOf(parent.flow + ":" + parent.node + ":") === 0;
+  }
+
+  // Node events of one flow, in order: what a replay steps through (`graph` scopes a sub-flow).
+  function replaySteps(events, flow, graph) {
     const steps = [];
     (events || []).forEach((ev, index) => {
       const data = ev.data || {};
-      if (has(NODE_STATUS, ev.type) && data.flow === flow && data.node) steps.push(index);
+      if (has(NODE_STATUS, ev.type) && data.flow === flow && data.node && (!graph || inScope(graph, ev.call_id))) steps.push(index);
     });
     return steps;
   }
@@ -73,8 +89,8 @@
       const ev = events[index];
       const data = ev.data || {};
       if (typeof ev.ts === "number") lastTs = ev.ts;
-      if ((ev.type === "flow.finished" && data.flow === graph.flow) || ev.type === "run.finished") stopRunning(nodes);
-      if (!has(NODE_STATUS, ev.type) || data.flow !== graph.flow || !has(nodes, data.node)) continue;
+      if ((ev.type === "flow.finished" && data.flow === graph.flow && ownFlowEvent(graph, ev)) || ev.type === "run.finished") stopRunning(nodes);
+      if (!has(NODE_STATUS, ev.type) || data.flow !== graph.flow || !has(nodes, data.node) || !inScope(graph, ev.call_id)) continue;
       const status = NODE_STATUS[ev.type];
       applyNodeEvent(nodes[data.node], ev, status);
       if (ev.type === "node.started") {
@@ -92,6 +108,14 @@
     if (limit === Infinity && run && run.summary && ENDED.has(run.summary.status)) stopRunning(nodes);
     addSpans(graph, run, nodes, limit);
     return { nodes: nodes, edges: edges, ts: lastTs, upto: limit };
+  }
+
+  // A sub-flow's flow.* events name the SubFlow node they ran under; a top-level flow's do not.
+  function ownFlowEvent(graph, ev) {
+    const data = ev.data || {};
+    const parent = graph.parent;
+    if (!parent) return !data.parent_flow;
+    return data.parent_flow === parent.flow && data.parent_node === parent.node && inScope(graph, ev.call_id);
   }
 
   // A node still "running" when its flow or run ended was cancelled (no node event says so).
@@ -130,7 +154,7 @@
     ((run && run.spans) || []).forEach((span) => {
       if (span.family === "node" || span.family === "flow") return;
       const info = has(nodes, span.node) ? nodes[span.node] : null;
-      if (!info || !span.events || span.events[0] > limit) return;
+      if (!info || !span.events || span.events[0] > limit || !inScope(graph, span.parent_id || span.call_id)) return;
       const ended = spanEnded(span, limit);
       info.calls += 1;
       if (ended && span.status === "error") {
@@ -139,7 +163,8 @@
       }
       if (ended && typeof span.cost_usd === "number") info.cost = (info.cost || 0) + span.cost_usd;
       const visitCall = graph.flow + ":" + span.node + ":" + info.lastVisit;
-      if (info.items && byId[span.node].fan_out && span.parent_id === visitCall) {
+      const parentVisit = String(span.parent_id || "").slice(scopeOf(span.parent_id).length).replace(/^\//, "");
+      if (info.items && byId[span.node].fan_out && parentVisit === visitCall) {
         info.items.total += 1;
         if (ended) info.items.done += 1;
       }
@@ -189,6 +214,7 @@
     if (n.fan_out) out.push("fan-out over " + n.over);
     if (n.fan_in) out.push("fan-in: " + (n.sources || []).join(", "));
     if (n.tool && (n.kind === "call" || n.kind === "map")) out.push("tool: " + n.tool);
+    if (n.subflow) out.push("sub-flow: " + n.subflow.flow);
     if (n.pause) out.push("pause gate");
     return out;
   }
@@ -200,21 +226,38 @@
     return text ? shape + "|" + quote(text) + "|" : shape;
   }
 
-  function mermaid(graph) {
-    const id = (name) => "n_" + name;
-    const lines = ["flowchart TD", "  aa_start((start)) --> " + id(graph.start)];
-    (graph.nodes || []).forEach((n) => {
+  // Mermaid ids: `n_<name>` at the top, `s<index path>__<name>` inside sub-flows (as Python).
+  function mermaidId(name, path) {
+    return path.length ? "s" + path.join("_") + "__" + name : "n_" + name;
+  }
+
+  function mermaidBody(graph, path, indent) {
+    const lines = [];
+    (graph.nodes || []).forEach((n, index) => {
+      const text = quote(nodeLines(n).join("<br/>"));
+      if (n.subflow) {
+        lines.push(indent + "subgraph " + mermaidId(n.id, path) + "[" + text + "]");
+        Array.prototype.push.apply(lines, mermaidBody(n.subflow, path.concat([index]), indent + "  "));
+        lines.push(indent + "end");
+        return;
+      }
       const shape = SHAPES[n.kind] || SHAPES.fn;
-      lines.push("  " + id(n.id) + shape[0] + quote(nodeLines(n).join("<br/>")) + shape[1] + (n.pause ? ":::pause" : ""));
+      lines.push(indent + mermaidId(n.id, path) + shape[0] + text + shape[1] + (n.pause ? ":::pause" : ""));
     });
-    (graph.edges || []).forEach((e) => lines.push("  " + id(e.source) + " " + arrow(e) + " " + id(e.target)));
-    (graph.nodes || []).filter((n) => n.end).forEach((n) => lines.push("  " + id(n.id) + " --> aa_end((end))"));
+    (graph.edges || []).forEach((e) => lines.push(indent + mermaidId(e.source, path) + " " + arrow(e) + " " + mermaidId(e.target, path)));
+    return lines;
+  }
+
+  function mermaid(graph) {
+    const lines = ["flowchart TD", "  aa_start((start)) --> " + mermaidId(graph.start, [])];
+    Array.prototype.push.apply(lines, mermaidBody(graph, [], "  "));
+    (graph.nodes || []).filter((n) => n.end).forEach((n) => lines.push("  " + mermaidId(n.id, []) + " --> aa_end((end))"));
     lines.push("  classDef pause stroke-dasharray: 5 5");
     return lines.join("\n") + "\n";
   }
 
   AA.graphLive = {
     STATUSES: STATUSES, ICONS: ICONS, dict: dict, has: has, edgeKey: edgeKey, links: links, replaySteps: replaySteps,
-    snapshot: snapshot, paths: paths, search: search, mermaid: mermaid,
+    snapshot: snapshot, paths: paths, search: search, mermaid: mermaid, inScope: inScope,
   };
 })();

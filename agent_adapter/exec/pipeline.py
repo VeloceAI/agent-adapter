@@ -27,6 +27,7 @@ from agent_adapter.core.registry import Registry
 from agent_adapter.core.tool import ToolSpec, call_in_attempt
 from agent_adapter.core.types import ErrorInfo, LedgerEntry, ToolCall, ToolResult
 from agent_adapter.exec._approve import approve
+from agent_adapter.exec._call_content import NOT_PASSED, emit_finished
 from agent_adapter.exec._call_steps import NOT_STORED, CallSteps
 from agent_adapter.exec._journal import Journal, JournalSlot
 from agent_adapter.exec._resume import current_journal, restore_visit, visit_snapshot
@@ -76,6 +77,8 @@ async def _execute(
     """
     journal = current_journal()
     slot = _claim(journal, call, spec, registry) if journal is not None else None
+    if slot is not None and journal is not None:
+        await journal.started(slot)  # a durable run logs the call (or its replay) first
     if slot is not None and slot.result is not None:
         logger.debug("tool %s replayed from the node journal (run %s)", slot.tool, ctx.run_id)
         own_id = call.id or call_id or slot.result.call_id
@@ -84,7 +87,7 @@ async def _execute(
     with use_context(run.ctx):
         result = await run.execute(spec, registry)
     if slot is not None and journal is not None:
-        journal.record(slot, result)
+        await journal.settle(slot, result)
     return result
 
 
@@ -137,11 +140,17 @@ class _Call(CallSteps):
         )
         self._event_ctx = ToolContext(run_id=ctx.run_id, call_id=self.parent_id)
         self.attempts = 0
+        self.spec: ToolSpec | None = None
+        self.passed: Any = NOT_PASSED  # the arguments, once the before-tool guards passed
         self.started = settings.clock()
         self.started_at = time.time()
 
     def emit(self, type: str, /, **data: Any) -> None:
         emit(self.ctx.sink, make_event(type, self._event_ctx, call_id=self.call_id, **data))
+
+    def emit_finished(self, value: Any, /, **data: Any) -> None:
+        event = make_event(EventType.TOOL_FINISHED, self._event_ctx, call_id=self.call_id, **data)
+        emit_finished(self.ctx.sink, event, self.spec, self.passed, value)
 
     def latency_ms(self) -> float:
         return max(0.0, (self.settings.clock() - self.started) * 1000)
@@ -151,6 +160,7 @@ class _Call(CallSteps):
         found: ToolSpec | None = None
         try:
             found = self._resolve(spec, registry)
+            self.spec = found
             self.emit(EventType.TOOL_STARTED, tool=self.name, kind=found.kind)
             result, stored = await self._admitted(found)
         except BaseException as exc:
@@ -171,10 +181,13 @@ class _Call(CallSteps):
     def _resolve(self, spec: ToolSpec | None, registry: Registry | None) -> ToolSpec:
         if spec is not None:
             self.name = spec.name
-            return spec
-        if registry is None:
+            found = spec
+        elif registry is None:
             raise ToolNotFound(f"no tool named {self.name!r}: the executor has no registry")
-        return registry.get(self.name)
+        else:
+            found = registry.get(self.name)
+        policy = self.settings.policy
+        return found if policy is None else policy.effective(found)
 
     async def _admitted(self, spec: ToolSpec) -> tuple[ToolResult, Any]:
         runs = self.settings.runs
@@ -202,6 +215,7 @@ class _Call(CallSteps):
                 # edited arguments pass the same checks (guardrails, budget) as the originals
                 short = await run_before(hooks, "before_tool", approved)
             inv = approved
+        self.passed = inv.call.arguments
         if short is not None:
             result = self._ok(short.value)
         else:

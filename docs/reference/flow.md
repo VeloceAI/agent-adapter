@@ -8,7 +8,7 @@ Flow graphs, nodes and the runner. Concepts: [Flows](../concepts/flows.md), [Flo
 
 ::: agent_adapter.flow
     options:
-      members: [Call, FlowCheckpoint, FlowGraph, FlowResult, Join, Map, Merge, MergeRule, NodeFn, NodeSpec, Route, RouteSpec, apply_updates, keyed, merge_rules, node_model, node_prompt]
+      members: [Call, FlowCheckpoint, FlowGraph, FlowResult, Join, Map, Merge, MergeRule, NodeCache, NodeFn, NodeSpec, Route, RouteSpec, SubFlow, apply_updates, keyed, merge_rules, node_model, node_prompt]
 
 Also exported here, documented under the canonical path: [`Flow`](top-level.md#agent_adapter.Flow), [`FlowRunner`](top-level.md#agent_adapter.FlowRunner).
 

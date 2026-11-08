@@ -113,19 +113,31 @@ nav:
       - Wrap a legacy class: how-to/wrap-legacy-code.md
       - Parallel retrieval: how-to/parallel-retrieval.md
       - Human in the loop: how-to/human-in-the-loop.md
+      - Run flows on Temporal or DBOS: how-to/durable-engines.md
       - Budgets: how-to/budgets.md
+      - Team budgets: how-to/team-budgets.md
       - Caching: how-to/caching.md
       - Bring your own model: how-to/bring-your-own-model.md
+      - Model recipes: how-to/model-recipes.md
+      - Send traces: how-to/send-traces.md
       - Compress a long context: how-to/compress-long-context.md
       - Sync code and backends: how-to/sync-backends.md
       - Testing tools: how-to/testing-tools.md
       - See your runs: how-to/see-your-runs.md
+      - Search and tag runs: how-to/search-your-runs.md
       - Navigate the graph: how-to/navigate-the-graph.md
       - Chat with your agent: how-to/chat-with-your-agent.md
+      - Remember users across chats: how-to/chat-memory.md
       - Chat flows by example: how-to/chat-flows.md
       - Wrap a framework for chat: how-to/chat-wrappers.md
+      - Multi-agent: how-to/multi-agent.md
+      - Evaluate your agent: how-to/evaluate-your-agent.md
+      - Evals from production: how-to/evals-from-production.md
+      - See your evals: how-to/see-your-evals.md
       - Optimise your agent: how-to/optimise-your-agent.md
+      - Cut model costs per step: how-to/cut-model-costs.md
       - "Tutorial: a research agent": tutorials/research-agent.md
+      - "Tutorial: the golden path": tutorials/golden-path.md
       - Cookbook:
           - cookbook/index.md
           - Retry a flaky tool: cookbook/retry-flaky-tool.md
@@ -145,9 +157,10 @@ nav:
       - Approval: examples/approval.md
       - Cost and cache: examples/cost-cache.md
       - Parallel fan-out and fan-in: examples/parallel.md
+      - Memory and retrieval: examples/memory.md
       - Flows: examples/flows.md
       - Serving and protocols: examples/serving.md
-      - Optimiser: examples/optimiser.md
+      - Evals and optimiser: examples/optimiser.md
       - Cookbook: examples/cookbook.md
   - Backends:
       - FastAPI: backends/fastapi.md
@@ -230,17 +243,28 @@ nav:
       - Executor policies: concepts/executor-policies.md
       - Flows: concepts/flows.md
       - Flow pause and resume: concepts/flow-resume.md
+      - Sub-flows and node cache: concepts/flow-subflows.md
+      - Durable runs: concepts/durable-runs.md
       - Hooks: concepts/hooks.md
+      - Guardrails: concepts/guardrails.md
+      - Policy file: concepts/policy.md
+      - Audit log: concepts/audit.md
+      - Audit log in production: concepts/audit-operations.md
       - Approval: concepts/approval.md
       - Resume a parked call: concepts/approval-resume.md
       - Approval batches: concepts/approval-batches.md
       - Approval stores: concepts/approval-stores.md
       - Database approval stores: concepts/approval-stores-db.md
+      - Approval memory: concepts/approval-memory.md
       - Cost: concepts/cost.md
       - Tracing: concepts/tracing.md
       - Cache: concepts/cache.md
       - Embeddings: concepts/embeddings.md
+      - Memory: concepts/memory.md
+      - Retrieval (RAG): concepts/retrieval.md
+      - Sandboxed code: concepts/sandbox.md
       - Model ports: concepts/models.md
+      - Streaming: concepts/streaming.md
       - Instrumented models and tool loop: concepts/tool-loop.md
       - Context compression: concepts/context-compression.md
       - Errors: concepts/errors.md
@@ -248,6 +272,8 @@ nav:
       - Glossary: concepts/glossary.md
   - Guides:
       - Security: guides/security.md
+      - Threat model: guides/threat-model.md
+      - Production checklist: guides/production-checklist.md
       - Performance: guides/performance.md
       - Observability: guides/observability.md
       - Versioning: guides/versioning.md
@@ -256,6 +282,7 @@ nav:
           - Raw tool calling: migration/raw-tool-calling.md
           - LangChain tools: migration/langchain-tools.md
           - Hand-rolled approval: migration/hand-rolled-approval.md
+          - The migrate command: migration/migrate-command.md
           - From LangGraph: tutorials/migrate-langgraph.md
   - Reference:
       - API reference: reference.md
@@ -268,16 +295,24 @@ nav:
       - Cost: reference/cost.md
       - Cache: reference/cache.md
       - Embeddings: reference/embeddings.md
+      - Memory: reference/memory.md
+      - Retrieval: reference/retrieval.md
+      - Sandbox: reference/sandbox.md
+      - Policy: reference/policy.md
+      - Audit log: reference/audit.md
       - Context compression: reference/context.md
       - Runtime: reference/runtime.md
       - Tracing: reference/tracing.md
       - Models: reference/models.md
       - HTTP server: reference/server.md
       - Handlers: reference/handlers.md
+      - Chat contract: reference/chat.md
       - Run viewer: reference/viewer.md
       - "Integrations: model APIs and protocols": reference/integrations-providers.md
       - "Integrations: frameworks": reference/integrations-frameworks.md
+      - "Integrations: durable engines": reference/integrations-durable.md
       - "Integrations: protocol": reference/integrations-base.md
+      - Evals: reference/evals.md
       - Optimiser: reference/optimiser.md
       - CLI: reference/cli.md
       - Changelog: changelog.md
@@ -285,4 +320,5 @@ nav:
       - Writing an integration: contributing/writing-an-integration.md
       - Performance regression tests: contributing/performance-tests.md
       - Cutting a release: contributing/release.md
+      - API stability policy: contributing/stability.md
       - Roadmap: roadmap.md

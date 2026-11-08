@@ -47,12 +47,13 @@ read the same input state: treat it as read-only and return updates.
 | `Call(tool, args=…, into=…)` | `executor.run_spec`; `args` may be `fn(state)` | `{into: value}` |
 | `Map(over, tool= / tool_from= / fn=, into=…)` | one call per item of the list field `over` | one `{into: value}` per item |
 | `Join(sources, fn=None)` | once nothing else is pending (fan-in) | what `fn` returns |
+| `SubFlow(flow, input=…, into=…)` | another flow, as one node ([sub-flows](flow-subflows.md)) | the child's result, mapped by `into` |
 
 `Map(tool=…)` passes the item (or `args_fn(item)`); `tool_from="tool"` reads the tool name
 from each item, arguments from `item[args_from]` (else the rest of the item); `fn(item,
 state, ctx)` maps without a tool. `on_error="fail"` fails on the first failed item in item
 order, `"skip"` drops it with a `WARNING`. Node options: `concurrency` (Map), `timeout`,
-`retries` (executor backoff), `pause`, `prompt`.
+`retries` (executor backoff), `pause`, `prompt`, `cache` ([node cache](flow-subflows.md#node-cache)).
 
 ## Building and validating
 
@@ -142,9 +143,8 @@ through. With `trace_state` the [run recorder](../how-to/see-your-runs.md) keeps
 
 | File | Holds |
 |---|---|
-| `flow/spec.py` | `Flow` builder |
-| `flow/actions.py` | `Call`, `Map`, `Join`, `Route`, `node_prompt`, `node_model` |
+| `flow/spec.py`, `actions.py` | `Flow` builder; `Call`, `Map`, `Join`, `Route`, `node_prompt`, `node_model` |
 | `flow/state.py` | merge rules, `merge_rules`, `apply_updates` |
 | `flow/graph.py` | `FlowGraph`, `NodeSpec`, `RouteSpec`, validation |
-| `flow/runner.py` | `FlowRunner`, `FlowResult`, `FlowCheckpoint`, the superstep loop |
+| `flow/runner.py`, `_loop.py` | `FlowRunner`, `FlowResult`, `FlowCheckpoint`; the superstep loop |
 | `flow/_nodes.py`, `_gates.py`, `_step.py`, `_invoke.py` | node visit, gates and resume answer, merge and routes, user code |

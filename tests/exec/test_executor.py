@@ -31,6 +31,7 @@ def test_context_carries_the_executor_ports():
     assert ex.sink.sinks == (sink,)  # the executor's hub, so sinks added later reach ctx
     assert ctx.state == {"user": "u"} and ctx.extras == {"k": 1}
     assert ex.context(run_id="mine").run_id == "mine"
+    assert ex.context(user_id="ann").user_id == "ann" and ctx.user_id == ""
 
 
 def test_public_configuration_is_read_only():

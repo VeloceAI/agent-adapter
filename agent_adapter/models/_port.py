@@ -14,10 +14,12 @@ from collections.abc import AsyncIterable, AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from typing import Any, ClassVar, Protocol, TypeVar
 
+from agent_adapter.core._partial_json import PartialJSON
 from agent_adapter.core.errors import ModelError, ModelOutputInvalid
 from agent_adapter.core.messages import (
     LLMRequest,
     LLMResponse,
+    PartialOutput,
     StreamDone,
     StreamEvent,
     TextDelta,
@@ -38,6 +40,25 @@ class Assembler(Protocol):
     def feed(self, chunk: Any) -> list[TextDelta | ToolCallDelta]: ...
 
     def response(self) -> LLMResponse: ...
+
+
+class PartialOutputs:
+    """Follows text deltas with `PartialOutput` when the request has an `output_schema`."""
+
+    def __init__(self, request: LLMRequest) -> None:
+        self._json = PartialJSON() if request.output_schema is not None else None
+
+    def after(self, event: StreamEvent) -> PartialOutput | None:
+        """The `PartialOutput` to send after `event`, if the parsed value changed."""
+        if self._json is None:
+            return None
+        if isinstance(event, PartialOutput):
+            self._json = None  # the stream sends its own
+            return None
+        if not isinstance(event, TextDelta):
+            return None
+        changed, value = self._json.feed(event.text)
+        return PartialOutput(value=value) if changed else None
 
 
 class ProviderPort(ABC):
@@ -179,6 +200,9 @@ class ProviderPort(ABC):
     async def stream(self, request: LLMRequest) -> AsyncIterator[StreamEvent]:
         """Text and tool-call deltas, then `StreamDone` with the assembled response.
 
+        With `output_schema`, each text delta that changes the JSON parsed so far is followed
+        by a `PartialOutput`.
+
         Raises:
             ModelError: a mapped provider failure, before or during the stream.
             ConfigError: `request.compression` is invalid or could not run.
@@ -193,6 +217,7 @@ class ProviderPort(ABC):
         model = request.model or self.model
         client, kwargs = await self._prepare(request, model)
         assembler = self._assembler(model)
+        partial = PartialOutputs(request)
         started = time.perf_counter()
         try:
             chunks = await self._open_stream(client, kwargs)
@@ -200,6 +225,8 @@ class ProviderPort(ABC):
                 async for chunk in chunks:
                     for delta in assembler.feed(chunk):
                         yield delta
+                        if (extra := partial.after(delta)) is not None:
+                            yield extra
             finally:
                 await _close_stream(chunks)
             response = assembler.response()
@@ -327,10 +354,12 @@ async def collect_stream(
 
 
 def replay(response: LLMResponse) -> list[StreamEvent]:
-    """A finished response as stream events: its text, each tool call, then `StreamDone`."""
+    """A finished response as stream events: text, parsed output, tool calls, `StreamDone`."""
     events: list[StreamEvent] = []
     if response.text:
         events.append(TextDelta(text=response.text))
+    if response.parsed is not None:
+        events.append(PartialOutput(value=response.parsed))
     for index, call in enumerate(response.tool_calls):
         events.append(
             ToolCallDelta(

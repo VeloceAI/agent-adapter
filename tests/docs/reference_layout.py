@@ -56,14 +56,26 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
         "[Executor](../concepts/executor.md), "
         "[Executor policies](../concepts/executor-policies.md).\n\n"
         "`agent_adapter.exec.integration` is a seam for flow compilers and framework "
-        "bridges; most code never needs it.",
-        ("agent_adapter.exec", "agent_adapter.exec.control", "agent_adapter.exec.integration"),
+        "bridges; most code never needs it. Checkpoint stores for crash-safe runs: "
+        "[Durable runs](../concepts/durable-runs.md).",
+        (
+            "agent_adapter.exec",
+            "agent_adapter.exec.checkpoints",
+            "agent_adapter.exec.control",
+            "agent_adapter.exec.integration",
+        ),
     ),
     "hooks": (
         "Hooks",
-        "Hooks around tool, model and node calls, and the built-in hooks. "
-        "Concepts: [Hooks](../concepts/hooks.md).",
-        ("agent_adapter.hooks", "agent_adapter.hooks.builtin"),
+        "Hooks around tool, model and node calls, the built-in hooks and content guards. "
+        "Concepts: [Hooks](../concepts/hooks.md), [Guardrails](../concepts/guardrails.md), "
+        "[Team budgets](../how-to/team-budgets.md).",
+        (
+            "agent_adapter.hooks",
+            "agent_adapter.hooks.builtin",
+            "agent_adapter.hooks.builtin.budgets",
+            "agent_adapter.hooks.builtin.guards",
+        ),
     ),
     "approval": (
         "Approval",
@@ -94,6 +106,43 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
         "The embedding port, a callable embedder and its cache. "
         "Concepts: [Embeddings](../concepts/embeddings.md).",
         ("agent_adapter.embeddings",),
+    ),
+    "memory": (
+        "Memory",
+        "The memory port, SQLite and callable backends, Mem0/Zep/Graphiti adapters and the "
+        "memory tools. Concepts: [Memory](../concepts/memory.md).",
+        ("agent_adapter.memory",),
+    ),
+    "retrieval": (
+        "Retrieval",
+        "The retriever port, documents with sources, callable, embedding, LlamaIndex and "
+        "LangChain retrievers, and `retriever_tool`. "
+        "Concepts: [Retrieval (RAG)](../concepts/retrieval.md).",
+        ("agent_adapter.retrieval",),
+    ),
+    "sandbox": (
+        "Sandbox",
+        "The sandbox port, Docker, callable and development-only local backends, and "
+        "`code_tool`. Concepts: [Sandboxed code](../concepts/sandbox.md).",
+        ("agent_adapter.sandbox",),
+    ),
+    "policy": (
+        "Policy",
+        "One policy file for access, approvals, guards, budgets and limits per tool, team "
+        "and environment. Concepts: [Policy file](../concepts/policy.md).",
+        ("agent_adapter.policy",),
+    ),
+    "audit": (
+        "Audit log",
+        "A signed, tamper-evident log of approvals, guard blocks and redactions, budget stops, "
+        "memory deletes and exports. Guide: [Audit log](../concepts/audit.md).",
+        ("agent_adapter.audit",),
+    ),
+    "integrations-durable": (
+        "Integrations: durable engines",
+        "Flows on Temporal and DBOS: "
+        "[Run flows on Temporal or DBOS](../how-to/durable-engines.md). " + _INSTALL + ".",
+        ("agent_adapter.integrations.temporal", "agent_adapter.integrations.dbos"),
     ),
     "context": (
         "Context compression",
@@ -132,11 +181,18 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
         "Run tool calls from queue messages, serverless events and pipelines.",
         ("agent_adapter.handlers",),
     ),
+    "chat": (
+        "Chat contract",
+        "The types a chat agent receives for one turn and what it may return, shared by the "
+        "chat page and evals. Guide: [Chat with your agent](../how-to/chat-with-your-agent.md).",
+        ("agent_adapter.chat",),
+    ),
     "viewer": (
         "Run viewer",
         "Record runs to a folder and browse them on 127.0.0.1 (`agent-adapter ui`), or chat "
         "with an agent there. Guides: [See your runs](../how-to/see-your-runs.md), "
-        "[Chat with your agent](../how-to/chat-with-your-agent.md).",
+        "[Chat with your agent](../how-to/chat-with-your-agent.md), "
+        "[See your evals](../how-to/see-your-evals.md).",
         ("agent_adapter.viewer", "agent_adapter.viewer.chat"),
     ),
     "integrations-providers": (
@@ -173,6 +229,17 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
         "The integration protocol and entry-point discovery, for authors of new integrations "
         "([Writing an integration](../contributing/writing-an-integration.md)).",
         (_I + "base", _I + "discovery"),
+    ),
+    "evals": (
+        "Evals",
+        "Run eval cases on any agent, grade them and report "
+        "([Evaluate your agent](../how-to/evaluate-your-agent.md)).",
+        (
+            "agent_adapter.evals",
+            "agent_adapter.evals.advisor",
+            "agent_adapter.evals.from_runs",
+            "agent_adapter.evals.graders",
+        ),
     ),
     "optimiser": (
         "Optimiser",

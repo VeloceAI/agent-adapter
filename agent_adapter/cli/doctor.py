@@ -1,4 +1,4 @@
-"""`agent-adapter doctor`: Python, package, extras, integrations, shadowing and pip index."""
+"""`agent-adapter doctor`: Python, package, extras, features, integrations, shadowing, pip index."""
 
 from __future__ import annotations
 
@@ -7,11 +7,12 @@ import logging
 import os
 import re
 import sys
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 
 from agent_adapter._version import __version__
+from agent_adapter.cli.doctor_features import FEATURES, Feature, docker_finding, feature_findings
 from agent_adapter.cli.findings import Finding, Level
 from agent_adapter.cli.pipindex import index_findings
 from agent_adapter.core.errors import MissingDependency
@@ -153,8 +154,13 @@ def check_shadowing(cwd: Path, found: Mapping[str, Integration]) -> list[Finding
     return findings
 
 
-def diagnose(environ: Mapping[str, str] | None = None, cwd: Path | None = None) -> list[Finding]:
-    """Every doctor check, in display order."""
+def diagnose(
+    environ: Mapping[str, str] | None = None,
+    cwd: Path | None = None,
+    features: Sequence[Feature] = FEATURES,
+    docker: Callable[[], Finding] = docker_finding,
+) -> list[Finding]:
+    """Every doctor check, in display order; `features` and `docker` are the optional backends."""
     env = os.environ if environ is None else environ
     try:
         requires = importlib.metadata.distribution(DIST).requires or []
@@ -163,6 +169,8 @@ def diagnose(environ: Mapping[str, str] | None = None, cwd: Path | None = None) 
         requires, installed = [], None
     table = extras_table(requires)
     findings = [check_python(), check_package(installed), check_extras(table)]
+    findings += feature_findings(table, features, _version)
+    findings.append(docker())
     findings += check_integrations(table)
     findings += check_shadowing(cwd or Path.cwd(), available_integrations())
     findings += index_findings(env)

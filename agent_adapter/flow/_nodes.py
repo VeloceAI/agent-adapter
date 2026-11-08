@@ -1,4 +1,4 @@
-"""Run one flow node: hooks, timeout and retries, and its action (fn, Call, Map, Join)."""
+"""Run one flow node: hooks, timeout and retries, the node cache, and its action."""
 
 from __future__ import annotations
 
@@ -12,10 +12,11 @@ from typing import Any
 from pydantic import BaseModel
 
 from agent_adapter.approval.store import ApprovalStore
-from agent_adapter.core.context import ToolContext
+from agent_adapter.core.context import NODE_KEY, ToolContext
 from agent_adapter.core.control import is_control_flow
 from agent_adapter.core.errors import (
     AdapterError,
+    ApprovalDenied,
     ApprovalPending,
     FlowError,
     ToolNotFound,
@@ -26,13 +27,18 @@ from agent_adapter.core.tool import ToolSpec
 from agent_adapter.core.types import ApprovalDecision, ApprovalRequest
 from agent_adapter.exec._approve import approval_store, pending_store
 from agent_adapter.exec._canon import Decoder, Encoder
+from agent_adapter.exec._durable import CallLog, merged
 from agent_adapter.exec._journal import Journal, JournalData, _make_journal
 from agent_adapter.exec._resume import Pending, ResumeAnswer, _visit_scope, current_journal
 from agent_adapter.exec.executor import Executor, bind_model
+from agent_adapter.flow._cache import ApprovalWatch, CachedVisit, Codec, watched
 from agent_adapter.flow._invoke import describe_error, invoke_node_fn
-from agent_adapter.flow._map import ItemOutcome, MapVisit, item_journal, with_ids
+from agent_adapter.flow._map import MAP_TOOLS, ItemOutcome, MapVisit, item_journal, with_ids
+from agent_adapter.flow._nested import SubFlowDenied, SubflowHost, SubFlowPaused, child_request
+from agent_adapter.flow._result import FlowCheckpoint
 from agent_adapter.flow._trace import changed_fields, traced_updates
-from agent_adapter.flow.actions import MODEL_KEY, PROMPT_KEY, Call, Join, Map
+from agent_adapter.flow._updates import Updates
+from agent_adapter.flow.actions import MODEL_KEY, PROMPT_KEY, Call, Join, Map, SubFlow
 from agent_adapter.flow.graph import NodeSpec
 from agent_adapter.hooks.base import Hook, NodeInvocation
 from agent_adapter.hooks.dispatch import run_after, run_before, run_on_error
@@ -54,6 +60,10 @@ class NodeEnv:
     decoder: Decoder | None = None  # FlowRunner(seal_decoder=)
     allowed: Mapping[str, type] = field(default_factory=dict)  # classes a replay may build
     trace_state: bool = False  # FlowRunner(trace_state=): node.finished carries the values
+    scope: str = ""  # a sub-flow's call id prefix: `{parent visit id}/`
+    subflows: SubflowHost | None = None  # None: SubFlow nodes cannot run here
+    cache_secret: bytes = b""  # signs node cache entries (the runner's checkpoint key)
+    calls: CallLog | None = None  # a durable run's call log: logs calls, seeds replays
 
 
 @dataclass(frozen=True)
@@ -67,17 +77,21 @@ class NodeOutcome:
     journal: JournalData = field(default_factory=dict)  # finished executor calls, for the replay
     pendings: tuple[Pending, ...] = ()  # every record the visit left pending, with its store
     visit_id: str = ""  # the visit's call id; flow-assigned `{visit_id}:{i}` ids repeat on resume
+    child: FlowCheckpoint | None = None  # a paused SubFlow node's child run
+    denied: str | None = None  # a SubFlow node whose child gate was denied: `node/child path`
 
 
-@dataclass
-class _Updates:
-    items: list[Mapping[str, Any]] = field(default_factory=list)
-    view: Mapping[str, Any] | None = None  # what after_node hooks see
+def node_call_id(flow: str, node: str, visit: int, scope: str = "") -> str:
+    """The id of one node visit (node events and the node's context); `scope` for sub-flows."""
+    return f"{scope}{flow}:{node}:{visit}"
 
 
-def node_call_id(flow: str, node: str, visit: int) -> str:
-    """The id of one node visit (node events and the node's context)."""
-    return f"{flow}:{node}:{visit}"
+def node_ids(env: NodeEnv, node: str, visit: int) -> dict[str, Any]:
+    """The ids node events and pending requests carry; a sub-flow's add its `scope`."""
+    ids: dict[str, Any] = {"flow": env.flow, "node": node, "visit": visit}
+    if env.scope:
+        ids["scope"] = env.scope
+    return ids
 
 
 async def run_node(
@@ -91,6 +105,7 @@ async def run_node(
     answer: ResumeAnswer | None = None,
     items: Mapping[int, ItemOutcome] | None = None,
     journal: JournalData | None = None,
+    child: FlowCheckpoint | None = None,
 ) -> NodeOutcome:
     """Run one node visit; failures raise FlowError, a pending approval is returned.
 
@@ -98,22 +113,37 @@ async def run_node(
         answer: Answers the tool approvals this visit resumes; spent when the visit ends.
         items: `Map` items finished before the pause (by index); they do not run again.
         journal: Executor calls this visit finished before the pause; they replay.
+        child: Where a SubFlow node's child run paused; it continues from there.
     """
-    call_id = node_call_id(env.flow, node.name, visit)
+    call_id = node_call_id(env.flow, node.name, visit, env.scope)
     node_ctx = ctx.child(call_id=call_id, approval=approval)
     node_ctx.extras[PROMPT_KEY] = node.prompt
+    node_ctx.extras[NODE_KEY] = node.name
+    watch = None
+    if node.cache is not None:  # a visit that asked for any approval is never cached
+        node_ctx, watch = watched(node_ctx, env.executor.sink)
     if env.model is not None:
         node_ctx.extras[MODEL_KEY] = bind_model(env.executor, env.model, node_ctx)
-    ids = {"flow": env.flow, "node": node.name, "visit": visit}
+    ids = node_ids(env, node.name, visit)
     emit(ctx.sink, make_event(EventType.NODE_STARTED, ctx, call_id=call_id, **ids))
-    visit_run = _Node(env, node, state, node_ctx, items or {})
+    visit_run = _Node(env, node, state, node_ctx, items or {}, child, watch, visit)
     replay = _visit_journal(env, node, call_id, journal)
     # every visit gets its own scope, so a nested flow never sees an outer answer
     with use_context(node_ctx), _visit_scope(answer, replay) as made:
         try:
             done = await visit_run.run()
+        except SubFlowDenied as exc:
+            event = make_event(
+                EventType.NODE_FAILED, ctx, call_id=call_id, error_kind=ApprovalDenied.kind, **ids
+            )
+            emit(ctx.sink, event)
+            return NodeOutcome(node.name, denied=f"{node.name}/{exc.at}", visit_id=call_id)
         except ApprovalPending as exc:
-            request = _pending_request(exc, node_ctx, ids)
+            nested = exc if isinstance(exc, SubFlowPaused) else None
+            if nested is not None:
+                request = child_request(nested.checkpoint, ids)
+            else:
+                request = _pending_request(exc, node_ctx, ids)
             default_store = approval_store(env.executor.approval)
             emit(
                 ctx.sink,
@@ -133,9 +163,14 @@ async def run_node(
                 node.name,
                 pending=request,
                 items=dict(visit_run.items),
-                journal=replay.data(drop=[item_journal(i) for i in visit_run.items]),
-                pendings=_pendings(made, request, pending_store(exc, default_store)),
+                journal=replay.data(drop=[MAP_TOOLS, *(item_journal(i) for i in visit_run.items)]),
+                pendings=_pendings(
+                    [*made, *(nested.pendings if nested else ())],
+                    request,
+                    pending_store(exc, default_store),
+                ),
                 visit_id=call_id,
+                child=nested.checkpoint if nested else None,
             )
         except Exception as exc:
             if is_control_flow(exc):
@@ -152,6 +187,8 @@ async def run_node(
             raise error from exc
     changed = changed_fields(done.items)
     state_data: dict[str, Any] = {"changed": changed}
+    if done.cached:
+        state_data["cached"] = True
     if env.trace_state:
         state_data["updates"] = traced_updates(done.view or {}, changed)
     emit(
@@ -169,10 +206,19 @@ def _visit_journal(env: NodeEnv, node: NodeSpec, call_id: str, data: JournalData
     """
     calls = node.kind != "map"
     outer = current_journal()
-    if outer is not None:
+    if outer is not None and not env.scope:  # a sub-flow node's journal is in its checkpoint
         return outer.child(call_id, data, calls=calls)
+    log = env.calls
+    if log is not None:  # a recovered visit replays the calls it logged before the crash
+        data = merged(data, log.seed(call_id))
     return _make_journal(
-        data, encoder=env.encoder, decoder=env.decoder, calls=calls, allowed=env.allowed
+        data,
+        encoder=env.encoder,
+        decoder=env.decoder,
+        calls=calls,
+        allowed=env.allowed,
+        observer=log,
+        path=(call_id,),
     )
 
 
@@ -186,15 +232,21 @@ class _Node:
         state: BaseModel,
         ctx: ToolContext,
         items: Mapping[int, ItemOutcome],
+        child: FlowCheckpoint | None = None,
+        watch: ApprovalWatch | None = None,
+        visit: int = 0,
     ) -> None:
         self.env = env
         self.node = node
         self.state = state
         self.ctx = ctx
         self.items: dict[int, ItemOutcome] = dict(items)  # finished Map items by index
+        self.child = child
+        self.watch = watch
+        self.visit = visit
         self.where = f"flow {env.flow!r} node {node.name!r}"
 
-    async def run(self) -> _Updates:
+    async def run(self) -> Updates:
         hooks = self.env.hooks
         inv = NodeInvocation(self.env.flow, self.node.name, self.state, self.ctx)
         short = await run_before(hooks, "before_node", inv)
@@ -202,8 +254,8 @@ class _Node:
             done = self._as_updates(short.value)
         else:
             try:
-                done = await self._attempts()
-            except ApprovalPending:
+                done = await self._cached_attempts()
+            except (ApprovalPending, SubFlowDenied):
                 raise
             except Exception as exc:
                 if is_control_flow(exc):
@@ -217,9 +269,9 @@ class _Node:
             done = self._as_updates(replaced)
         return done
 
-    def _as_updates(self, value: Any) -> _Updates:
+    def _as_updates(self, value: Any) -> Updates:
         if value is None:
-            return _Updates()
+            return Updates()
         if not isinstance(value, Mapping):
             raise FlowError(
                 f"{self.where} returned {type(value).__name__}, expected a mapping or None",
@@ -227,14 +279,36 @@ class _Node:
                 node=self.node.name,
             )
         update = dict(value)
-        return _Updates([update], update)
+        return Updates([update], update)
 
-    async def _attempts(self) -> _Updates:
+    async def _cached_attempts(self) -> Updates:
+        """The action, or its cached updates; a visit that asked for approval is not stored.
+
+        Under an executor policy the cache is skipped (no lookup, no store): a hit would skip
+        the policy's per-caller access, approvals, guards and budgets.
+        """
+        if self.node.cache is None:
+            return await self._attempts()
+        if self.env.executor.policy is not None:
+            logger.debug("node %s: cache skipped under the executor's policy", self.node.name)
+            return await self._attempts()
+        env = self.env
+        visit = CachedVisit(
+            self.node,
+            env.flow,
+            self.ctx,
+            node_ids(env, self.node.name, self.visit),
+            self.watch,
+            Codec(env.cache_secret, env.encoder, env.decoder, env.allowed),
+        )
+        return await visit.run(self.state, self._attempts)
+
+    async def _attempts(self) -> Updates:
         """The action under the node's timeout, retried with the executor's backoff."""
         node = self.node
         expired: list[ToolTimeout] = []  # our own timeouts, told apart from a tool's by identity
 
-        async def attempt() -> _Updates:
+        async def attempt() -> Updates:
             scope = asyncio.timeout(node.timeout)
             try:
                 async with scope:
@@ -260,7 +334,7 @@ class _Node:
             ) from exc
         return done
 
-    async def _action(self) -> _Updates:
+    async def _action(self) -> Updates:
         action = self.node.action
         if isinstance(action, Call):
             return await self._call(action)
@@ -269,14 +343,25 @@ class _Node:
                 self.env.flow, self.node, self.env.executor, self.state, self.ctx, self.items
             )
             into, kept = await visit.run(action)
-            return _Updates([{into: value} for value in kept], {into: kept})
+            return Updates([{into: value} for value in kept], {into: kept})
         if isinstance(action, Join):
             if action.fn is None:
-                return _Updates()
+                return Updates()
             return self._as_updates(await invoke_node_fn(action.fn, self.state, self.ctx))
+        if isinstance(action, SubFlow):
+            host = self.env.subflows
+            if host is None:
+                raise FlowError(
+                    f"{self.where}: SubFlow nodes run on FlowRunner only",
+                    flow=self.env.flow,
+                    node=self.node.name,
+                )
+            return self._as_updates(
+                await host.run(self.env, self.node, self.state, self.ctx, self.child)
+            )
         return self._as_updates(await invoke_node_fn(action, self.state, self.ctx))
 
-    async def _call(self, action: Call) -> _Updates:
+    async def _call(self, action: Call) -> Updates:
         executor = self.env.executor
         spec = action.tool if isinstance(action.tool, ToolSpec) else self._spec(action.tool)
         args = action.args(self.state) if callable(action.args) else action.args
@@ -289,7 +374,7 @@ class _Node:
                 raise
             raise filled from exc
         if action.into is None:
-            return _Updates()
+            return Updates()
         return self._as_updates({action.into: value})
 
     def _spec(self, name: str) -> ToolSpec:

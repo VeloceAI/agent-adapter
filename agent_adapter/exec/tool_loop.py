@@ -3,62 +3,49 @@
 from __future__ import annotations
 
 import dataclasses
-import inspect
-import json
 import logging
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
 from pydantic import ValidationError
 
-from agent_adapter.context.model import marked
 from agent_adapter.context.policy import CompressionPolicy
 from agent_adapter.context.run import (
-    after_overflow,
     check_policy,
-    compress_for_model,
     context_window,
 )
 from agent_adapter.core.context import ToolContext
-from agent_adapter.core.errors import ModelContextOverflow, ModelOutputInvalid, ToolUsageError
+from agent_adapter.core.errors import ToolUsageError
 from agent_adapter.core.messages import (
     LLMRequest,
-    LLMResponse,
     Message,
     OutputSchema,
-    StreamDone,
-    TextDelta,
     ToolDef,
 )
 from agent_adapter.core.ports import LedgerPort, LLMPort
 from agent_adapter.core.registry import Registry
-from agent_adapter.core.types import ToolCall, ToolResult, Usage
-from agent_adapter.exec._loop_history import _history_digest, _trailing_turn, _unanswered
+from agent_adapter.exec._durable import durable_key
+from agent_adapter.exec._durable_loop import LoopCheckpoints, Saved, begin, claim, load
+from agent_adapter.exec._durable_seal import check_identity
+from agent_adapter.exec._loop_history import _history_digest as _history_digest
+from agent_adapter.exec._loop_history import _trailing_turn as _trailing_turn
+from agent_adapter.exec._loop_history import _unanswered as _unanswered
+from agent_adapter.exec._loop_steps import EventCallback as EventCallback
+from agent_adapter.exec._loop_steps import LoopFinish as LoopFinish
+from agent_adapter.exec._loop_steps import TextCallback as TextCallback
+from agent_adapter.exec._loop_steps import ToolLoopResult as ToolLoopResult
+from agent_adapter.exec._loop_steps import _Loop
+from agent_adapter.exec._loop_steps import _tool_content as _tool_content
+from agent_adapter.exec.checkpoints import CheckpointStore
 from agent_adapter.exec.executor import Executor, bind_model
-from agent_adapter.models._port import closing
 from agent_adapter.models.entries import entry_prefix, seed_entry_numbers
 from agent_adapter.models.instrument import InstrumentedModel
 from agent_adapter.runtime.ids import new_id
 
 logger = logging.getLogger(__name__)
 
-LoopFinish = Literal["stop", "max_steps", "length", "content_filter", "pending"]
-TextCallback = Callable[[str], Awaitable[None] | None]
-
 _RESERVED = frozenset({"messages", "tools", "tool_choice", "output_schema", "stage", "compression"})
-
-
-@dataclass(frozen=True)
-class ToolLoopResult:
-    """Where a tool loop ended: the full history, the last reply and every tool result."""
-
-    messages: tuple[Message, ...]
-    final: LLMResponse
-    steps: int  # model calls made by this run of the loop
-    finish: LoopFinish
-    tool_results: tuple[ToolResult, ...]
-    usage: Usage
 
 
 async def run_tool_loop(
@@ -76,6 +63,10 @@ async def run_tool_loop(
     request_options: Mapping[str, Any] | None = None,
     compression: CompressionPolicy | None = None,
     on_text: TextCallback | None = None,
+    on_event: EventCallback | None = None,
+    run_id: str | None = None,
+    checkpoints: CheckpointStore | None = None,
+    checkpoint_key: bytes | None = None,
 ) -> ToolLoopResult:
     """Call the model, run its tool calls, feed the results back, until it answers.
 
@@ -88,225 +79,227 @@ async def run_tool_loop(
     `if_still_too_long` once and retries the call once.
 
     With `on_text`, each model call streams through the port's `stream()` and every text
-    chunk is passed to `on_text` (sync or async) as it arrives.
+    chunk is passed to `on_text` (sync or async) as it arrives. `on_event` (also streaming)
+    gets every other stream event: `ToolCallDelta`, `PartialOutput`, and the `StreamDone`
+    that ends each model call.
+
+    With `checkpoints` (and a `run_id`, or a `ctx` with one), the history is saved signed
+    after each step and every tool call is logged; `recover_tool_loop` continues the run
+    after a crash without re-running a finished call. A paused run resumes here.
 
     Raises:
         ToolUsageError: `max_steps < 1`, or bad `request_options` (reserved, unknown or
             invalid keys, or `metadata["call_id"]`), before anything runs.
         ConfigError: `compression` is not a `CompressionPolicy`, or no context window is
-            known for the model, before anything runs.
+            known for the model, before anything runs; a durable store without a key.
+        CheckpointConflict: `checkpoints` holds this run as running or ended.
         ModelError: the model call failed.
     """
-    if max_steps < 1:
-        raise ToolUsageError(f"max_steps must be >= 1, got {max_steps}")
-    tools = tuple(spec.tool_def() for spec in registry)
-    request = _request_fields(
-        request_options, tools, tool_choice=tool_choice, output_schema=output_schema, stage=stage
-    )
-    if compression is not None:
-        context_window(check_policy(compression), request.get("model") or model.model)
-    executor = executor if executor is not None else Executor(registry)
-    owned = ctx is None or not ctx.run_id
-    if ctx is None:
-        ctx = executor.context()
-    elif not ctx.run_id:
-        ctx = dataclasses.replace(ctx, run_id=new_id("run_"))
-    # A fresh context resuming a run must not reuse the entry ids of the turns already paid;
-    # a compressed history has fewer turns than were paid, so the ledger is asked too.
-    llm = bind_model(executor, model, ctx)
-    turns = sum(1 for m in messages if m.role == "assistant")
-    if compression is not None:
-        turns = max(turns, _paid_turns(ctx, llm.ledger or ctx.ledger, stage))
-    seed_entry_numbers(ctx, stage, turns)
-    loop = _Loop(
-        llm,
+    setup = _Setup.made(
+        model,
         registry,
+        max_steps,
         executor,
         ctx,
-        tools=tools,
-        request=request,
-        concurrency=concurrency,
-        stage=stage,
-        compression=compression,
-        on_text=on_text,
+        run_id,
+        request_options,
+        tool_choice,
+        output_schema,
+        stage,
+        compression,
+        checkpoints,
     )
-    try:
-        return await loop.run(list(messages), max_steps)
-    finally:
-        if owned:
-            executor.end_run(ctx.run_id)
+    durable = None
+    if checkpoints is not None:
+        key = durable_key(checkpoints, checkpoint_key, "run_tool_loop")
+        durable = await begin(checkpoints, key, stage, setup.ctx)
+    return await setup.run(
+        list(messages),
+        max_steps,
+        concurrency=concurrency,
+        on_text=on_text,
+        on_event=on_event,
+        durable=durable,
+    )
 
 
-class _Loop:
-    """State of one `run_tool_loop` call."""
+async def recover_tool_loop(
+    model: LLMPort,
+    registry: Registry,
+    run_id: str,
+    *,
+    checkpoints: CheckpointStore,
+    checkpoint_key: bytes | None = None,
+    rerun_in_doubt: bool = False,
+    max_steps: int = 8,
+    executor: Executor | None = None,
+    ctx: ToolContext | None = None,
+    output_schema: OutputSchema | None = None,
+    tool_choice: Literal["auto", "none", "required"] | str = "auto",
+    concurrency: int | None = None,
+    stage: str = "tool_loop",
+    request_options: Mapping[str, Any] | None = None,
+    compression: CompressionPolicy | None = None,
+    on_text: TextCallback | None = None,
+    on_event: EventCallback | None = None,
+) -> ToolLoopResult:
+    """Continue a durable tool loop from its last checkpoint; finished tool calls replay.
 
-    def __init__(
-        self,
-        llm: InstrumentedModel,
+    A call that started but logged no result runs again only if its tool is
+    `idempotent=True`, or with `rerun_in_doubt=True` after you checked it. `max_steps`
+    counts the model calls of the whole run, before the crash too; `tool_results` and
+    `usage` cover this call only.
+
+    Raises:
+        CheckpointNotFound: nothing is stored for `run_id`.
+        CheckpointConflict: another worker took the run, it ended, or it is not this loop.
+        CheckpointStoreCorrupt: the stored checkpoint or its signature does not check out.
+        RecoveryNeedsDecision: a call may have run and its tool is not idempotent.
+        ToolUsageError, ConfigError, ModelError: as `run_tool_loop`.
+    """
+    key = durable_key(checkpoints, checkpoint_key, "recover_tool_loop")
+    saved: Saved = await load(checkpoints, key, run_id, stage)
+    if ctx is not None and ctx.run_id not in ("", run_id):
+        raise ToolUsageError(f"ctx.run_id {ctx.run_id!r} is not the recovered run {run_id!r}")
+    check_identity(run_id, saved.identity, ctx)
+    owned = ctx is None or not ctx.run_id
+    executor = executor if executor is not None else Executor(registry)
+    if ctx is None:
+        identity = saved.identity
+        ctx = executor.context(
+            run_id=run_id, user_id=identity["user_id"], thread_id=identity["thread_id"]
+        )
+    setup = _Setup.made(
+        model,
+        registry,
+        max_steps,
+        executor,
+        ctx,
+        run_id,
+        request_options,
+        tool_choice,
+        output_schema,
+        stage,
+        compression,
+        checkpoints,
+        owned=owned,
+    )
+    durable = await claim(saved, checkpoints, key, setup.ctx, registry, rerun=rerun_in_doubt)
+    return await setup.run(
+        saved.messages,
+        max_steps,
+        concurrency=concurrency,
+        on_text=on_text,
+        on_event=on_event,
+        durable=durable,
+        steps=saved.steps,
+    )
+
+
+@dataclass
+class _Setup:
+    """A tool loop's checked options, bound model and run context, before it runs."""
+
+    llm: InstrumentedModel
+    registry: Registry
+    executor: Executor
+    ctx: ToolContext
+    owned: bool
+    tools: tuple[ToolDef, ...]
+    request: dict[str, Any]
+    stage: str
+    compression: CompressionPolicy | None
+
+    @classmethod
+    def made(
+        cls,
+        model: LLMPort,
         registry: Registry,
-        executor: Executor,
-        ctx: ToolContext,
-        *,
-        tools: tuple[ToolDef, ...],
-        request: dict[str, Any],
-        concurrency: int | None,
+        max_steps: int,
+        executor: Executor | None,
+        ctx: ToolContext | None,
+        run_id: str | None,
+        request_options: Mapping[str, Any] | None,
+        tool_choice: str,
+        output_schema: OutputSchema | None,
         stage: str,
         compression: CompressionPolicy | None,
-        on_text: TextCallback | None = None,
-    ) -> None:
-        self.llm = llm
-        self.compression = compression
-        self.on_text = on_text
-        self.registry = registry
-        self.executor = executor
-        self.ctx = ctx
-        self.tools = tools
-        self.request = request
-        self.concurrency = concurrency
-        self.id_prefix = f"{ctx.call_id or ctx.run_id}:{stage}"
-        self.history: list[Message] = []
-        self.results: list[ToolResult] = []
-        self.usage = Usage()
-        self.steps = 0
+        checkpoints: CheckpointStore | None,
+        *,
+        owned: bool | None = None,
+    ) -> _Setup:
+        """Check the options and bind the run.
 
-    async def run(self, messages: list[Message], max_steps: int) -> ToolLoopResult:
-        self.history = messages
-        trailing = _trailing_turn(messages)
-        if trailing is not None and await self._run_calls(*trailing):
-            index = trailing[0]
-            return self._result("pending", self._replayed(messages[index]))
-        while True:
-            final = await self._generate()
-            self.steps += 1
-            self.usage += final.usage
-            self.history.append(final.message)
-            if final.finish_reason in ("length", "content_filter"):
-                logger.info("tool loop stopped: %s (run %s)", final.finish_reason, self.ctx.run_id)
-                stop: LoopFinish = "length" if final.finish_reason == "length" else "content_filter"
-                return self._result(stop, final)
-            if not final.tool_calls:
-                if final.finish_reason == "error":
-                    logger.warning(
-                        "tool loop: the model ended with an error and no tool calls "
-                        "(raw %r, run %s); finishing as stop",
-                        final.raw_finish_reason,
-                        self.ctx.run_id,
-                    )
-                return self._result("stop", final)
-            if self.steps >= max_steps:
-                logger.info("tool loop hit max_steps=%d (run %s)", max_steps, self.ctx.run_id)
-                return self._result("max_steps", final)
-            if await self._run_calls(len(self.history) - 1, final.tool_calls):
-                return self._result("pending", final)
+        Raises:
+            ToolUsageError: bad options, or a run id that disagrees with `ctx` (or none
+                for a durable loop).
+            ConfigError: a bad `compression`.
+        """
+        if max_steps < 1:
+            raise ToolUsageError(f"max_steps must be >= 1, got {max_steps}")
+        tools = tuple(spec.tool_def() for spec in registry)
+        request = _request_fields(
+            request_options,
+            tools,
+            tool_choice=tool_choice,
+            output_schema=output_schema,
+            stage=stage,
+        )
+        if compression is not None:
+            context_window(check_policy(compression), request.get("model") or model.model)
+        executor = executor if executor is not None else Executor(registry)
+        if run_id is not None and ctx is not None and ctx.run_id not in ("", run_id):
+            raise ToolUsageError(f"run_id {run_id!r} is not ctx.run_id {ctx.run_id!r}")
+        if checkpoints is not None and not run_id and (ctx is None or not ctx.run_id):
+            raise ToolUsageError("a tool loop with checkpoints= needs run_id= (or a ctx with one)")
+        if owned is None:
+            owned = ctx is None or not ctx.run_id
+        if ctx is None:
+            ctx = executor.context(run_id=run_id or None)
+        elif not ctx.run_id:
+            ctx = dataclasses.replace(ctx, run_id=run_id or new_id("run_"))
+        llm = bind_model(executor, model, ctx)
+        return cls(llm, registry, executor, ctx, owned, tools, request, stage, compression)
 
-    async def _generate(self) -> LLMResponse:
-        """One model call on the history, compressed first when the loop has a policy."""
-        policy = self.compression
-        if policy is None:
-            return await self._call()
-        where = self._where()
-        self.history, _ = await compress_for_model(self.history, policy, **where)
+    async def run(
+        self,
+        messages: list[Message],
+        max_steps: int,
+        *,
+        concurrency: int | None,
+        on_text: TextCallback | None,
+        durable: LoopCheckpoints | None,
+        on_event: EventCallback | None = None,
+        steps: int = 0,
+    ) -> ToolLoopResult:
+        """Run the loop on `messages`; the run ends here when this call made it."""
+        ctx, stage = self.ctx, self.stage
+        # A fresh context resuming a run must not reuse the entry ids of the turns already
+        # paid; a compressed history has fewer turns than were paid, so the ledger is asked.
+        turns = sum(1 for m in messages if m.role == "assistant")
+        if self.compression is not None:
+            turns = max(turns, _paid_turns(ctx, self.llm.ledger or ctx.ledger, stage))
+        seed_entry_numbers(ctx, stage, turns)
+        loop = _Loop(
+            self.llm,
+            self.registry,
+            self.executor,
+            ctx,
+            tools=self.tools,
+            request=self.request,
+            concurrency=concurrency,
+            stage=stage,
+            compression=self.compression,
+            on_text=on_text,
+            durable=durable,
+            on_event=on_event,
+        )
+        loop.steps = steps
         try:
-            return await self._call()
-        except ModelContextOverflow:
-            smaller = await after_overflow(self.history, policy, **where)
-            if smaller is None:
-                raise
-            self.history = smaller
-        return await self._call()
-
-    async def _call(self) -> LLMResponse:
-        request = LLMRequest(messages=tuple(self.history), tools=self.tools, **self.request)
-        # The loop compressed and retries itself: a CompressingModel inside must not again.
-        request = marked(request) if self.compression else request
-        if self.on_text is None:
-            return await self.llm.generate(request)
-        return await self._streamed(request, self.on_text)
-
-    async def _streamed(self, request: LLMRequest, on_text: TextCallback) -> LLMResponse:
-        """One streamed model call: text chunks to `on_text`, the `StreamDone` response back."""
-        async with closing(self.llm.stream(request)) as events:
-            async for event in events:
-                if isinstance(event, TextDelta) and event.text:
-                    answer = on_text(event.text)
-                    if inspect.isawaitable(answer):
-                        await answer
-                elif isinstance(event, StreamDone):
-                    return event.response
-        # InstrumentedModel ends every stream with StreamDone or raises; kept as a guard.
-        raise ModelOutputInvalid(  # pragma: no cover
-            f"{self.llm.provider} {self.llm.model}: stream ended without StreamDone",
-            provider=self.llm.provider,
-            model=self.llm.model,
-        )
-
-    def _where(self) -> dict[str, Any]:
-        model = self.request.get("model") or self.llm.model
-        return {"provider": self.llm.provider, "model": model, "ctx": self.ctx}
-
-    async def _run_calls(self, index: int, calls: Sequence[ToolCall]) -> bool:
-        """Run the unanswered `calls` of the assistant turn at `index`; True if any is pending."""
-        identified = self._with_ids(index, calls)
-        todo = _unanswered(identified, self.history[index + 1 :])
-        if not todo:
-            return False
-        results = await self.executor.run_many(
-            todo, self.ctx, concurrency=self.concurrency, registry=self.registry
-        )
-        self.results.extend(results)
-        pending = False
-        for call, result in zip(todo, results, strict=True):
-            if result.status == "pending":
-                pending = True
-                continue
-            self.history.append(
-                Message(
-                    role="tool",
-                    tool_call_id=call.id,
-                    name=call.name,
-                    content=_tool_content(result),
-                )
-            )
-        if pending:
-            logger.info("tool loop paused for approval (run %s)", self.ctx.run_id)
-        return pending
-
-    def _with_ids(self, index: int, calls: Sequence[ToolCall]) -> list[tuple[ToolCall, bool]]:
-        """Each call with an id, and whether the model gave it; the same on every resume."""
-        if all(call.id for call in calls):
-            return [(call, True) for call in calls]
-        # The conversation digest keeps ids distinct across loops sharing a run.
-        conversation = _history_digest(self.history[: index + 1])
-        return [
-            (call, True)
-            if call.id
-            else (
-                call.model_copy(update={"id": f"{self.id_prefix}:{conversation}:{index}:{n}"}),
-                False,
-            )
-            for n, call in enumerate(calls)
-        ]
-
-    def _replayed(self, message: Message) -> LLMResponse:
-        """The paused assistant turn as a response, when no model call happened."""
-        return LLMResponse(
-            provider=self.llm.provider,
-            model=self.llm.model,
-            text=message.content,
-            tool_calls=message.tool_calls,
-            finish_reason="tool_calls",
-            message=message,
-        )
-
-    def _result(self, finish: LoopFinish, final: LLMResponse) -> ToolLoopResult:
-        return ToolLoopResult(
-            messages=tuple(self.history),
-            final=final,
-            steps=self.steps,
-            finish=finish,
-            tool_results=tuple(self.results),
-            usage=self.usage,
-        )
+            return await loop.run(messages, max_steps)
+        finally:
+            if self.owned:
+                self.executor.end_run(ctx.run_id)
 
 
 def _request_fields(
@@ -341,15 +334,3 @@ def _paid_turns(ctx: ToolContext, ledger: LedgerPort | None, stage: str) -> int:
         if entry.entry_id.startswith(prefix) and (suffix := entry.entry_id[len(prefix) :]).isdigit()
     ]
     return max(numbers) + 1 if numbers else 0
-
-
-def _tool_content(result: ToolResult) -> str:
-    """A tool message body: the value as text, or `{"error": {"kind", "message"}}` JSON."""
-    if result.ok:
-        value = result.value
-        return (
-            value if isinstance(value, str) else json.dumps(value, default=str, ensure_ascii=False)
-        )
-    error = result.error
-    kind, message = (error.kind, error.message) if error is not None else ("internal-error", "")
-    return json.dumps({"error": {"kind": kind, "message": message}}, ensure_ascii=False)

@@ -156,8 +156,12 @@ async def test_a_new_database_file_is_created_owner_only(path, monkeypatch):
 async def test_the_database_and_its_wal_files_are_mode_0600(path):
     store = SQLiteApprovalStore(path)
     await store.create(req())
-    for name in (path, Path(f"{path}-wal"), Path(f"{path}-shm")):
-        assert stat.S_IMODE(name.stat().st_mode) & 0o077 == 0, name
+    # SQLite deletes -wal and -shm when the last connection closes; a reader keeps them.
+    with closing(sqlite3.connect(path)) as reader:
+        reader.execute(f"SELECT count(*) FROM {TABLE}").fetchone()
+        await store.create(req("call_2"))
+        for name in (path, Path(f"{path}-wal"), Path(f"{path}-shm")):
+            assert stat.S_IMODE(name.stat().st_mode) & 0o077 == 0, name
 
 
 async def test_values_json_cannot_carry_are_refused_before_any_write(path):

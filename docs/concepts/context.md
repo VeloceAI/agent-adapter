@@ -59,10 +59,13 @@ Every event is an `Event(type, run_id, call_id, parent_id, ts, data)`. Types out
 | Approval | `approval.requested`, `approval.decided` |
 | LLM | `llm.started`, `llm.finished`, `llm.cached`, `llm.failed`, `llm.fallback` |
 | Embeddings | `embedding.started`, `embedding.finished`, `embedding.failed` |
+| Memory | `memory.added`, `memory.searched`, `memory.deleted`, `memory.exported` ([counts only](memory.md)) |
+| Retrieval | `retrieval.searched`, `retrieval.failed` (ids and counts; texts only with `capture_content`) |
+| Sandbox | `sandbox.started`, `sandbox.finished`, `sandbox.failed` (sizes and exit codes; code and output only with `capture_content`) |
 | Reranking | `rerank.started`, `rerank.finished`, `rerank.failed` (`CallableReranker`) |
 | Context compression | `context.compressed`, `context.compress_failed` ([counts only](context-compression.md#errors-events-and-cost)) |
-| Flow | `flow.started`, `flow.finished`, `node.started`, `node.finished`, `node.failed`, `node.paused` |
-| Budget | `budget.warning` |
+| Flow | `flow.started`, `flow.finished`, `node.started`, `node.finished`, `node.failed`, `node.paused`, `node.cached`; durable runs: `checkpoint.saved`, `run.recovered` |
+| Budget | `budget.warning`, `budget.reserved`, `budget.exceeded` |
 
 `make_event(type, ctx, *, call_id=None, **data)` builds one and rejects an unknown type
 or missing keys (`ToolUsageError`). Given an explicit `call_id`, the context's own call

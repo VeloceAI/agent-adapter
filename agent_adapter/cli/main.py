@@ -20,6 +20,10 @@ EXAMPLES: dict[str, str] = {
     "doctor": "agent-adapter doctor",
     "guide": "agent-adapter guide --out docs/agent-adapter.md",
     "ui": "agent-adapter ui",
+    "eval": "agent-adapter eval app.chat:agent eval_cases.jsonl --min-score 0.9 --junit evals.xml",
+    "migrate": "agent-adapter migrate src/ --diff",
+    "policy": "agent-adapter policy check policy.yaml --env prod",
+    "audit": "agent-adapter audit verify .agent_adapter/audit",
 }
 
 
@@ -28,7 +32,9 @@ def _parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         prog="agent-adapter",
-        description="Start a project, check this environment, or print the AI-agent guide.",
+        description="Start a project, check this environment, view runs, run evals, migrate "
+        "framework tools, check a policy file, verify or export the audit log, or print the "
+        "AI-agent guide.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=f"agent-adapter {__version__}")
@@ -37,11 +43,25 @@ def _parser() -> argparse.ArgumentParser:
     init.add_argument("template", choices=list(TEMPLATES), help="the kind of project")
     init.add_argument("folder", nargs="?", default=".", help="where to write (default: here)")
     init.add_argument("--force", action="store_true", help="replace files that exist")
-    commands.add_parser("doctor", help="check Python, extras, integrations and the pip index")
+    commands.add_parser(
+        "doctor", help="check Python, extras, optional backends, integrations and the pip index"
+    )
     _add_guide(commands)
     from agent_adapter.cli.ui import add_ui_parser
 
     add_ui_parser(commands)
+    from agent_adapter.cli.eval import add_eval_parser
+
+    add_eval_parser(commands)
+    from agent_adapter.cli.migrate import add_migrate_parser
+
+    add_migrate_parser(commands)
+    from agent_adapter.cli.policy import add_policy_parser
+
+    add_policy_parser(commands)
+    from agent_adapter.cli.audit import add_audit_parser
+
+    add_audit_parser(commands)
     parser.epilog = _epilog(commands)
     return parser
 
@@ -111,6 +131,22 @@ def main(argv: Sequence[str] | None = None, out: TextIO | None = None) -> int:
             from agent_adapter.cli.ui import run_ui
 
             return run_ui(args, stream)
+        if args.command == "eval":
+            from agent_adapter.cli.eval import run_eval_command
+
+            return run_eval_command(args, stream)
+        if args.command == "migrate":
+            from agent_adapter.cli.migrate import run_migrate
+
+            return run_migrate(args, stream)
+        if args.command == "policy":
+            from agent_adapter.cli.policy import run_policy
+
+            return run_policy(args, stream)
+        if args.command == "audit":
+            from agent_adapter.cli.audit import run_audit
+
+            return run_audit(args, stream)
         return run_doctor(stream)
     except (ConfigError, OSError) as exc:
         logger.debug("agent-adapter %s failed", args.command, exc_info=True)

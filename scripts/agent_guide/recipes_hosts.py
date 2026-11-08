@@ -27,6 +27,14 @@ CASES = (
     "    return 'sunny'"
 )
 
+EVAL_SETUP = (
+    "from pathlib import Path\n"
+    'Path("cases.jsonl").write_text(\'{"id": "c1", "input": "Weather in Oslo?", '
+    '"expected": "sunny"}\', "utf-8")\n'
+    "def answer(question):  # your agent: fn(input), fn(input, ctx=) or fn(message, session)\n"
+    "    return 'sunny'"
+)
+
 HOSTS: tuple[Recipe, ...] = (
     Recipe(
         "compress a long context for one call",
@@ -183,6 +191,29 @@ HOSTS: tuple[Recipe, ...] = (
         ),
     ),
     Recipe(
+        "run a flow inside a flow, or cache a node",
+        "`SubFlow(flow, input=, into=)`, `Flow.node(cache=NodeCache(...))`",
+        (
+            "from pydantic import BaseModel",
+            "from agent_adapter.flow import NodeCache, SubFlow",
+            "",
+            "",
+            "class Trip(BaseModel):",
+            "    city: str",
+            '    weather: str = ""',
+            "",
+            "",
+            'check = aa.Flow("check", state=Trip).node("look", lambda t: {"weather": '
+            '"sun"}).end("look")',
+            'cached = NodeCache(ttl=600, reads=["city"])  # needs a cache port on the executor',
+            'flow = aa.Flow("trip", state=Trip).node("plan", SubFlow(check), '
+            'cache=cached).end("plan")',
+            "executor = aa.Executor(registry, cache=aa.MemoryCache())",
+            'result = await aa.FlowRunner(executor).run(flow, {"city": "Oslo"})',
+        ),
+        full_only=True,
+    ),
+    Recipe(
         "serve tools over MCP",
         "`streamable_http_app`",
         (
@@ -221,6 +252,21 @@ HOSTS: tuple[Recipe, ...] = (
             ")",
         ),
         requires=("a2a",),
+    ),
+    Recipe(
+        "evaluate an agent on eval cases (scores, JUnit for CI, regressions)",
+        "`run_eval_sync` with graders (or `agent-adapter eval TARGET CASES`)",
+        (
+            "from agent_adapter.evals import load_cases, run_eval_sync",
+            "from agent_adapter.evals.graders import contains, max_cost",
+            "",
+            'cases, graders = load_cases("cases.jsonl"), [contains(), max_cost(0.05)]',
+            'report = run_eval_sync(answer, cases, graders, save_to=".agent_adapter/evals")',
+            "print(report.mean_score, report.n_passed)  # then: agent-adapter ui, Evals tab",
+            'Path("evals.xml").write_text(report.to_junit(), "utf-8")  # for CI test reports',
+        ),
+        setup=EVAL_SETUP,
+        full_only=True,
     ),
     Recipe(
         "improve tool descriptions and prompts against eval cases",

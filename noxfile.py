@@ -224,6 +224,26 @@ for _target, _extra in EXTRAS.items():
     _contract_session(_target, _extra)
 
 
+@nox.session(name="contract-temporal", python=PYTHONS, default=False)
+def contract_temporal(session: nox.Session) -> None:
+    """Flows on a real Temporal dev server (downloaded on the first run)."""
+    tests = _existing(session, "tests/integrations/durable/test_temporal_contract.py")
+    if not tests:
+        return
+    session.install("-e", ".[dev,temporal]")
+    session.run("pytest", "-m", "contract", *tests, env=_coverage_env(session))
+
+
+@nox.session(name="contract-dbos", python=PYTHONS, default=False)
+def contract_dbos(session: nox.Session) -> None:
+    """Flows as DBOS workflows on SQLite."""
+    tests = _existing(session, "tests/integrations/durable/test_dbos_contract.py")
+    if not tests:
+        return
+    session.install("-e", ".[dev,dbos]")
+    session.run("pytest", "-m", "contract", *tests, env=_coverage_env(session))
+
+
 @nox.session(name="contract-all-compatible", python=PYTHONS, default=False)
 def contract_all_compatible(session: nox.Session) -> None:
     """Every extra in `all` installed together: pip check, then every contract test."""

@@ -81,6 +81,21 @@ export interface Approval {
   /** Epoch seconds. */
   created_at: number;
   decision: ApprovalDecisionRecord | null;
+  /** Similar past decisions, sent to approvers only. Advice: the call still waits. */
+  context?: ApprovalContext;
+}
+
+/** Counts of earlier decisions on similar calls; never argument values or secret fields. */
+export interface ApprovalContext {
+  tool: string;
+  similar: number;
+  approved: number;
+  denied: number;
+  deciders: string[];
+  /** Epoch seconds. */
+  last_decided_at: number | null;
+  examples: Record<string, unknown>[];
+  summary: string;
 }
 
 export interface StageSummary {
@@ -106,6 +121,23 @@ export interface LedgerSummary {
   wall_ms: number;
   busy_ms: number;
   parallelism: number;
+}
+
+/** One budget from `GET /budget`: limit, settled spend, live holds and its UTC window. */
+export interface Budget {
+  name: string;
+  scope: "principal" | "user" | "team" | "global";
+  /** The user id, team id, or "*" for the global budget. */
+  key: string;
+  /** "all", "day:YYYY-MM-DD" or "month:YYYY-MM". */
+  window: string;
+  limit_usd: number;
+  spent_usd: number;
+  reserved_usd: number;
+  remaining_usd: number;
+  /** Epoch seconds when the window resets; null when it never does. */
+  resets_at: number | null;
+  on_exceed: "stop" | "warn";
 }
 
 /** RFC 9457 problem details; extensions (`tool`, `errors`, `approval_id`, ...) are kept. */

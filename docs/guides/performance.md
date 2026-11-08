@@ -71,13 +71,30 @@ See [Caching](../how-to/caching.md) and [Cache model answers across workers](../
 
 ## Per-call overhead
 
-```python
---8<-- "examples/guide_performance.py:measure"
-```
+`python scripts/bench_overhead.py` times a tool and a model that do nothing, directly and
+through the executor, with each feature on, in interleaved rounds, with INFO logging
+formatted as a service would. One run (agent_adapter 1.1.0, Python 3.12.8, Windows Server
+2022, 4 CPUs, 10,000 calls each; **your numbers will differ**: run it on your hardware):
 
-Run `python examples/guide_performance.py --measure`. The figure is the adapter's own
-work (validation, hooks, guards, events) for a tool that does nothing. A tool that does
-I/O usually dwarfs it.
+| Scenario | Median (µs) | p95 (µs) |
+|---|---:|---:|
+| tool: direct `await echo()` (baseline) | 0.4 | 0.7 |
+| tool: `executor.run`, nothing on | 155 | 286 |
+| tool: + hooks (`LoggingHook`, `PIIGuard`) | 449 | 650 |
+| tool: + approval (`AutoApprove`, confirm tool) | 202 | 352 |
+| tool: + cache (every call a hit) | 206 | 354 |
+| tool: + policy (allow rule, PII guard) | 253 | 417 |
+| tool: + ledger | 199 | 343 |
+| tool: hooks, approval, cache, ledger | 513 | 806 |
+| tool: a sync tool, nothing on (worker thread) | 450 | 605 |
+| model: direct `generate` (baseline) | 3.6 | 6.8 |
+| model: `executor.model(...)`, nothing on | 74 | 123 |
+| model: + hooks and ledger | 247 | 415 |
+| model: + response cache (every call a hit) | 106 | 218 |
+
+Each `executor.run` here starts a new run. Most of the hooks figure is `LoggingHook`
+writing its INFO lines. A model call takes hundreds of milliseconds, so the adapter's share
+is well under 1%. Sync tools pay a thread hop: make hot tools `async`.
 
 ## Sync callers: `run_sync` or `LoopRunner`
 
@@ -125,4 +142,5 @@ Details: [Runtime](../concepts/runtime.md); process models and probes: [Deploy](
 | File | Does |
 |---|---|
 | `examples/guide_performance.py` | import check, a capped search, a cache hit, an overhead timer, `run_sync` vs `LoopRunner` |
-| `tests/docs/test_guides.py` | runs it offline and checks the output |
+| `scripts/bench_overhead.py` | the overhead table above (`--iterations N`) |
+| `tests/docs/test_guides.py` | runs the example offline and checks the output |

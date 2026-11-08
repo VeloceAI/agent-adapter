@@ -7,21 +7,11 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 
+from agent_adapter.evals._text import clip as clip
 from agent_adapter.optimiser.model import CaseRun, EvalCase, HarnessTree, Lesson, ProbeReport
 
 _BLOCK = re.compile(r"^\[[A-Z][A-Z ]*\]", re.MULTILINE)
 MIN_CASE_CHARS = 800  # below this a case shows too little to be worth including
-
-
-def clip(text: str, limit: int) -> str:
-    """`text` cut to at most `limit` characters, with a marker saying how much was cut."""
-    if len(text) <= limit:
-        return text
-    marker = f"\n[... {len(text) - limit + 31} chars clipped]"
-    marker = f"\n[... {len(text) - (limit - len(marker))} chars clipped]"
-    if limit <= len(marker):
-        return text[:limit]
-    return text[: limit - len(marker)] + marker
 
 
 def clip_observations(transcript: str, limit: int) -> str:
