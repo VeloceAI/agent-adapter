@@ -280,8 +280,8 @@ Guard tests that catch common mistakes:
   `agent_adapter/`, `README.md`, `CHANGELOG.md`, `LICENSE` and `NOTICE`. Then run
   `twine check --strict`.
 - **Publish.** Push a tag `vX.Y.Z`: `.github/workflows/release.yml` builds and uploads to
-  PyPI with trusted publishing. `.github/workflows/ci.yml` runs `scripts/check.py` on every
-  push to `main` and every pull request.
+  PyPI with trusted publishing. `.github/workflows/ci.yml` runs `scripts/check.py` on Linux, started
+  by hand from the Actions tab (Actions minutes are limited); run `check.py` locally instead.
 - **Still open:** the PyPI trusted publisher, hosting the docs at `site_url`, and the nox
   matrix in CI. The maintainer list is `NEXT_STEPS.md`.
 
