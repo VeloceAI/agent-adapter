@@ -30,6 +30,8 @@ classifiers = [
 [project.urls]
 Documentation = "https://agent-adapter.veloceai.in/"
 Changelog = "https://agent-adapter.veloceai.in/changelog/"
+Repository = "https://github.com/VeloceAI/agent-adapter"
+Issues = "https://github.com/VeloceAI/agent-adapter/issues"
 
 [project.optional-dependencies]
 openai = ["openai>=3.41,<4"]

@@ -24,7 +24,6 @@ flowchart LR
 
 | Decision | Options | Recommendation |
 |---|---|---|
-| Make the repository public | stays private, or public now that the docs are live | public: free branch protection and unlimited CI minutes; first fix the old "proprietary" lines in `docs/superpowers/` |
 | TypeScript client version | keep `0.1.0` (private), or bump it to `1.0.0` with the Python release | bump it when the client is first used outside this repo |
 | Review the security changes | read CHANGELOG `[1.0.0]` → Security | approval bridges, HTTP approve, MCP auth, loopback guard and approval stores touch auth logic |
 

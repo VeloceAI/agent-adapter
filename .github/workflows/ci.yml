@@ -1,7 +1,10 @@
 name: ci
 
-# Manual only: the free plan's Actions minutes are limited. Run it from the Actions tab.
+# The repo is public, so Actions minutes are free: run on every push and pull request to main.
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:

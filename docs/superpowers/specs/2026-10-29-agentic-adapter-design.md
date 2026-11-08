@@ -682,7 +682,7 @@ lands.
 ## 20. Resolved questions (2026-10-29)
 
 1. Package name — `agent_adapter` (distribution `agent-adapter`).
-2. Licence — internal / proprietary.
+2. Licence — Apache-2.0.
 3. Minimum Python — 3.11.
 4. Importers are integration functions, not `Registry` methods (keeps core framework-free).
 5. Flow compilers are named `compile_flow`.

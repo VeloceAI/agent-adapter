@@ -1,0 +1,105 @@
+      <div class="bg"><div class="grid" id="grid"></div><div class="glow glow-a" id="glow-a"></div><div class="glow glow-b" id="glow-b"></div><div class="glow glow-a" id="flash"></div></div>
+
+      <section class="scene clip" id="s1" data-start="0" data-duration="3.5" data-track-index="1">
+        <div class="inner" id="s1-in">
+          <h1 id="hook"><span class="w">Your</span> <span class="w">agent</span> <span class="w">just</span> <span class="w">tried</span> <span class="w">to</span> <span class="w">refund</span> <span class="w bad">$5,000.</span></h1>
+          <div class="card" id="term1">
+            <div class="tbar"><i></i><i></i><i></i><span>agent run</span></div>
+            <div class="code"><span class="dim">&rsaquo; </span><span class="type" id="call">refund("o-7", 5000)</span><span class="caret"></span></div>
+            <div class="stamp" id="stamp">HELD FOR APPROVAL</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene clip" id="s2" data-start="3.5" data-duration="4" data-track-index="1">
+        <div class="inner" id="s2-in">
+          <h2 id="p1"><span class="w">Every</span> <span class="w">framework</span> <span class="w">has</span> <span class="w">its</span> <span class="w">own</span> <span class="w">rules.</span></h2>
+          <ul class="chips" id="chips">
+            <li class="chip">LangChain</li><li class="chip">CrewAI</li><li class="chip">ADK</li><li class="chip">OpenAI Agents SDK</li>
+            <li class="chip">LlamaIndex</li><li class="chip">Pydantic AI</li><li class="chip">LangGraph</li><li class="chip">Haystack</li>
+            <li class="chip">DSPy</li><li class="chip">AutoGen</li><li class="chip">smolagents</li><li class="chip">Agno</li>
+            <li class="chip">Strands</li><li class="chip more">+8 more</li>
+          </ul>
+          <h2 id="p2">So safety gets rebuilt. <span class="bad">Every time.</span></h2>
+        </div>
+      </section>
+
+      <section class="scene clip" id="s3" data-start="7.5" data-duration="6" data-track-index="1">
+        <div class="inner" id="s3-in">
+          <div class="brand" id="brand">%%MARK%%<b>Agent Adapter</b></div>
+          <h2 id="what">The open-source safety layer for <span class="teal">AI agent tools.</span></h2>
+          <div class="card" id="codecard">
+            <div class="tbar"><i></i><i></i><i></i><span>your tool, in plain Python</span></div>
+            <div class="code"><span class="ln"><span class="dec">@aa.tool</span>(<span class="hl" id="confirm">confirm=True</span>)</span><span class="ln"><span class="kw">def</span> <span class="fn">refund</span>(order_id, amount):</span><span class="ln">    <span class="str">"""Refund an order."""</span></span><span class="ln">    <span class="kw">return</span> <span class="str">f"refunded {amount}"</span></span></div>
+            <div class="note" id="note">&uarr; asks a person first</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene clip" id="s4" data-start="13.5" data-duration="9.5" data-track-index="1">
+        <div class="inner" id="s4-in">
+          <h2 id="every">Every call. <span class="teal">Any framework.</span></h2>
+          <div class="tabs" id="tabs"><span class="tab" id="tab1">Approval</span><span class="tab" id="tab2">Budgets</span><span class="tab" id="tab3">Cost</span><span class="tab" id="tab4">Traces</span></div>
+          <div class="deck card" id="deck">
+            <div class="panel" id="c1">
+              <div class="row"><h3 class="mono">refund</h3><span style="position: relative"><span class="pill p-amber" id="pend">pending</span><span class="pill p-ok" id="pend-ok" style="position: absolute; right: 0; top: 0">approved</span></span></div>
+              <div class="row dim">o-7 &middot; $5,000</div>
+              <div class="btns"><span class="btn go" id="approve">Approve</span><span class="btn">Deny</span></div>
+              <div class="result ok" id="approved">&check; Approved by ana</div>
+              <div class="cursor" id="cursor"></div>
+            </div>
+            <div class="panel" id="c2">
+              <div class="code" style="font-size: var(--small)"><span class="dec">BudgetHook</span>(50, scope=<span class="str">"team"</span>, per=<span class="str">"day"</span>)</div>
+              <div class="row"><span>support team today</span><span class="mono" id="spent">$0 / $50</span></div>
+              <div class="meter"><i id="fill"></i></div>
+              <div class="result bad" id="stopped">&#9632; Stopped at $50/day</div>
+            </div>
+            <div class="panel" id="c3">
+              <h3>Every call priced</h3>
+              <div class="row"><span class="mono">plan &middot; model</span><span class="mono">$0.0031</span></div>
+              <div class="row"><span class="mono">opening_hours &middot; tool</span><span class="mono">$0.0000</span></div>
+              <div class="row"><span class="mono">answer &middot; model</span><span class="mono">$0.0024</span></div>
+              <div class="row teal"><b>run total</b><b class="mono">$0.0055</b></div>
+              <span class="tag">sample data</span>
+            </div>
+            <div class="panel" id="c4">
+              <h3>Every step traced</h3>
+              <div class="ev"><span class="t">14 ms</span><span>tool.started opening_hours</span></div>
+              <div class="ev"><span class="t">66 ms</span><span>tool.finished opening_hours</span></div>
+              <div class="ev"><span class="t">68 ms</span><span>node.finished lookup</span></div>
+              <div class="ev"><span class="t">236 ms</span><span>run.finished <span class="pill p-ok">ok</span></span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene clip" id="s5" data-start="23" data-duration="3" data-track-index="1">
+        <div class="inner" id="s5-in">
+          <h1 id="tg1">Build with any framework.</h1>
+          <h1 id="tg2">Ship with <span class="teal">one safety layer.</span></h1>
+        </div>
+      </section>
+
+      <section class="scene clip" id="s6" data-start="26" data-duration="4" data-track-index="1">
+        <div class="inner" id="s6-in">
+          <div class="brand" id="brand2">%%MARK%%<b>Agent Adapter</b></div>
+          <div class="card" id="term2"><div class="code"><span class="dim">$ </span><span class="type" id="pip">pip install agent-adapter</span><span class="caret"></span></div></div>
+          <p class="sub" id="oss">Open source &middot; Apache-2.0</p>
+          <p class="url" id="url">agent-adapter.veloceai.in</p>
+        </div>
+      </section>
+
+      <audio id="score" src="assets/music/score.wav" data-start="0" data-duration="30" data-track-index="10" data-volume="0.8"></audio>
+      <audio id="k1" src="assets/sfx/ui_tick.wav" data-start="0.45" data-duration="0.02" data-track-index="11" data-volume="0.5"></audio>
+      <audio id="k2" src="assets/sfx/ui_tick.wav" data-start="0.7" data-duration="0.02" data-track-index="12" data-volume="0.5"></audio>
+      <audio id="k3" src="assets/sfx/ui_tick.wav" data-start="0.95" data-duration="0.02" data-track-index="11" data-volume="0.5"></audio>
+      <audio id="k4" src="assets/sfx/ui_tick.wav" data-start="1.2" data-duration="0.02" data-track-index="12" data-volume="0.5"></audio>
+      <audio id="fx-stamp" src="assets/sfx/metal_hit.wav" data-start="1.8" data-duration="0.11" data-track-index="13" data-volume="0.8"></audio>
+      <audio id="fx-boom" src="assets/sfx/low_boom.wav" data-start="1.8" data-duration="1" data-track-index="14" data-volume="0.45"></audio>
+      <audio id="fx-click" src="assets/sfx/ui_click.wav" data-start="14.4" data-duration="0.01" data-track-index="11" data-volume="0.9"></audio>
+      <audio id="fx-ok" src="assets/sfx/ui_confirm.wav" data-start="14.5" data-duration="0.54" data-track-index="12" data-volume="0.6"></audio>
+      <audio id="fx-stop" src="assets/sfx/soft_hit.wav" data-start="16.65" data-duration="0.16" data-track-index="13" data-volume="0.7"></audio>
+      <audio id="p1k" src="assets/sfx/ui_tick.wav" data-start="26.35" data-duration="0.02" data-track-index="11" data-volume="0.5"></audio>
+      <audio id="p2k" src="assets/sfx/ui_tick.wav" data-start="26.6" data-duration="0.02" data-track-index="12" data-volume="0.5"></audio>
+      <audio id="p3k" src="assets/sfx/ui_tick.wav" data-start="26.85" data-duration="0.02" data-track-index="11" data-volume="0.5"></audio>
+      <audio id="fx-ping" src="assets/sfx/glass_ping.wav" data-start="27.4" data-duration="0.12" data-track-index="13" data-volume="0.6"></audio>

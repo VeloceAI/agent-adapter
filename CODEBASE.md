@@ -280,8 +280,8 @@ Guard tests that catch common mistakes:
   `agent_adapter/`, `README.md`, `PYPI.md` (the PyPI page), `CHANGELOG.md`, `LICENSE` and
   `NOTICE`. Then run `twine check --strict`.
 - **Publish.** Push a tag `vX.Y.Z`: `.github/workflows/release.yml` builds and uploads to
-  PyPI with trusted publishing. `.github/workflows/ci.yml` runs `scripts/check.py` on Linux, started
-  by hand from the Actions tab (Actions minutes are limited); run `check.py` locally instead.
+  PyPI with trusted publishing. `.github/workflows/ci.yml` runs `scripts/check.py` on Linux on every
+  push and pull request to `main` (free on a public repo).
 - **Docs.** `bash scripts/deploy_docs.sh` builds the site and publishes it to `site_url`
   (nginx on the Veloce AI web server, over SSH).
 - **Still open:** the nox matrix in CI. The maintainer list is `NEXT_STEPS.md`.
@@ -307,7 +307,7 @@ Guard tests that catch common mistakes:
 Skip this section on any other machine.
 
 - **The laptop with git** (`C:\VeloceAI\agent_adapter`). The repository is
-  `VeloceAI/agent-adapter` (private), branch `main`; pushing needs the repo-local credential
+  `VeloceAI/agent-adapter` (public), branch `main`; pushing needs the repo-local credential
   override for the Veloce-AI account. Everything lives on C:; do not use D:.
 - **The build machine** (no git). Venvs, nox envs, caches and builds live under `D:\aa`.
   Work done there reaches the repository as an archive that is merged on the laptop: keep

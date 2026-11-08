@@ -19,7 +19,7 @@
 - Absolute imports only.
 - Docstrings: one line; add `Args`/`Raises` only for non-obvious public API. No change-history comments.
 - All errors subclass `AdapterError`; never swallow an exception.
-- Licence: proprietary, internal use only.
+- Licence: Apache-2.0.
 - Commits: Conventional Commits, ending with `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`.
 - Run every command from the worktree root: `.claude/worktrees/agent-adapter`. Shell examples are bash (Git Bash); the venv interpreter is `.venv/Scripts/python`.
 
@@ -70,7 +70,7 @@ dynamic = ["version"]
 description = "Framework-independent tools, parallel execution and flows for LLM agents."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Proprietary - internal use only" }
+license = "Apache-2.0"
 dependencies = ["pydantic>=2.7,<3"]
 
 [project.optional-dependencies]
@@ -129,7 +129,7 @@ site/
 Define a tool once as a plain Python function. Use it from OpenAI, Gemini,
 Anthropic, LangGraph, ADK, MCP or plain code.
 
-Internal use only. Docs: `mkdocs serve` (see `docs/`).
+Apache-2.0. Docs: `mkdocs serve` (see `docs/`).
 ```
 
 `agent_adapter/__init__.py`:

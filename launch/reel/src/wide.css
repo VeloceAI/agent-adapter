@@ -1,0 +1,7 @@
+html, body { width: 1920px; height: 1080px; }
+:root { --h1: 100px; --h2: 74px; --h3: 50px; --body: 40px; --small: 30px; --code: 38px; --chip: 30px; --stamp: 40px;
+  --mark: 100px; --brand: 78px; --pad: 38px; --deck: 520px; --evcols: 130px 1fr; }
+.glow-a { width: 1500px; height: 1500px; left: -200px; top: -500px; }
+.glow-b { width: 1100px; height: 1100px; left: 1100px; top: 300px; }
+.inner { left: 300px; right: 300px; top: 70px; bottom: 70px; gap: 36px; }
+#s4 .inner { gap: 26px; }
