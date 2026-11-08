@@ -3,6 +3,10 @@
 Start with one function and one call. Then define two tools, render them for two
 providers, and run them through an executor of your own. Five minutes.
 
+!!! tip "Rather let your AI do it?"
+    Paste the [prompt for any AI](ai-prompt.md). It looks at your framework and backend,
+    then plans the integration for your project.
+
 ## 0. Hello world
 
 This is `examples/hello.py`. The test suite runs it.

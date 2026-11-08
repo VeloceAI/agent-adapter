@@ -4,6 +4,10 @@ Agent Adapter is on [PyPI](https://pypi.org/project/agent-adapter/) under the Ap
 licence. Install it with pip, or from a checkout of the
 [GitHub repository](https://github.com/VeloceAI/agent-adapter).
 
+!!! tip "Using an AI assistant?"
+    Paste the [prompt for any AI](ai-prompt.md) into Claude, ChatGPT, Gemini or Cursor.
+    It reads your project and tells you which extras to install and how to connect them.
+
 ## Requirements
 
 | Need | Version |

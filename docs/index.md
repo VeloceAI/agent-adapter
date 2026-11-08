@@ -16,8 +16,9 @@ hide:
 [Attach anywhere](how-to/attach-anywhere.md){ .md-button .md-button--primary }
 [Quickstart](get-started/quickstart.md){ .md-button }
 [See every feature](features.md){ .md-button }
+[:material-robot-outline: Set it up with your AI](get-started/ai-prompt.md){ .md-button }
 
-[Prompt for any AI](get-started/ai-prompt.md) · [Which feature do I need?](choose.md) · [Cookbook](cookbook/index.md) · [Troubleshooting](troubleshooting.md) · [Support matrix](support-matrix.md) · :fontawesome-brands-python: [PyPI](https://pypi.org/project/agent-adapter/) · :fontawesome-brands-github: [GitHub](https://github.com/VeloceAI/agent-adapter)
+[Which feature do I need?](choose.md) · [Cookbook](cookbook/index.md) · [Troubleshooting](troubleshooting.md) · [Support matrix](support-matrix.md) · :fontawesome-brands-python: [PyPI](https://pypi.org/project/agent-adapter/) · :fontawesome-brands-github: [GitHub](https://github.com/VeloceAI/agent-adapter)
 
 <video class="aa-reel" src="assets/video/agent-adapter-reel.mp4" poster="assets/video/agent-adapter-reel.jpg" controls playsinline preload="none" aria-label="Agent Adapter in 29 seconds"></video>
 

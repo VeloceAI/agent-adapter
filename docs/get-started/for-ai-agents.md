@@ -4,6 +4,9 @@ One file teaches an AI coding agent (Claude Code, Cursor, Copilot) the SDK: what
 install, which function does each job, the safety rules and the common errors. It is
 generated from the code, so it matches the version you installed.
 
+!!! tip "Just want a one-off answer?"
+    Paste the [prompt for any AI](ai-prompt.md) into any chat instead.
+
 ```mermaid
 flowchart LR
   C["the code<br/>__all__, signatures, pyproject"] --> G["scripts/gen_agent_guide.py"]
