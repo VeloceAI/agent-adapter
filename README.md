@@ -5,7 +5,7 @@
   </picture>
 </p>
 
-<h3 align="center">The agent framework that scales with your enterprise.</h3>
+<h3 align="center">The agentic framework that runs your tools anywhere, safely.</h3>
 
 <p align="center">
   Write a tool once, as a plain Python function. Use it in any agent framework, any backend or on its own, with approvals, budgets, cost and traces built in.
@@ -19,12 +19,12 @@
 
 <p align="center">
   <a href="#quickstart">Quickstart</a> · <a href="#why-agent-adapter">Why</a> · <a href="#how-it-works">How it works</a> · <a href="#a-tour-in-code">Tour</a> ·
-  <a href="#see-your-runs-and-chat-with-your-agent">Viewer and chat</a> · <a href="#install">Install</a> · <a href="docs/index.md">Docs</a> ·
+  <a href="#see-your-runs-and-chat-with-your-agent">Viewer and chat</a> · <a href="#install">Install</a> · <a href="https://agent-adapter.veloceai.in/">Docs</a> ·
   <a href="docs/use-cases.md">Use cases</a> · <a href="docs/skill.md">Agent skill</a> · <a href="docs/get-started/ai-prompt.md">Prompt for any AI</a>
 </p>
 
-LangChain, CrewAI or ADK help you build an agent. Agent Adapter makes every tool call
-that agent makes safe, priced and traced, in any framework or in none.
+Agent Adapter is an agentic framework built around your tools: write each tool once, run it in
+LangChain, CrewAI, ADK or 18 more, from any backend or language, safe, priced and traced.
 
 It is an open-source, framework-independent Python SDK. It turns your functions into LLM
 tools, checks their schemas once at startup, and runs every call through one
@@ -35,8 +35,8 @@ No agent framework is needed: a FastAPI service calling an LLM gets tools, appro
 budgets, cost, cache and context compression directly. The adapter can also be your
 framework: `run_tool_loop` with your own model is the agent loop, and `Flow` is the graph.
 
-> **Let your AI set it up.** Add the [agent skill](docs/skill.md) to Claude Code, Codex, Cursor, Copilot or Gemini CLI with
-> `npx skills add VeloceAI/agent-adapter --skill agent-adapter`, or in Claude Code `/plugin marketplace add VeloceAI/agent-adapter`.
+> **Let your AI set it up.** Add the [agent skill](docs/skill.md) to Codex, Cursor, Copilot, Gemini CLI or 60+ more agents with
+> `npx skills add VeloceAI/agent-adapter --skill agent-adapter -a <agent>` (e.g. `-a codex`), or in Claude Code `/plugin marketplace add VeloceAI/agent-adapter`.
 
 ## Quickstart
 
@@ -215,9 +215,9 @@ agent-adapter ui --agent app:chat                        # chat with any agent
 agent-adapter ui --model app:model --tools app:registry  # the built-in tool loop
 ```
 
-It binds 127.0.0.1 only and opens with a private token link. Try it without installing
-anything in the docs: [Chat with your agent](docs/how-to/chat-with-your-agent.md) has a
-replayable demo, and [Navigate the graph](docs/how-to/navigate-the-graph.md) a run demo.
+It binds 127.0.0.1 only and opens with a private token link. Try both live, nothing to
+install: the [run viewer demo](https://agent-adapter.veloceai.in/assets/demo/sample-run.html#run=run_00000000000000000000000000000001)
+(graph, replay, timeline, compare) and the [chat demo](https://agent-adapter.veloceai.in/assets/demo/chat-demo.html).
 
 ## Attach anywhere
 
@@ -228,7 +228,7 @@ replayable demo, and [Navigate the graph](docs/how-to/navigate-the-graph.md) a r
 | a raw model API | `chat_tools`, `function_declarations`, `anthropic_tools`, then `executor.run_call` per tool call; or `run_tool_loop` |
 | an agent framework | one module and one extra per framework (LangGraph, ADK, LangChain, MCP, OpenAI Agents SDK, Pydantic AI, LlamaIndex, CrewAI, Agent Framework, Agno, Strands, Haystack, Claude Agent SDK, Semantic Kernel, DSPy, smolagents, AutoGen, CAMEL-AI, AG2) |
 | another agent or a UI | A2A (server and client), AG-UI (event stream) |
-| another language | MCP, the HTTP tool server, the TypeScript client ([Connect anywhere](docs/connect/index.md)) |
+| another language | MCP or HTTP, tested end to end from TypeScript, Python, C#, Go, Rust, Ruby, Java, Kotlin, Swift and PHP ([clients](examples/clients), [Connect anywhere](docs/connect/index.md)) |
 | a queue, a Lambda, a pipeline | the [backend guides](docs/backends/scripts.md) |
 
 ## Safe by default

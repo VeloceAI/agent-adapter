@@ -62,6 +62,7 @@ extra_css:
   - stylesheets/extra.css
   - stylesheets/home.css
   - stylesheets/brand.css
+  - stylesheets/theme.css
 # Mermaid served from the site itself, so diagrams render offline; the theme uses this global
 # instead of fetching it from a CDN. Its MIT licence sits next to it.
 extra_javascript:
@@ -116,19 +117,18 @@ plugins:
             heading_level: 3
 nav:
   - Home: index.md
-  - Product:
-      - Use cases: use-cases.md
-      - Agent skill: skill.md
-      - Watch the reel: reel.md
   - Get started:
       - Install: get-started/install.md
       - Quickstart: get-started/quickstart.md
       - Wrap existing code: get-started/wrap-existing-code.md
       - First flow: get-started/first-flow.md
       - Prompt for any AI: get-started/ai-prompt.md
+      - Agent skill: skill.md
       - For AI coding agents: get-started/for-ai-agents.md
       - Which feature do I need?: choose.md
       - Features: features.md
+      - Use cases: use-cases.md
+      - Watch the reel: reel.md
       - Troubleshooting: troubleshooting.md
   - How-to:
       - Attach anywhere: how-to/attach-anywhere.md

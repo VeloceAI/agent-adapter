@@ -12,7 +12,7 @@
   <div class="aa-inner">
     <h2>One safety layer for <span class="aa-hl2">every tool call</span></h2>
     <p class="aa-sub">Your agent decides what to do. Agent Adapter checks, prices, approves and records
-      every call before it runs, in every framework and every backend.</p>
+      every call before it runs, in every framework and every backend. Then see it all in the run viewer, or chat with your agent.</p>
     <div class="aa-hub aa-reveal">
       <div class="aa-card aa-chat">
         <div class="aa-chat-who">Your agent</div>
@@ -36,6 +36,13 @@
         <span class="aa-ok">&#10003;</span>
         <div><b>2 tickets booked for Saturday</b>
           <small>Approved by a person · $0.004 · 312 ms · traced</small></div>
+      </div>
+      <div class="aa-runlink">
+        <div class="aa-runlink-btns">
+          <a class="aa-btn aa-btn--primary" href="{{ 'assets/demo/sample-run.html' | url }}#run=run_00000000000000000000000000000001" target="_blank" rel="noopener">Open this run in the viewer &rarr;</a>
+          <a class="aa-btn" href="{{ 'assets/demo/chat-demo.html' | url }}" target="_blank" rel="noopener">Chat with an agent &rarr;</a>
+        </div>
+        <small>Viewer: flow graph, replay, timeline, cost per call, approvals, compare runs · Chat: tool and approval cards, live graph · both run offline, nothing to install</small>
       </div>
     </div>
   </div>

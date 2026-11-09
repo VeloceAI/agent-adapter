@@ -1,0 +1,109 @@
+/* Brand colours: black and white, orange for highlights and enterprise, yellow as the second accent.
+   Loaded last, so it overrides the older indigo and teal tokens in extra.css, home.css and brand.css. */
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #c2410c;
+  --md-primary-fg-color--light: #f97316;
+  --md-primary-fg-color--dark: #9a3412;
+  --md-accent-fg-color: #b45309;
+  --md-accent-fg-color--transparent: rgba(180, 83, 9, .1);
+  --md-typeset-a-color: #c2410c;
+  --aa-orange: #ea580c;
+  --aa-yellow: #f59e0b;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #f97316;
+  --md-primary-fg-color--light: #fb923c;
+  --md-primary-fg-color--dark: #c2410c;
+  --md-accent-fg-color: #fbbf24;
+  --md-accent-fg-color--transparent: rgba(251, 191, 36, .1);
+  --md-typeset-a-color: #fdba74;
+  --md-default-bg-color: #0c0a09;
+  --aa-orange: #fb923c;
+  --aa-yellow: #fbbf24;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary) { color: #fdba74; }
+.md-header, .md-tabs { background-color: #0a0a0a; }
+
+/* Landing page tokens. */
+.aa-home { --aa-blue: var(--aa-orange); --aa-teal: var(--aa-yellow); }
+.aa-dark { --aa-blue: #fb923c; --aa-teal: #fbbf24; --aa-card: #141210; --aa-soft: #0f0d0c; background: #0a0a0a; }
+.aa-hl2 { color: var(--aa-orange); }
+.aa-dark .aa-hl2 { color: #fb923c; }
+
+/* Hero: a black card with warm orange and yellow light. The enterprise line is the orange highlight. */
+.aa-heroband .aa-inner { background:
+    radial-gradient(60% 50% at 18% 12%, rgba(249, 115, 22, .55), transparent 70%),
+    radial-gradient(50% 45% at 88% 28%, rgba(250, 204, 21, .26), transparent 70%),
+    radial-gradient(75% 60% at 50% 105%, rgba(194, 65, 12, .55), transparent 75%),
+    #0c0a09; }
+.aa-heroband .aa-hl { color: #fb923c; }
+.aa-heroband .aa-install--skill, .aa-install--skill { border-color: rgba(251, 146, 60, .6); }
+
+/* Hard-coded indigo and teal effects elsewhere. */
+.aa-pill--new { border-color: var(--aa-orange); color: var(--aa-orange); }
+.aa-changed { background: rgba(251, 146, 60, .14); box-shadow: inset 3px 0 0 var(--aa-orange); }
+.aa-skill { background: linear-gradient(var(--aa-card), var(--aa-card)) padding-box,
+    linear-gradient(120deg, #f97316, #facc15) border-box; box-shadow: 0 30px 80px rgba(234, 88, 12, .14); }
+.aa-wire { background: linear-gradient(var(--aa-orange), var(--aa-yellow)); background-size: 100% 200%; }
+@keyframes aa-glow { 50% { box-shadow: 0 0 0 6px rgba(249, 115, 22, .12), 0 0 30px rgba(250, 204, 21, .22); } }
+.aa-stepn { background: var(--aa-orange); }
+.aa-logo--dot::before { background: var(--aa-orange); }
+.md-typeset .aa-gcard--hl { border-color: var(--aa-orange); box-shadow: inset 0 0 0 1px var(--aa-orange); }
+
+/* Layer graphic (partials/home/stack.html): orange line art, labels beside it. */
+.aa-stack { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 2em; align-items: center;
+  max-width: 54em; margin: 2.6em auto 0; text-align: left; }
+.aa-stack svg { width: 100%; height: auto; overflow: visible; }
+.aa-stack-links line { stroke: var(--aa-orange); stroke-width: 1.2; stroke-dasharray: 4 5; opacity: .55; }
+.aa-plate polygon { fill: rgba(249, 115, 22, .12); stroke: var(--aa-orange); stroke-width: 2.4; stroke-linejoin: round; }
+.aa-plate--core polygon { fill: rgba(249, 115, 22, .35); }
+.aa-plate-logos svg { fill: currentColor; color: var(--md-default-fg-color); }
+.aa-pchip rect { fill: var(--md-default-bg-color); stroke: var(--aa-orange); stroke-width: 1.2; }
+.aa-pchip text, .aa-pcall { font: 600 11px var(--aa-mono); fill: currentColor; text-anchor: middle; }
+.aa-pcall { font-size: 13px; }
+.aa-packet { fill: #f97316; filter: drop-shadow(0 0 6px #f97316); opacity: 0; }
+
+/* One call travelling down the stack; transform and opacity only, and only once the section is on screen. */
+.aa-pchip { opacity: .3; }
+.aa-stack.in .aa-packet { animation: aa-call 6s ease-in-out infinite; }
+.aa-stack.in .aa-pchip { animation: aa-chip 6s infinite; animation-delay: var(--d); }
+.aa-stack.in .aa-plate--end polygon { animation: aa-land 6s infinite; }
+@keyframes aa-call {
+  0% { transform: translateY(0); opacity: 0; } 5% { opacity: 1; }
+  20%, 45% { transform: translateY(76px); } 65%, 75% { transform: translateY(184px); opacity: 1; }
+  85%, 100% { transform: translateY(184px); opacity: 0; } }
+@keyframes aa-chip { 0%, 22% { opacity: .3; } 27%, 75% { opacity: 1; } 85%, 100% { opacity: .3; } }
+@keyframes aa-land { 0%, 64% { fill: rgba(249, 115, 22, .12); } 70% { fill: rgba(249, 115, 22, .4); } 80%, 100% { fill: rgba(249, 115, 22, .12); } }
+@media (prefers-reduced-motion: reduce) {
+  .aa-stack.in .aa-packet { display: none; }
+  .aa-pchip, .aa-stack.in .aa-pchip, .aa-stack.in .aa-plate--end polygon { animation: none; opacity: 1; } }
+.aa-stack-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.6em; }
+.aa-stack-list li { margin: 0; display: grid; gap: .2em; padding-left: 1em; border-left: 2px solid var(--aa-orange); }
+.aa-stack-tag { font: 600 .72em var(--aa-mono); letter-spacing: .1em; color: var(--aa-orange); }
+.aa-stack-list b { font-family: var(--aa-serif); font-style: italic; font-weight: 400; font-size: 1.45em; line-height: 1.2; }
+.aa-stack-list small { font: .78em var(--aa-mono); color: var(--aa-dim); }
+@media (max-width: 50em) { .aa-stack { grid-template-columns: 1fr; gap: 1.4em; } }
+.aa-hl { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--aa-orange); }
+.aa-dark .aa-hl { color: #fb923c; }
+
+/* Yellow's one job: small eyebrow tags on dark backgrounds (too faint on white). */
+[data-md-color-scheme="slate"] .aa-stack-tag, .aa-dark .aa-stack-tag,
+[data-md-color-scheme="slate"] .aa-tag, .aa-dark .aa-tag { color: #fbbf24; }
+[data-md-color-scheme="slate"] .aa-pill--new, .aa-dark .aa-pill--new { color: #fbbf24; border-color: #fbbf24; }
+
+/* Phone menu: black header like the top bar (an orange one hid the logo's orange bars). */
+.md-nav--primary .md-nav__title[for="__drawer"] { background-color: #0a0a0a; color: #fff; }
+.md-nav__source { background-color: #1c1917; color: #fff; }
+
+/* Agent chips fill the skill section's command box (partials/home/ai-tools.html, site.js showAgent). */
+.aa-agent { all: unset; display: inline-flex; align-items: center; cursor: pointer; }
+.aa-agents li:has(.aa-agent):hover, .aa-agents li:has(.aa-agent[aria-pressed="true"]) { border-color: var(--aa-orange); }
+.aa-agent:focus-visible { outline: 2px solid var(--aa-orange); outline-offset: 4px; border-radius: 999px; }
+
+/* Under the hub's result card: the one link to the live run viewer. */
+.aa-runlink { display: grid; justify-items: center; gap: .6em; margin-top: 1.2em; }
+.aa-runlink small { font: .72em var(--aa-mono); color: var(--aa-dim); text-align: center; }
+.aa-runlink-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: .6em; }

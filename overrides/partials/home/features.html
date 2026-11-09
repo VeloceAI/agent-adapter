@@ -3,7 +3,7 @@
   ("Graph flows", "Portable <code>Flow</code> graphs with branches, waves and sub-flows. Run them on their own, or compile them to LangGraph and Google ADK.", "concepts/flows/"),
   ("Approvals that survive restarts", "A risky tool waits for a person. The approval is stored, used once, and the run resumes in any process.", "how-to/human-in-the-loop/"),
   ("Budgets per user and team", "Cap spend per run, per user or per team with <code>BudgetHook</code>. The call stops before the money is spent.", "how-to/team-budgets/"),
-  ("See every run", "A local viewer for runs, cost, timelines and the call graph. OpenTelemetry spans for your own stack.", "how-to/see-your-runs/"),
+  ("See every run", "A local viewer for runs, cost, timelines and the call graph. OpenTelemetry spans for your own stack.", "assets/demo/sample-run.html#run=run_00000000000000000000000000000001"),
   ("Durable runs", "Long runs survive crashes and deploys on Temporal or DBOS, with the same tools and rules.", "how-to/durable-engines/"),
   ("Context compression", "Shrink long histories before each model call, in each framework's own message type.", "concepts/context-compression/"),
   ("Evals from production", "Turn a failure seen in production into a regression case that CI runs on every change.", "how-to/evals-from-production/"),
@@ -14,10 +14,11 @@
     <h2>Everything an agent needs <span class="aa-hl2">in production</span></h2>
     <div class="aa-cards">
       {% for title, body, href in feats %}
-        <a class="aa-card aa-feat aa-reveal" href="{{ href | url }}">
+        {% set demo = href.startswith("assets/") %}
+        <a class="aa-card aa-feat aa-reveal" href="{{ href.split('#')[0] | url }}{{ '#' ~ href.split('#')[1] if demo else '' }}"{% if demo %} target="_blank" rel="noopener"{% endif %}>
           <b>{{ title }}</b>
           <p>{{ body | safe }}</p>
-          <span class="aa-more">Learn more &rarr;</span>
+          <span class="aa-more">{{ "Try the live demo" if demo else "Learn more" }} &rarr;</span>
         </a>
       {% endfor %}
     </div>

@@ -1,17 +1,7 @@
-{% set steps = [
-  ("1", "Write a tool", "A plain Python function with <code>@tool</code>. Its name, types and docstring become the schema every model and framework reads.", "concepts/tools/"),
-  ("2", "Attach it anywhere", "One line hands it to LangChain, CrewAI, ADK and 20 more, to your FastAPI or Celery code, or to .NET, Java and TypeScript over MCP and HTTP.", "how-to/attach-anywhere/"),
-  ("3", "Every call is checked", "Before it runs: approval for risky calls, budgets and limits. After: cost, traces and an audit log. Same rules everywhere.", "concepts/executor/"),
-] %}
 <section class="aa-band aa-light">
   <div class="aa-inner">
     <h2>What Agent Adapter <span class="aa-hl2">does</span></h2>
-    <p class="aa-sub">It is the layer between your agent and your tools: you write each tool once, and every call to it is safe, priced and traced, wherever it comes from.</p>
-    <ol class="aa-steps">
-      {% for n, title, body, href in steps %}
-        <li class="aa-card aa-reveal"><span class="aa-stepn">{{ n }}</span><b>{{ title }}</b><p>{{ body | safe }}</p>
-          <a class="aa-more" href="{{ href | url }}">How it works &rarr;</a></li>
-      {% endfor %}
-    </ol>
+    <p class="aa-sub">One call, start to finish: your agent asks, Agent Adapter approves, prices and traces it, then your function runs.</p>
+    {% include "partials/home/stack.html" %}
   </div>
 </section>

@@ -41,6 +41,8 @@
       else window.location.href = promptPage();
       return;
     }
+    var a = e.target.closest(".aa-agent");
+    if (a) { showAgent(a); return; }
     var c = e.target.closest("[data-aa-copy]");
     if (c) { e.preventDefault(); copy(c.getAttribute("data-aa-copy")); return; }
     var f = e.target.closest(".aa-filter button");
@@ -62,6 +64,24 @@
       });
     }
   });
+
+  // An agent chip (hero or skill section) puts that agent's install line in the skill section's box.
+  function showAgent(btn) {
+    var skill = document.querySelector(".aa-skill");
+    if (!skill) return;
+    var agent = btn.getAttribute("data-agent");
+    skill.querySelectorAll(".aa-agent").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-agent") === agent); });
+    var claude = agent === "claude-code";  // Claude Code has its own plugin commands
+    var cmd = claude ? "/plugin marketplace add VeloceAI/agent-adapter\n/plugin install agent-adapter@agent-adapter"
+      : "npx skills add VeloceAI/agent-adapter --skill agent-adapter -a " + agent;
+    var tab = skill.querySelector('[aria-controls="aa-sk-any"]'), panel = skill.querySelector("#aa-sk-any");
+    tab.textContent = btn.getAttribute("data-name");
+    panel.querySelector(".aa-copybtn").setAttribute("data-aa-copy", cmd);
+    panel.querySelector(".aa-prompt").hidden = claude;
+    panel.querySelector("pre").lastChild.textContent = (claude ? "" : " ") + cmd;
+    tab.click();
+    if (!skill.contains(btn)) skill.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
   function revealOnScroll() {
     var items = document.querySelectorAll(".aa-reveal:not(.in)");

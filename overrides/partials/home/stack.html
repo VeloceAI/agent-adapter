@@ -1,0 +1,36 @@
+{% set layers = [
+  (80, "L2 · ATTACH", "Any framework, any language", "LangChain · CrewAI · ADK · MCP · .NET · Java · Go"),
+  (200, "L1 · EXECUTOR", "Every call checked", "approval · budgets · cost · traces · audit"),
+  (320, "L0 · TOOLS", "Your code, written once", "plain Python functions with @tool"),
+] %}
+{% set chips = [(108, 78, "✓ approved"), (194, 52, "$0.004"), (254, 78, "trace a1f3")] %}
+<div class="aa-stack aa-reveal">
+  <svg viewBox="0 0 440 400" role="img" aria-label="One call travels down through Agent Adapter: it comes from any framework, is approved, priced and traced, then your function runs">
+    <g class="aa-stack-links">
+      <line x1="30" y1="80" x2="30" y2="320"/><line x1="410" y1="80" x2="410" y2="320"/><line x1="220" y1="138" x2="220" y2="262"/>
+    </g>
+    {% for y, tag, title, sub in layers %}
+      <g class="aa-plate{% if loop.index == 2 %} aa-plate--core{% elif loop.last %} aa-plate--end{% endif %}">
+        <polygon points="220,{{ y - 58 }} 410,{{ y }} 220,{{ y + 58 }} 30,{{ y }}"/>
+      </g>
+    {% endfor %}
+    <g class="aa-plate-logos">
+      {% for icon in ["langchain", "crewai", "google", "openai", "dotnet"] %}
+        {% set logo %}{% include ".icons/brand/" ~ icon ~ ".svg" %}{% endset %}
+        {{ logo | replace("<svg ", '<svg x="' ~ (129 + loop.index0 * 40) ~ '" y="69" width="22" height="22" ', 1) | safe }}
+      {% endfor %}
+    </g>
+    {% for x, w, label in chips %}
+      <g class="aa-pchip" style="--d: {{ loop.index0 * 0.3 }}s">
+        <rect x="{{ x }}" y="197" width="{{ w }}" height="22" rx="4"/><text x="{{ x + w / 2 }}" y="212">{{ label }}</text>
+      </g>
+    {% endfor %}
+    <text class="aa-pcall" x="220" y="325">book_tickets("Louvre", people=2)</text>
+    <circle class="aa-packet" cx="220" cy="104" r="5"/>
+  </svg>
+  <ol class="aa-stack-list">
+    {% for y, tag, title, sub in layers %}
+      <li><span class="aa-stack-tag">{{ tag }}</span><b>{{ title }}</b><small>{{ sub }}</small></li>
+    {% endfor %}
+  </ol>
+</div>

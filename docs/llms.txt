@@ -8,13 +8,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 
 ## Home
 
-- [Home](https://agent-adapter.veloceai.in/): Agent Adapter is an open-source (Apache-2.0), framework-independent Python SDK (version **1.1.0**)
-
-## Product
-
-- [Use cases](https://agent-adapter.veloceai.in/use-cases/): Each use case names the problem, the features that solve it and an example that runs in this repository with no API keys
-- [Agent skill](https://agent-adapter.veloceai.in/skill/): The skill teaches your coding agent the Agent Adapter API, its safety rules and which extras your stack needs
-- [Watch the reel](https://agent-adapter.veloceai.in/reel/): Write a tool once, as a plain Python function
+- [Home](https://agent-adapter.veloceai.in/)
 
 ## Get started
 
@@ -23,9 +17,12 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Wrap existing code](https://agent-adapter.veloceai.in/get-started/wrap-existing-code/): Use `registry.wrap()` for code you cannot or will not edit
 - [First flow](https://agent-adapter.veloceai.in/get-started/first-flow/): Build a three-node flow that classifies a support ticket, then either looks up a policy with a tool or escalates
 - [Prompt for any AI](https://agent-adapter.veloceai.in/get-started/ai-prompt/): Paste this into Claude, ChatGPT, Gemini, Cursor or any coding assistant that can see your project
+- [Agent skill](https://agent-adapter.veloceai.in/skill/): The skill teaches your coding agent the Agent Adapter API, its safety rules and which extras your stack needs
 - [For AI coding agents](https://agent-adapter.veloceai.in/get-started/for-ai-agents/): One file teaches an AI coding agent (Claude Code, Cursor, Copilot) the SDK: what to install, which function does each job, the safety rules and the common...
 - [Which feature do I need?](https://agent-adapter.veloceai.in/choose/): Answer the questions top to bottom
 - [Features](https://agent-adapter.veloceai.in/features/): What Agent Adapter does, grouped by area, with a link to each guide
+- [Use cases](https://agent-adapter.veloceai.in/use-cases/): Each use case names the problem, the features that solve it and an example that runs in this repository with no API keys
+- [Watch the reel](https://agent-adapter.veloceai.in/reel/): Write a tool once, as a plain Python function
 - [Troubleshooting](https://agent-adapter.veloceai.in/troubleshooting/): Find your symptom, read the cause, apply the fix
 
 ## How-to

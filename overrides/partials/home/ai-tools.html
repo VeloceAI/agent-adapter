@@ -1,12 +1,15 @@
+{#- Third field: the agent's `-a` value in the `skills` CLI (vercel-labs/skills docs/agents.md). -#}
 {% set ai_tools = [
-  ("Claude Code", "claude-code"), ("Codex", "codex"), ("Cursor", "cursor"), ("GitHub Copilot", "github-copilot"),
-  ("Gemini CLI", "gemini-cli"), ("Windsurf", "windsurf"), ("Antigravity", "antigravity"), ("Kiro", "kiro"),
-  ("Cline", "cline"), ("Roo Code", "roo-code"), ("OpenCode", "opencode"), ("Junie", "junie"),
-  ("Zed", "zed"), ("Amp", "amp"), ("Goose", "goose"), ("Devin", "devin"), ("Trae", "trae"), ("Kilo Code", "kilo-code"),
+  ("Claude Code", "claude-code", "claude-code"), ("Codex", "codex", "codex"), ("Cursor", "cursor", "cursor"),
+  ("GitHub Copilot", "github-copilot", "github-copilot"), ("Gemini CLI", "gemini-cli", "gemini-cli"),
+  ("Windsurf", "windsurf", "windsurf"), ("Antigravity", "antigravity", "antigravity"), ("Kiro", "kiro", "kiro-cli"),
+  ("Cline", "cline", "cline"), ("Roo Code", "roo-code", "roo"), ("OpenCode", "opencode", "opencode"),
+  ("Junie", "junie", "junie"), ("Zed", "zed", "zed"), ("Amp", "amp", "amp"), ("Goose", "goose", "goose"),
+  ("Devin", "devin", "devin"), ("Trae", "trae", "trae"), ("Kilo Code", "kilo-code", "kilo"),
 ] %}
-<ul class="aa-logos">
-  {% for name, icon in ai_tools[:ai_limit | default(99)] %}
-    <li><span class="aa-logo" aria-hidden="true">{% include ".icons/brand/" ~ icon ~ ".svg" %}</span>{{ name }}</li>
+<ul class="aa-logos aa-agents">
+  {% for name, icon, agent in ai_tools[:ai_limit | default(99)] %}
+    <li><button type="button" class="aa-agent" aria-pressed="false" data-agent="{{ agent }}" data-name="{{ name }}"><span class="aa-logo" aria-hidden="true">{% include ".icons/brand/" ~ icon ~ ".svg" %}</span>{{ name }}</button></li>
   {% endfor %}
   <li><a href="{{ 'skill/' | url }}">60+ more</a></li>
 </ul>
