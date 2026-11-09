@@ -51,6 +51,7 @@ theme:
     - content.tabs.link
     - toc.follow
 extra:
+  web3forms_key: ""  # public form key from web3forms.com; the contact section shows only once this is set
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/VeloceAI/agent-adapter

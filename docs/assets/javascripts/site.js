@@ -41,6 +41,9 @@
       else window.location.href = promptPage();
       return;
     }
+    var open = e.target.closest("[data-aa-open]");
+    if (open) { document.getElementById(open.getAttribute("data-aa-open")).showModal(); return; }
+    if (e.target.closest("[data-aa-close]") || e.target.tagName === "DIALOG") { e.target.closest("dialog").close(); return; }
     var a = e.target.closest(".aa-agent");
     if (a) { showAgent(a); return; }
     var c = e.target.closest("[data-aa-copy]");
@@ -82,6 +85,23 @@
     tab.click();
     if (!skill.contains(btn)) skill.scrollIntoView({ behavior: "smooth", block: "center" });
   }
+
+  document.addEventListener("submit", function (e) {
+    var form = e.target.closest("[data-aa-contact]");
+    if (!form) return;
+    e.preventDefault();
+    var status = form.querySelector(".aa-contact-status"), send = form.querySelector("[type=submit]");
+    send.disabled = true;
+    status.textContent = "Sending...";
+    fetch(form.action, { method: "POST", headers: { Accept: "application/json" }, body: new FormData(form) })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (!res.success) throw new Error(res.message);
+        form.reset();
+        status.textContent = "Thanks, we got it. We reply within one working day.";
+      })
+      .catch(function () { status.textContent = "That did not send. Please try again in a minute."; send.disabled = false; });
+  });
 
   function revealOnScroll() {
     var items = document.querySelectorAll(".aa-reveal:not(.in)");

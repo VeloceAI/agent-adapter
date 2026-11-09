@@ -1,0 +1,38 @@
+{#- Business enquiries post to Web3Forms, which emails the shared inbox; home.html shows this only once mkdocs.yml has extra.web3forms_key. -#}
+<section class="aa-band aa-light" id="contact">
+  <div class="aa-inner">
+    <h2>Using it at work? <span class="aa-hl2">Let's talk.</span></h2>
+    <p class="aa-sub">Rolling it out across teams, a framework or language we don't cover yet, a security review or support.
+      Tell us what you are building and we reply within one working day.</p>
+    <div class="aa-ctas"><button type="button" class="aa-btn aa-btn--primary" data-aa-open="aa-contact-dialog">Talk to us &rarr;</button></div>
+  </div>
+  {#- No padding on the dialog itself: a click that lands on it outside .aa-dialog-body is a backdrop click and closes it. -#}
+  <dialog class="aa-dialog" id="aa-contact-dialog" aria-labelledby="aa-contact-title">
+    <div class="aa-dialog-body">
+      <div class="aa-dialog-head">
+        <h3 id="aa-contact-title">Tell us what you are building</h3>
+        <button type="button" class="aa-dialog-x" data-aa-close aria-label="Close">&times;</button>
+      </div>
+      <form class="aa-contact" action="https://api.web3forms.com/submit" method="POST" data-aa-contact>
+        <input type="hidden" name="access_key" value="{{ config.extra.web3forms_key }}">
+        <input type="hidden" name="subject" value="Agent Adapter enquiry">
+        <input type="hidden" name="from_name" value="agent-adapter.veloceai.in">
+        <input type="checkbox" name="botcheck" class="aa-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <label>Name<input name="name" required autocomplete="name"></label>
+        <label>Work email<input name="email" type="email" required autocomplete="email"></label>
+        <label>Company<input name="company" autocomplete="organization"></label>
+        <label>Team size
+          <select name="team_size"><option>Just me</option><option>2 to 20</option><option>21 to 200</option><option>200+</option></select>
+        </label>
+        <label class="aa-contact-wide">What do you need?
+          <select name="topic"><option>Help rolling it out</option><option>A new framework or language</option><option>Security review</option><option>Support</option><option>Partnership</option><option>Something else</option></select>
+        </label>
+        <label class="aa-contact-wide">Message<textarea name="message" rows="4" required placeholder="What are you building, and which framework or backend?"></textarea></label>
+        <div class="aa-contact-wide aa-contact-foot">
+          <button class="aa-btn aa-btn--primary" type="submit">Send</button>
+          <small class="aa-contact-status" role="status">We only use this to reply. No newsletter.</small>
+        </div>
+      </form>
+    </div>
+  </dialog>
+</section>

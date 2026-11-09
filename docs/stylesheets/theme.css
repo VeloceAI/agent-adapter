@@ -107,3 +107,23 @@
 .aa-runlink { display: grid; justify-items: center; gap: .6em; margin-top: 1.2em; }
 .aa-runlink small { font: .72em var(--aa-mono); color: var(--aa-dim); text-align: center; }
 .aa-runlink-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: .6em; }
+
+/* Business contact form (partials/home/contact.html). */
+.aa-contact { display: grid; grid-template-columns: 1fr 1fr; gap: 1em 1.2em; text-align: left; }
+.aa-contact label { display: grid; gap: .35em; font: 500 .78em var(--aa-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--aa-dim); }
+.aa-contact input, .aa-contact select, .aa-contact textarea { font: 400 1rem var(--aa-sans); text-transform: none; letter-spacing: 0; color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color); border: 1px solid var(--aa-line); border-radius: .45em; padding: .7em .8em; }
+.aa-contact input:focus, .aa-contact select:focus, .aa-contact textarea:focus { outline: 2px solid var(--aa-orange); outline-offset: 1px; border-color: transparent; }
+.aa-contact-wide { grid-column: 1 / -1; }
+.aa-contact-foot { display: flex; align-items: center; gap: 1em; flex-wrap: wrap; }
+.aa-contact-status { color: var(--aa-dim); }
+.aa-hp { position: absolute; left: -9999px; }
+@media (max-width: 40em) { .aa-contact { grid-template-columns: 1fr; } }
+.aa-dialog { width: min(40em, calc(100% - 2em)); max-height: calc(100% - 2em); padding: 0; border: 1px solid var(--aa-line, rgba(127,127,127,.25)); border-radius: 14px;
+  background: var(--md-default-bg-color); color: var(--md-default-fg-color); box-shadow: 0 24px 80px rgba(0,0,0,.45); }
+.aa-dialog::backdrop { background: rgba(10,10,10,.7); backdrop-filter: blur(3px); }
+.aa-dialog-body { padding: 1.6em; }
+.aa-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 1em; margin-bottom: 1.2em; }
+.aa-dialog-head h3 { margin: 0; font-size: 1.25em; }
+.aa-dialog-x { all: unset; cursor: pointer; font-size: 1.6em; line-height: 1; padding: 0 .2em; color: var(--aa-dim); }
+.aa-dialog-x:hover, .aa-dialog-x:focus-visible { color: var(--aa-orange); }
