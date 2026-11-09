@@ -82,9 +82,8 @@
 .aa-pill--new { border-radius: 999px; }
 @media (max-width: 40em) { .aa-heroband .aa-inner { padding: 3.2em 1em 2.6em; border-radius: 1.2em; } }
 
-/* Highlighted headline line: white bold sans. The serif has no bold cut, and a box behind it collided with the line above. */
-.aa-heroband .aa-hl { font-family: var(--aa-sans); font-style: normal; font-weight: 800; font-size: 1em;
-  letter-spacing: -.045em; color: #fff; background: none; padding: 0; }
+/* Highlighted headline line: white italic serif, no box (a box behind it collided with the line above). */
+.aa-heroband .aa-hl { color: #fff; background: none; padding: 0; }
 
 /* Logos (Simple Icons and Font Awesome, bundled with the theme). */
 .aa-logo { display: inline-flex; width: 1.15em; height: 1.15em; margin-right: .45em; vertical-align: -.2em; flex: none; }
