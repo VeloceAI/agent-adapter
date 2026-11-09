@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 
 {#- Icons: the SVG favicon for current browsers, a PNG for the rest, a home-screen icon for iOS. -#}
+{#- Bump v when the icons change: nginx lets browsers cache them for a week. -#}
 {% block site_meta %}
   {{ super() }}
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ 'assets/favicon-32.png' | url }}">
-  <link rel="icon" type="image/svg+xml" sizes="any" href="{{ config.theme.favicon | url }}">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ 'assets/apple-touch-icon.png' | url }}">
+  {% set v = "?v=2" %}
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ 'assets/favicon-32.png' | url }}{{ v }}">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="{{ config.theme.favicon | url }}{{ v }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ 'assets/apple-touch-icon.png' | url }}{{ v }}">
 {% endblock %}
 
 {#- Link previews in chat and mail; og:url and og:image follow site_url; the description is
