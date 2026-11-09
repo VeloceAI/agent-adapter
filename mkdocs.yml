@@ -51,7 +51,8 @@ theme:
     - content.tabs.link
     - toc.follow
 extra:
-  web3forms_key: ""  # public form key from web3forms.com; the contact section shows only once this is set
+  web3forms_key: ""  # public form key from web3forms.com; once set, the contact form sends directly
+  contact_email: hello@veloceai.in  # until then, Send opens the visitor's email app addressed here
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/VeloceAI/agent-adapter

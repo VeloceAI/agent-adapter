@@ -91,6 +91,16 @@
     if (!form) return;
     e.preventDefault();
     var status = form.querySelector(".aa-contact-status"), send = form.querySelector("[type=submit]");
+    var to = form.getAttribute("data-aa-mailto");
+    if (to) {
+      var d = new FormData(form);
+      var body = ["Name: " + d.get("name"), "Email: " + d.get("email"), "Company: " + d.get("company"),
+        "Team size: " + d.get("team_size"), "Need: " + d.get("topic"), "", d.get("message")].join("\n");
+      window.location.href = "mailto:" + to + "?subject=" + encodeURIComponent("Agent Adapter enquiry: " + d.get("topic")) +
+        "&body=" + encodeURIComponent(body);
+      status.textContent = "Your email app should open with this message. Press send there.";
+      return;
+    }
     send.disabled = true;
     status.textContent = "Sending...";
     fetch(form.action, { method: "POST", headers: { Accept: "application/json" }, body: new FormData(form) })

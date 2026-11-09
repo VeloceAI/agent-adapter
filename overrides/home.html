@@ -14,6 +14,6 @@
     {% include "partials/home/skill.html" %}
     {% include "partials/home/enterprise.html" %}
     {% include "partials/home/cta.html" %}
-    {% if config.extra.web3forms_key %}{% include "partials/home/contact.html" %}{% endif %}
+    {% if config.extra.web3forms_key or config.extra.contact_email %}{% include "partials/home/contact.html" %}{% endif %}
   </div>
 {% endblock %}
