@@ -1,0 +1,23 @@
+{% set cases = [
+  ("Customer support", "Refunds and cancellations wait for a person's approval; every reply is priced and traced."),
+  ("Finance operations", "Payment and invoice tools with per-user budgets, an audit log and no secrets in logs."),
+  ("Legacy systems to agents", "Turn an OpenAPI spec or old service classes into safe agent tools in an afternoon."),
+] %}
+<section class="aa-band aa-light">
+  <div class="aa-inner">
+    <h2>Built for <span class="aa-hl2">real work</span></h2>
+    <div class="aa-cards aa-cards--3">
+      {% for title, body in cases %}
+        <a class="aa-card aa-case aa-reveal" href="{{ 'use-cases/' | url }}">
+          <span class="aa-tag">Use case</span>
+          <b>{{ title }}</b>
+          <p>{{ body }}</p>
+        </a>
+      {% endfor %}
+    </div>
+    <div class="aa-ctas">
+      <a class="aa-btn aa-btn--primary" href="{{ 'use-cases/' | url }}">See all use cases</a>
+      <a class="aa-btn" href="{{ 'examples/' | url }}">Browse 170 examples</a>
+    </div>
+  </div>
+</section>

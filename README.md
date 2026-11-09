@@ -5,11 +5,10 @@
   </picture>
 </p>
 
-<h3 align="center">Build with any framework. Ship with one safety layer.</h3>
+<h3 align="center">The agent framework that scales with your enterprise.</h3>
 
 <p align="center">
-  Write a tool once, as a plain Python function. Use it in any agent framework, any backend
-  or on its own, with approvals, budgets, cost and traces built in.
+  Write a tool once, as a plain Python function. Use it in any agent framework, any backend or on its own, with approvals, budgets, cost and traces built in.
 </p>
 
 <p align="center"><a href="https://agent-adapter.veloceai.in/assets/video/agent-adapter-reel.mp4"><img src="docs/assets/video/agent-adapter-reel-play.jpg" alt="Watch Agent Adapter in 29 seconds" width="270"></a><br><sub>Watch it in 29 seconds · <a href="https://agent-adapter.veloceai.in/reel/">share it</a></sub></p>
@@ -19,12 +18,9 @@
 </p>
 
 <p align="center">
-  <a href="#quickstart">Quickstart</a> · <a href="#why-agent-adapter">Why</a> ·
-  <a href="#how-it-works">How it works</a> ·
-  <a href="#a-tour-in-code">Tour</a> ·
-  <a href="#see-your-runs-and-chat-with-your-agent">Viewer and chat</a> ·
-  <a href="#install">Install</a> · <a href="docs/index.md">Docs</a> ·
-  <a href="docs/get-started/ai-prompt.md">Prompt for any AI</a>
+  <a href="#quickstart">Quickstart</a> · <a href="#why-agent-adapter">Why</a> · <a href="#how-it-works">How it works</a> · <a href="#a-tour-in-code">Tour</a> ·
+  <a href="#see-your-runs-and-chat-with-your-agent">Viewer and chat</a> · <a href="#install">Install</a> · <a href="docs/index.md">Docs</a> ·
+  <a href="docs/use-cases.md">Use cases</a> · <a href="docs/skill.md">Agent skill</a> · <a href="docs/get-started/ai-prompt.md">Prompt for any AI</a>
 </p>
 
 LangChain, CrewAI or ADK help you build an agent. Agent Adapter makes every tool call
@@ -38,6 +34,9 @@ depends only on pydantic. Every framework is an optional extra, imported lazily.
 No agent framework is needed: a FastAPI service calling an LLM gets tools, approvals,
 budgets, cost, cache and context compression directly. The adapter can also be your
 framework: `run_tool_loop` with your own model is the agent loop, and `Flow` is the graph.
+
+> **Let your AI set it up.** Add the [agent skill](docs/skill.md) to Claude Code, Codex, Cursor, Copilot or Gemini CLI with
+> `npx skills add VeloceAI/agent-adapter --skill agent-adapter`, or in Claude Code `/plugin marketplace add VeloceAI/agent-adapter`.
 
 ## Quickstart
 

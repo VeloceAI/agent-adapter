@@ -1,0 +1,60 @@
+{% set fws = [
+  ("LangChain", "langchain"), ("LangGraph", "langgraph"), ("CrewAI", "crewai"), ("Google ADK", "adk"),
+  ("OpenAI Agents SDK", "openai-agents"), ("Pydantic AI", "pydantic-ai"), ("LlamaIndex", "llamaindex"),
+  ("MCP", "mcp"), ("AutoGen", "autogen"), ("AG2", "ag2"), ("Haystack", "haystack"), ("smolagents", "smolagents"),
+  ("Strands Agents", "strands"), ("Semantic Kernel", "semantic-kernel"), ("DSPy", "dspy"), ("Agno", "agno"),
+  ("CAMEL-AI", "camel"), ("Claude Agent SDK", "claude-agent"), ("Microsoft Agent Framework", "agent-framework"),
+  ("OpenAI", "openai"), ("Gemini", "gemini"), ("Anthropic", "anthropic"), ("OpenAPI", "openapi"),
+  ("A2A", "a2a"), ("AG-UI", "ag-ui"), ("Composio and any MCP server", "mcp")
+] %}
+{% set tabs = [
+  ("langchain", "LangChain", 'pip install "agent-adapter[langchain]"', 'tools = <f>attach</f>(<s>"langchain"</s>, registry, executor=executor)'),
+  ("crewai", "CrewAI", 'pip install "agent-adapter[crewai]"', 'tools = <f>attach</f>(<s>"crewai"</s>, registry, executor=executor)'),
+  ("oa", "OpenAI Agents", 'pip install "agent-adapter[openai-agents]"', 'tools = <f>attach</f>(<s>"openai_agents"</s>, registry, executor=executor)'),
+  ("adk", "Google ADK", 'pip install "agent-adapter[adk]"', 'tools = <f>attach</f>(<s>"adk"</s>, registry, executor=executor)'),
+  ("mcp", "MCP", 'pip install "agent-adapter[mcp]"', 'app = <f>streamable_http_app</f>(registry, executor=executor)  <c># any MCP client</c>'),
+  ("none", "No framework", 'pip install agent-adapter', 'result = <k>await</k> executor.<f>run</f>(<s>"book_tickets"</s>, {<s>"place"</s>: <s>"Louvre"</s>, <s>"day"</s>: <s>"Sat"</s>, <s>"people"</s>: <t>2</t>})'),
+] %}
+<section class="aa-band aa-dark aa-fwband">
+  <div class="aa-inner">
+    <h2>Works with <span class="aa-hl2">any framework</span></h2>
+    <p class="aa-sub">Define the tool once. Change one line to move it to another framework.</p>
+    <div class="aa-marquee" aria-label="Integrations">
+      <div class="aa-track">
+        {% for loop_i in [0, 1] %}
+          {% for name, slug in fws %}
+            <a class="aa-chip" href="{{ ('integrations/' ~ slug ~ '/') | url }}"{% if loop_i %} aria-hidden="true" tabindex="-1"{% endif %}>{{ name }}</a>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+    <div class="aa-tabs aa-reveal">
+      <div class="aa-tablist" role="tablist">
+        {% for id, label, _, _ in tabs %}
+          <button type="button" role="tab" aria-controls="aa-tab-{{ id }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>
+        {% endfor %}
+      </div>
+      {% for id, _, install, line in tabs %}
+        <div class="aa-code" role="tabpanel" id="aa-tab-{{ id }}"{% if not loop.first %} hidden{% endif %}>
+          <button class="aa-copybtn" type="button" data-aa-copy="{{ install }}" title="Copy">Copy</button>
+          <pre><span class="aa-prompt">$</span> {{ install }}</pre>
+          <pre><k>from</k> agent_adapter <k>import</k> Executor, Registry, attach
+
+registry = Registry()
+
+<d>@registry.tool</d>
+<k>def</k> <f>book_tickets</f>(place: str, day: str, people: int) -> str:
+    <s>"""Book museum tickets."""</s>
+    ...
+
+executor = Executor(registry)  <c># approvals, budgets, cost, traces</c>
+<span class="aa-changed">{{ line | safe }}</span></pre>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="aa-ctas">
+      <a class="aa-btn aa-btn--primary" href="{{ 'integrations/' | url }}">See all integrations</a>
+      <a class="aa-btn" href="{{ 'how-to/attach-anywhere/' | url }}">Read the docs</a>
+    </div>
+  </div>
+</section>

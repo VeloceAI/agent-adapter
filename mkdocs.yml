@@ -61,12 +61,15 @@ extra:
       name: agent-adapter on PyPI
 extra_css:
   - stylesheets/extra.css
+  - stylesheets/home.css
 # Mermaid served from the site itself, so diagrams render offline; the theme uses this global
 # instead of fetching it from a CDN. Its MIT licence sits next to it.
 extra_javascript:
   - path: assets/javascripts/vendor/mermaid-11.17.2.min.js
     defer: true
   - path: assets/javascripts/diagrams.js
+    defer: true
+  - path: assets/javascripts/site.js
     defer: true
 # Each page's description (search results, link previews) from its first paragraph.
 hooks:
@@ -110,6 +113,8 @@ plugins:
             heading_level: 3
 nav:
   - Home: index.md
+  - Use cases: use-cases.md
+  - Skill: skill.md
   - Watch the reel: reel.md
   - Get started:
       - Install: get-started/install.md

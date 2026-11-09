@@ -36,7 +36,7 @@ def test_the_built_config_loads_it_before_the_narrow_screen_tweak() -> None:
     pytest.importorskip("mkdocstrings")
     config = config_module.load_config(str(ROOT / "mkdocs.yml"))
     scripts = [str(getattr(item, "path", item)) for item in config.extra_javascript]
-    assert scripts == [SCRIPT, "assets/javascripts/diagrams.js"]
+    assert scripts[:2] == [SCRIPT, "assets/javascripts/diagrams.js"]
     assert all(getattr(item, "defer", False) for item in config.extra_javascript)
     assert (ROOT / "docs" / SCRIPT).is_file()
 

@@ -1,0 +1,42 @@
+{% set tiles = [
+  ("Tools", "concepts/tools/", "M4 7h16M4 12h10M4 17h7"),
+  ("Approvals", "how-to/human-in-the-loop/", "M5 12l4 4L19 6"),
+  ("Budgets", "how-to/budgets/", "M12 3v18M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"),
+  ("Cost", "concepts/cost/", "M3 17l6-6 4 4 8-8"),
+  ("Traces", "concepts/tracing/", "M4 6h4v4H4zM10 14h4v4h-4zM16 6h4v4h-4zM8 8h8M12 10v4"),
+  ("Flows", "concepts/flows/", "M6 4v6a4 4 0 0 0 4 4h8M14 10l4 4-4 4"),
+  ("Memory", "concepts/memory/", "M4 6h16v12H4zM8 10h8M8 14h5"),
+  ("Evals", "how-to/evaluate-your-agent/", "M9 11l3 3 8-8M20 12v7H4V5h11"),
+] %}
+<section class="aa-band aa-light">
+  <div class="aa-inner">
+    <h2>One safety layer for <span class="aa-hl2">every tool call</span></h2>
+    <p class="aa-sub">Your agent decides what to do. Agent Adapter checks, prices, approves and records
+      every call before it runs, in every framework and every backend.</p>
+    <div class="aa-hub aa-reveal">
+      <div class="aa-card aa-chat">
+        <div class="aa-chat-who">Your agent</div>
+        <code class="aa-call aa-call--dim">get_weather(city="Paris")</code>
+        <code class="aa-call">book_tickets(place="Louvre", day="Sat", people=2)</code>
+        <p>"Book two tickets for the Louvre on Saturday."</p>
+      </div>
+      <div class="aa-wire"></div>
+      <div class="aa-core">
+        <div class="aa-grid8">
+          {% for name, href, d in tiles %}
+            <a class="aa-tile" href="{{ href | url }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="{{ d }}"/></svg>{{ name }}</a>
+            {% if loop.index == 4 %}
+              <div class="aa-corelogo"><img src="{{ 'assets/mark.svg' | url }}" alt="" class="aa-only-light"><img src="{{ 'assets/mark-dark.svg' | url }}" alt="" class="aa-only-dark">Agent Adapter</div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      <div class="aa-wire"></div>
+      <div class="aa-card aa-result">
+        <span class="aa-ok">&#10003;</span>
+        <div><b>2 tickets booked for Saturday</b>
+          <small>Approved by a person · $0.004 · 312 ms · traced</small></div>
+      </div>
+    </div>
+  </div>
+</section>

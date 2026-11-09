@@ -1,0 +1,25 @@
+{% set items = [
+  ("Approvals no one can skip", "A risky call runs only after a one-use approval for that exact call. No approver means denied.", "concepts/approval/"),
+  ("Audit log", "Who asked, which tool ran, with what result and cost, in a log you can ship to your own store.", "concepts/audit/"),
+  ("Policy file", "Limits, rates and approval rules in one reviewed file, not scattered through code.", "concepts/policy/"),
+  ("Guardrails", "Input and output checks, redaction and rate limits on every call, from every surface.", "concepts/guardrails/"),
+  ("Locked-down server", "The HTTP tool server refuses to start without auth and scopes every run to its caller.", "cross-language/http-server/"),
+  ("Self-hosted and open", "Runs in your cloud. Apache-2.0, no account, no telemetry.", "guides/security/"),
+] %}
+<section class="aa-band aa-dark">
+  <div class="aa-inner">
+    <h2>Built for <span class="aa-hl">enterprise deployment</span></h2>
+    <p class="aa-sub">See who each agent acts for, what it can reach and what it is allowed to do, in one place.</p>
+    <div class="aa-cards">
+      {% for title, body, href in items %}
+        <a class="aa-card aa-ent aa-reveal" href="{{ href | url }}">
+          <b>{{ title }}</b>
+          <p>{{ body }}</p>
+        </a>
+      {% endfor %}
+    </div>
+    <div class="aa-ctas">
+      <a class="aa-btn" href="{{ 'guides/production-checklist/' | url }}">Production checklist</a>
+    </div>
+  </div>
+</section>

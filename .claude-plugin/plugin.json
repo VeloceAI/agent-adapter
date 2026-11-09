@@ -1,0 +1,8 @@
+{
+  "name": "agent-adapter",
+  "version": "1.1.0",
+  "description": "Teaches your coding agent the Agent Adapter Python SDK: install, attach, approvals, budgets and safety rules.",
+  "license": "Apache-2.0",
+  "homepage": "https://agent-adapter.veloceai.in/skill/",
+  "repository": "https://github.com/VeloceAI/agent-adapter"
+}

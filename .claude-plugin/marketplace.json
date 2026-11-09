@@ -1,0 +1,12 @@
+{
+  "name": "agent-adapter",
+  "description": "The Agent Adapter skill for Claude Code: define agent tools once, run them in any framework or backend.",
+  "owner": { "name": "Veloce AI", "url": "https://github.com/VeloceAI" },
+  "plugins": [
+    {
+      "name": "agent-adapter",
+      "source": "./",
+      "description": "Teaches your coding agent the Agent Adapter Python SDK: install, attach, approvals, budgets and safety rules."
+    }
+  ]
+}
