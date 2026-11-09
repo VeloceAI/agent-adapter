@@ -22,6 +22,27 @@ flowchart LR
 | OpenAPI | the caller generates a typed client from a spec | [OpenAPI](openapi.md) |
 | TypeScript client | a TS / JS app calls the HTTP server | [TypeScript client](typescript-client.md) |
 
+## Every backend language
+
+MCP has official SDKs in ten languages, so each one connects natively. Any other language
+calls the HTTP routes, or a client generated from `/openapi.json`.
+
+| Language | Native route | Plain HTTP |
+|---|---|---|
+| :brand-typescript: TypeScript | MCP TypeScript SDK, or our [TypeScript client](typescript-client.md) | `fetch` |
+| :brand-python: Python | in process, no server needed | `httpx` |
+| :brand-csharp: C# / .NET | MCP C# SDK, Microsoft Agent Framework ([recipe](../connect/maf-dotnet.md)) | `HttpClient` |
+| :brand-java: Java | MCP Java SDK, Spring AI ([recipe](../connect/spring-ai.md)) | `java.net.http` |
+| :brand-kotlin: Kotlin | MCP Kotlin SDK | Ktor client |
+| :brand-go: Go | MCP Go SDK, ADK Go ([recipe](../connect/adk-go.md)) | `net/http` |
+| :brand-rust: Rust | MCP Rust SDK (`rmcp`) | `reqwest` |
+| :brand-ruby: Ruby | MCP Ruby SDK | `Net::HTTP` |
+| :brand-php: PHP | MCP PHP SDK | Guzzle |
+| :brand-swift: Swift | MCP Swift SDK | `URLSession` |
+| :brand-openapi: Anything else | | any HTTP client, or a generated one |
+
+Every route runs the same executor, so approvals, budgets, cost and traces apply the same way.
+
 One app serves both: `create_app(registry)` mounts MCP at `/mcp` next to the HTTP routes,
 behind the same authenticator. That default needs both the `server` and `mcp` extras.
 

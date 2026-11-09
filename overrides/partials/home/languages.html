@@ -1,24 +1,43 @@
+{% set sdks = [("TypeScript", "typescript"), ("Python", "python"), ("C#", "csharp"), ("Go", "go"), ("Rust", "rust"),
+  ("Ruby", "ruby"), ("Java", "java"), ("Kotlin", "kotlin"), ("Swift", "swift"), ("PHP", "php")] %}
 {% set langs = [
-  ("py", "Python", "python", "In your process", 'tools = <f>attach</f>(<s>"langchain"</s>, registry, executor=executor)
-result = <k>await</k> executor.<f>run</f>(<s>"book_tickets"</s>, {...})', "how-to/attach-anywhere/"),
-  ("net", ".NET", "dotnet", "MCP C# SDK, Microsoft Agent Framework", '<k>await using var</k> mcp = <k>await</k> McpClient.<f>CreateAsync</f>(<k>new</k> <f>HttpClientTransport</f>(<k>new</k>() {
-    Endpoint = <k>new</k> Uri(<s>"https://tools.example.com/mcp"</s>) }));
-<k>var</k> tools = <k>await</k> mcp.<f>ListToolsAsync</f>();   <c>// AITools for your agent</c>', "connect/maf-dotnet/"),
-  ("java", "Java", "java", "Spring AI MCP client", '<c># application.yml</c>
+  ("py", "Python", "python", "1. Serve your tools (this runs as shown)", '<k>from</k> agent_adapter <k>import</k> Registry
+<k>from</k> agent_adapter.server <k>import</k> create_app, serve
+
+registry = <f>Registry</f>()
+
+<f>@registry.tool</f>(effects=<s>"read_only"</s>)
+<k>def</k> <f>get_weather</f>(city: str) -> str:
+    <k>return</k> <s>f"Sunny in {city}, 21 C"</s>
+
+<f>serve</f>(<f>create_app</f>(registry, allow_anonymous=<k>True</k>))  <c># http://localhost:8000</c>', "cross-language/http-server/"),
+  ("net", ".NET", "dotnet", "2. Call it from C# with the MCP C# SDK", '<k>await using var</k> mcp = <k>await</k> McpClient.<f>CreateAsync</f>(<k>new</k> <f>HttpClientTransport</f>(<k>new</k>() {
+    Endpoint = <k>new</k> Uri(<s>"http://localhost:8000/mcp"</s>) }));
+<k>var</k> result = <k>await</k> mcp.<f>CallToolAsync</f>(<s>"get_weather"</s>,
+    <k>new</k> Dictionary&lt;<k>string</k>, <k>object</k>?&gt; { [<s>"city"</s>] = <s>"Paris"</s> });', "connect/maf-dotnet/"),
+  ("java", "Java", "java", "2. Call it from Spring AI (tools become ToolCallbacks)", '<c># application.yml</c>
 spring.ai.mcp.client.streamable-http.connections:
-  shop-tools:
-    url: <s>https://tools.example.com</s>   <c># our tools become ToolCallbacks</c>', "connect/spring-ai/"),
-  ("ts", "TypeScript", "typescript", "TS client, Vercel AI SDK, Mastra, LangGraph.js", '<k>const</k> res = <k>await</k> <f>fetch</f>(<s>"https://tools.example.com/tools/book_tickets/invoke"</s>, {
-  method: <s>"POST"</s>, headers: { Authorization: <s>`Bearer ${token}`</s> },
-  body: JSON.<f>stringify</f>({ arguments: { place: <s>"Louvre"</s> } }) });', "cross-language/typescript-client/"),
-  ("any", "Go, Rust, any", "go", "Plain HTTP or MCP", 'curl -X POST https://tools.example.com/tools/book_tickets/invoke \
-  -H <s>"Authorization: Bearer $TOKEN"</s> \
-  -d <s>\'{"arguments": {"place": "Louvre", "day": "Sat", "people": 2}}\'</s>', "cross-language/http-server/"),
+  weather:
+    url: <s>http://localhost:8000</s>', "connect/spring-ai/"),
+  ("ts", "TypeScript", "typescript", "2. Call it from TypeScript", '<k>const</k> res = <k>await</k> <f>fetch</f>(<s>"http://localhost:8000/tools/get_weather/invoke"</s>, {
+  method: <s>"POST"</s>, headers: { <s>"Content-Type"</s>: <s>"application/json"</s> },
+  body: JSON.<f>stringify</f>({ arguments: { city: <s>"Paris"</s> } }) });', "cross-language/typescript-client/"),
+  ("go", "Go", "go", "2. Call it from Go", 'body := strings.<f>NewReader</f>(<s>`{"arguments": {"city": "Paris"}}`</s>)
+res, err := http.<f>Post</f>(<s>"http://localhost:8000/tools/get_weather/invoke"</s>,
+    <s>"application/json"</s>, body)', "connect/adk-go/"),
+  ("rust", "Rust", "rust", "2. Call it from Rust", '<k>let</k> res = reqwest::Client::<f>new</f>()
+    .<f>post</f>(<s>"http://localhost:8000/tools/get_weather/invoke"</s>)
+    .<f>json</f>(&amp;serde_json::json!({ <s>"arguments"</s>: { <s>"city"</s>: <s>"Paris"</s> } }))
+    .<f>send</f>().<k>await</k>?;', "cross-language/http-server/"),
+  ("any", "Any language", "openapi", "2. Call it from anything that speaks HTTP", 'curl -X POST http://localhost:8000/tools/get_weather/invoke \
+  -H <s>"Content-Type: application/json"</s> \
+  -d <s>\'{"arguments": {"city": "Paris"}}\'</s>
+<c># {"status": "ok", "result": "Sunny in Paris, 21 C", ...}</c>', "cross-language/openapi/"),
 ] %}
 <section class="aa-band aa-dark">
   <div class="aa-inner">
     <h2>Any language, <span class="aa-hl2">any backend</span></h2>
-    <p class="aa-sub">Your tools stay in Python. .NET, Java, TypeScript, Go or any service calls them over MCP or HTTP,
+    <p class="aa-sub">Your tools stay in Python. .NET, Java, TypeScript, Go, Rust, Ruby, PHP or any other backend calls them over MCP or HTTP,
       and the same approvals, budgets and traces apply to every call.</p>
     <div class="aa-tabs aa-reveal">
       <div class="aa-tablist" role="tablist">
@@ -34,6 +53,13 @@ spring.ai.mcp.client.streamable-http.connections:
         </div>
       {% endfor %}
     </div>
+    <p class="aa-codenote aa-langnote">On a real server, swap <code>allow_anonymous=True</code> for <code>bearer_auth</code>
+      and <code>localhost:8000</code> for your own domain.</p>
+    <p class="aa-works-in">Official MCP SDKs, so these connect natively</p>
+    <ul class="aa-logos">
+      {% for name, icon in sdks %}<li><span class="aa-logo" aria-hidden="true">{% include ".icons/brand/" ~ icon ~ ".svg" %}</span>{{ name }}</li>{% endfor %}
+      <li>+ any language with HTTP</li>
+    </ul>
     <div class="aa-ctas">
       <a class="aa-btn aa-btn--primary" href="{{ 'connect/' | url }}">Connect any stack</a>
       <a class="aa-btn" href="{{ 'cross-language/' | url }}">MCP, HTTP and OpenAPI</a>
