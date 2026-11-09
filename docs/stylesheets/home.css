@@ -91,11 +91,6 @@
 .aa-copybtn:hover { color: var(--aa-ink); border-color: var(--aa-teal); }
 .aa-codenote { color: var(--aa-dim); font-size: .85em; margin: .8em 0 0; }
 
-.aa-callout { display: block; max-width: 50em; margin: 0 auto 1.6em; padding: .9em 1.2em; border-radius: .8em; text-align: left;
-  border: 1px solid var(--aa-line); background: linear-gradient(90deg, rgba(99,102,241,.16), rgba(45,212,191,.08)); color: var(--aa-dim) !important; font-size: .95em; }
-.aa-callout b { color: var(--aa-ink); margin-right: .4em; }
-.aa-callout:hover { border-color: var(--aa-teal); }
-
 /* Hub diagram */
 .aa-hub { max-width: 34em; margin: 2.2em auto 0; display: flex; flex-direction: column; align-items: center; }
 .aa-card { display: block; border: 1px solid var(--aa-line); border-radius: 1em; background: var(--aa-card);
@@ -173,13 +168,7 @@
 /* The home page's Markdown H1 repeats the hero title: keep it for search and readers only. */
 .aa-home ~ .md-main .md-typeset > h1:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-/* Site-wide header button and toast (assets/javascripts/site.js). */
-.aa-prompt-btn { display: inline-flex; align-items: center; gap: .4em; margin: 0 .4em; padding: .35em .7em; border-radius: .4em;
-  border: 1px solid rgba(255,255,255,.45); background: rgba(255,255,255,.1); color: #fff; font: 600 .7em/1 inherit;
-  font-family: inherit; cursor: pointer; white-space: nowrap; }
-.aa-prompt-btn:hover { background: rgba(255,255,255,.2); }
-.aa-prompt-btn svg { width: 1em; height: 1em; fill: currentColor; }
-@media (max-width: 44.9375em) { .aa-prompt-btn span { display: none; } .aa-prompt-btn { padding: .35em .45em; } }
+/* Toast for copy buttons (assets/javascripts/site.js). */
 .aa-toast { position: fixed; left: 50%; bottom: 1.5em; z-index: 10; transform: translate(-50%, 1em); opacity: 0;
   padding: .7em 1.1em; border-radius: .6em; background: #111827; color: #fff; font-size: .8em;
   box-shadow: 0 10px 30px rgba(0,0,0,.3); transition: opacity .2s, transform .2s; pointer-events: none; }

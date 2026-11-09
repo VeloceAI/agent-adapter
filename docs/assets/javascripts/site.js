@@ -1,4 +1,4 @@
-// Copy buttons, the header "Copy setup prompt" button and the home page code tabs.
+// Copy buttons, the prompt copy button, card filters and the home page code tabs.
 // navigation.instant swaps pages without a reload, so everything re-binds on document$.
 (function () {
   var base = new URL(".", document.currentScript.src).href;
@@ -32,18 +32,6 @@
 
   function promptPage() { return new URL("../../get-started/ai-prompt/", base).href; }
 
-  function headerButton() {
-    var inner = document.querySelector(".md-header__inner");
-    if (!inner || inner.querySelector(".aa-prompt-btn")) return;
-    var b = document.createElement("button");
-    b.className = "aa-prompt-btn";
-    b.type = "button";
-    b.setAttribute("data-aa-copy-prompt", "");
-    b.title = "Copy a prompt that sets Agent Adapter up in your project, for any AI";
-    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73A2 2 0 0 1 12 2M7.5 13A2.5 2.5 0 0 0 5 15.5 2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"/></svg><span>Copy setup prompt</span>';
-    var anchor = inner.querySelector(".md-header__source") || inner.lastElementChild;
-    inner.insertBefore(b, anchor);
-  }
 
   document.addEventListener("click", function (e) {
     var p = e.target.closest("[data-aa-copy-prompt]");
@@ -84,6 +72,6 @@
     items.forEach(function (i) { io.observe(i); });
   }
 
-  function init() { headerButton(); revealOnScroll(); }
+  function init() { revealOnScroll(); }
   if (window.document$) window.document$.subscribe(init); else document.addEventListener("DOMContentLoaded", init);
 })();
