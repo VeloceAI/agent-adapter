@@ -25,8 +25,6 @@
 .aa-home h1 { line-height: 1.14; }
 .aa-hl, .aa-hl2 { font-family: var(--aa-serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; }
 .aa-hl2 { color: var(--aa-blue); }
-.aa-heroband .aa-hl { background: var(--aa-box); -webkit-background-clip: border-box; background-clip: border-box; color: #fff;
-  padding: 0 .16em; line-height: 1.14; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .aa-pill, .aa-tag, .aa-works-in, .aa-stats li { font-family: var(--aa-mono); text-transform: uppercase; letter-spacing: .1em; }
 .aa-pill { border-radius: 0; font-size: .72em; }
 .aa-stats b { font-family: var(--aa-sans); font-weight: 500; letter-spacing: -.03em; text-transform: none; }
@@ -58,4 +56,28 @@
 .aa-installs .aa-install { margin: 0; min-width: min(100%, 26em); }
 .aa-install--skill { border-color: rgba(45,212,191,.45); }
 .aa-install { white-space: nowrap; }
-@media (max-width: 40em) { .aa-installs .aa-install { font-size: .78em; padding: .9em .8em; min-width: 0; max-width: 100%; } }
+@media (max-width: 40em) { .aa-installs .aa-install { font-size: .72em; padding: .9em .7em; min-width: 0; max-width: 100%; } }
+
+/* Mix: CrewAI's rounded gradient hero card and italic serif voice, Composio's sans and mono buttons. */
+.aa-heroband { padding: .6em; background: var(--md-default-bg-color); }
+.aa-heroband::before { display: none; }
+.aa-heroband .aa-inner { max-width: none; padding: 4.2em 1.2em 3.4em; border-radius: 1.6em; overflow: hidden;
+  background:
+    radial-gradient(60% 50% at 20% 15%, rgba(129,140,248,.7), transparent 70%),
+    radial-gradient(55% 45% at 85% 30%, rgba(45,212,191,.4), transparent 70%),
+    radial-gradient(70% 60% at 50% 100%, rgba(67,56,202,.8), transparent 75%),
+    #17132f; }
+.aa-heroband .aa-inner > * { max-width: 46em; margin-left: auto; margin-right: auto; }
+.aa-heroband h1 { color: #fff; margin-bottom: .5em; }
+.aa-heroband .aa-hl { display: inline-block; background: none; -webkit-background-clip: border-box; background-clip: border-box;
+  color: #fff; font-size: 1.08em; display: inline; }
+.aa-heroband .aa-lede { color: rgba(255,255,255,.82); }
+.aa-heroband .aa-pill { border-radius: 999px; border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.08); color: rgba(255,255,255,.9); }
+.aa-heroband .aa-install { background: rgba(0,0,0,.35); border-color: rgba(255,255,255,.25); color: #fff; }
+.aa-heroband .aa-install--skill { border-color: rgba(45,212,191,.6); }
+.aa-heroband .aa-btn:not(.aa-btn--primary) { border-color: rgba(255,255,255,.5); color: #fff; background: rgba(255,255,255,.06); }
+.aa-heroband .aa-works-in, .aa-heroband .aa-stats li { color: rgba(255,255,255,.72); }
+.aa-heroband .aa-stats b { color: #fff; }
+.aa-btn, .aa-install, .aa-copybtn { border-radius: .45em; }
+.aa-pill--new { border-radius: 999px; }
+@media (max-width: 40em) { .aa-heroband .aa-inner { padding: 3.2em 1em 2.6em; border-radius: 1.2em; } }
