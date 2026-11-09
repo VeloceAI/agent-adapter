@@ -1,17 +1,23 @@
 <section class="aa-band aa-dark aa-heroband">
   <div class="aa-inner">
-    <span class="aa-pill">Open source · for vibe coders, startups and enterprises</span>
-    <h1>The agent framework<br><span class="aa-hl">that scales with your enterprise</span></h1>
+    <span class="aa-pill">For vibe coders, startups and enterprises · Open source</span>
+    <h1>The agent framework that <span class="aa-hl">scales with your enterprise</span></h1>
     <p class="aa-lede">Write a tool once, as a plain Python function. Run it in any agent framework,
       any backend or on its own, with approvals, budgets, cost and traces built in.</p>
-    <button class="aa-install" type="button" data-aa-copy="pip install agent-adapter" title="Copy">
-      <span class="aa-dollar">$</span> pip install agent-adapter <span class="aa-copyicon" aria-hidden="true"></span>
-    </button>
+    <div class="aa-installs">
+      <button class="aa-install" type="button" data-aa-copy="pip install agent-adapter" title="Copy">
+        <span class="aa-dollar">$</span> pip install agent-adapter <span class="aa-copyicon" aria-hidden="true"></span>
+      </button>
+      <button class="aa-install aa-install--skill" type="button" data-aa-copy="npx skills add VeloceAI/agent-adapter --skill agent-adapter" title="Copy">
+        <span class="aa-dollar">$</span> npx skills add VeloceAI/agent-adapter <span class="aa-copyicon" aria-hidden="true"></span>
+      </button>
+    </div>
     <div class="aa-ctas">
       <a class="aa-btn aa-btn--primary" href="{{ 'get-started/quickstart/' | url }}">Get started</a>
-      <button class="aa-btn" type="button" data-aa-copy-prompt>Copy setup prompt for your AI</button>
+      <a class="aa-btn" href="{{ 'skill/' | url }}">Add the skill to your AI</a>
+      <button class="aa-btn" type="button" data-aa-copy-prompt>Copy setup prompt</button>
     </div>
-    <p class="aa-works-in">Paste it into Claude Code · Codex · Cursor · Copilot · Gemini · ChatGPT</p>
+    <p class="aa-works-in">The skill works in Claude Code · Codex · Cursor · Copilot · Gemini CLI · Windsurf</p>
     <ul class="aa-stats">
       <li><b>23</b> integrations</li>
       <li><b>170</b> runnable examples</li>

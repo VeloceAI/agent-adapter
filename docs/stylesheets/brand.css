@@ -1,9 +1,7 @@
-/* Brand type and shapes, after CrewAI: serif headlines with an italic second voice, a rounded
-   gradient hero card, pill buttons. Fonts are self-hosted (OFL, assets/fonts). */
+/* Brand type and buttons, after Composio and CrewAI: a light grotesk for headlines, a serif italic
+   accent, mono uppercase square buttons, a dark header. Fonts are self-hosted (OFL, assets/fonts). */
 @font-face { font-family: "Inter Tight"; font-weight: 100 900; font-display: swap;
   src: url("../assets/fonts/InterTight-latin.woff2") format("woff2"); }
-@font-face { font-family: "Instrument Serif"; font-style: normal; font-weight: 400; font-display: swap;
-  src: url("../assets/fonts/InstrumentSerif-Regular.woff2") format("woff2"); }
 @font-face { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; font-display: swap;
   src: url("../assets/fonts/InstrumentSerif-Italic.woff2") format("woff2"); }
 @font-face { font-family: "Geist Mono"; font-weight: 100 900; font-display: swap;
@@ -12,69 +10,52 @@
   --aa-sans: "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --aa-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
   --aa-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --aa-box: #4338ca;
 }
 
-/* Site-wide: dark header and tabs, serif page titles. */
+/* Site-wide: dark header and tabs, grotesk headings. */
 .md-header, .md-tabs { background-color: #111113; }
-.md-typeset h1 { font-family: var(--aa-serif); font-weight: 400; letter-spacing: -.01em; }
-.md-typeset h2, .md-typeset h3 { font-family: var(--aa-sans); letter-spacing: -.02em; }
+.md-typeset h1, .md-typeset h2, .md-typeset h3 { font-family: var(--aa-sans); letter-spacing: -.02em; }
+.md-typeset h1 { font-weight: 500; }
+  font-weight: 500; text-transform: uppercase; letter-spacing: .02em; }
 
-/* Landing page: sans body, serif headlines. */
+/* Landing page */
 .aa-home { font-family: var(--aa-sans); }
-.aa-home h1, .aa-home h2 { font-family: var(--aa-serif); font-weight: 400; letter-spacing: -.015em; }
-.aa-home h1 { font-size: clamp(2.7em, 8.5vw, 5em); line-height: 1.04; }
-.aa-home h2 { font-size: clamp(2em, 5.4vw, 3em); line-height: 1.08; }
-.aa-hl, .aa-hl2 { font-family: var(--aa-serif); font-style: italic; font-weight: 400; }
-.aa-hl { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: inherit; }
+.aa-home h1, .aa-home h2 { font-weight: 500; letter-spacing: -.045em; }
+.aa-home h1 { line-height: 1.14; }
+.aa-hl, .aa-hl2 { font-family: var(--aa-serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; }
 .aa-hl2 { color: var(--aa-blue); }
-.aa-dark .aa-hl { color: #c7d2fe; }
-
-/* Hero: a rounded card with a soft brand gradient, like CrewAI's. */
-.aa-heroband { padding: .6em; background: var(--md-default-bg-color); }
-.aa-heroband::before { display: none; }
-.aa-heroband .aa-inner { max-width: none; padding: 4.2em 1.2em 3.4em; border-radius: 1.6em; overflow: hidden; position: relative;
-  background:
-    radial-gradient(60% 50% at 20% 15%, rgba(129,140,248,.75), transparent 70%),
-    radial-gradient(55% 45% at 85% 30%, rgba(45,212,191,.45), transparent 70%),
-    radial-gradient(70% 60% at 50% 100%, rgba(67,56,202,.85), transparent 75%),
-    #1b1640; }
-.aa-heroband .aa-inner > * { position: relative; max-width: 46em; margin-left: auto; margin-right: auto; }
-.aa-heroband h1 { color: #fff; margin-bottom: .45em; }
-.aa-heroband .aa-hl { color: #fff; opacity: .92; }
-.aa-heroband .aa-lede { color: rgba(255,255,255,.82); font-size: 1.05em; max-width: 34em; }
-.aa-pill { border-radius: 999px; border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.08); color: rgba(255,255,255,.9);
-  font-size: .78em; padding: .4em 1em; }
-.aa-pill--new { border-color: var(--aa-teal); background: none; color: var(--aa-teal); }
-.aa-install { border-radius: 999px; font-family: var(--aa-mono); font-weight: 500; background: rgba(0,0,0,.35);
-  border-color: rgba(255,255,255,.25); color: #fff; }
-.aa-band:not(.aa-heroband) .aa-install { background: var(--aa-card); color: var(--aa-ink); border-color: var(--aa-line); }
-.aa-works-in { color: rgba(255,255,255,.7); font-size: .85em; }
-.aa-stats { margin-top: 2.4em; }
-.aa-stats li { color: rgba(255,255,255,.7); }
-.aa-stats b { color: #fff; font-family: var(--aa-serif); font-weight: 400; font-size: 2.2em; letter-spacing: 0; }
-
-/* Buttons: pills. */
-.aa-btn { border-radius: 999px; font-family: var(--aa-sans); font-weight: 500; font-size: .95em; min-height: 3em; padding: 0 1.5em; }
+.aa-heroband .aa-hl { background: var(--aa-box); -webkit-background-clip: border-box; background-clip: border-box; color: #fff;
+  padding: 0 .16em; line-height: 1.14; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.aa-pill, .aa-tag, .aa-works-in, .aa-stats li { font-family: var(--aa-mono); text-transform: uppercase; letter-spacing: .1em; }
+.aa-pill { border-radius: 0; font-size: .72em; }
+.aa-stats b { font-family: var(--aa-sans); font-weight: 500; letter-spacing: -.03em; text-transform: none; }
+.aa-stats li { font-size: .78em; }
+.aa-install, .aa-code pre, .aa-call, .aa-tile, .aa-copybtn, .aa-codenote, .aa-tablist [role=tab] { font-family: var(--aa-mono); }
+.aa-install { border-radius: 0; font-weight: 500; }
+.aa-btn { border-radius: 0; font-family: var(--aa-mono); font-weight: 500; font-size: .85em; text-transform: uppercase;
+  letter-spacing: .03em; min-height: 3.2em; padding: 0 1.6em; }
 .aa-btn:hover { transform: none; }
-.aa-btn--primary, .aa-dark .aa-btn--primary, .aa-heroband .aa-btn--primary,
-[data-md-color-scheme="slate"] .aa-btn--primary { background: #fff; border-color: #fff; color: #131313; }
-.aa-btn--primary:hover, .aa-dark .aa-btn--primary:hover, .aa-heroband .aa-btn--primary:hover,
-[data-md-color-scheme="slate"] .aa-btn--primary:hover { background: #e9e9ee; border-color: #e9e9ee; color: #131313; }
-[data-md-color-scheme="default"] .aa-band:not(.aa-dark):not(.aa-heroband) .aa-btn--primary { background: #131313; border-color: #131313; color: #fff; }
-[data-md-color-scheme="default"] .aa-band:not(.aa-dark):not(.aa-heroband) .aa-btn--primary:hover { background: #333; }
-.aa-btn:not(.aa-btn--primary) { border-color: color-mix(in srgb, var(--aa-ink) 30%, transparent); }
-.aa-heroband .aa-btn:not(.aa-btn--primary) { border-color: rgba(255,255,255,.5); color: #fff; background: rgba(255,255,255,.06); }
-
-/* Small labels and code. */
-.aa-tag { font-family: var(--aa-mono); text-transform: uppercase; letter-spacing: .08em; }
-.aa-code pre, .aa-call, .aa-tile, .aa-copybtn { font-family: var(--aa-mono); }
-.aa-chip { font-weight: 500; }
-.aa-tablist [role=tab] { font-weight: 500; }
+.aa-btn--primary, .aa-dark .aa-btn--primary,
+[data-md-color-scheme="slate"] .aa-btn--primary { background: #fff; border-color: #fff; color: #000; }
+.aa-btn--primary:hover, .aa-dark .aa-btn--primary:hover,
+[data-md-color-scheme="slate"] .aa-btn--primary:hover { background: #e5e5e5; border-color: #e5e5e5; color: #000; }
+[data-md-color-scheme="default"] .aa-band:not(.aa-dark) .aa-btn--primary { background: #0f0f0f; border-color: #0f0f0f; color: #fff; }
+[data-md-color-scheme="default"] .aa-band:not(.aa-dark) .aa-btn--primary:hover { background: #2a2a2a; }
+.aa-btn:not(.aa-btn--primary) { border-color: color-mix(in srgb, var(--aa-ink) 35%, transparent); }
+.aa-chip { border-radius: .3em; font-weight: 500; }
+.aa-tabs { border-radius: .6em; }
+.aa-tablist [role=tab] { border-radius: .3em; font-weight: 500; font-size: .82em; }
 .aa-card b { font-weight: 600; }
 .aa-corelogo { font-family: var(--aa-sans); font-weight: 600; }
 .aa-dark { background: #0a0a0a; }
 [data-md-color-scheme="default"] .aa-light { background: #f6f6f6; }
-@media (max-width: 40em) { .aa-heroband .aa-inner { padding: 3.2em 1em 2.6em; border-radius: 1.2em; } }
+
 .aa-code { display: flow-root; }
-.aa-copybtn { position: static; float: right; margin: 0 0 .5em .5em; border-radius: 999px; }
+.aa-copybtn { position: static; float: right; margin: 0 0 .5em .5em; border-radius: 0; }
 .aa-copybtn + pre { clear: both; padding-right: 1em; }
+.aa-installs { display: flex; flex-direction: column; align-items: center; gap: .6em; margin-bottom: .2em; }
+.aa-installs .aa-install { margin: 0; min-width: min(100%, 26em); }
+.aa-install--skill { border-color: rgba(45,212,191,.45); }
+.aa-install { white-space: nowrap; }
+@media (max-width: 40em) { .aa-installs .aa-install { font-size: .78em; padding: .9em .8em; min-width: 0; max-width: 100%; } }
