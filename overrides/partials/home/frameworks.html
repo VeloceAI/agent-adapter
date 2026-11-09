@@ -5,7 +5,7 @@
   ("Strands Agents", "strands"), ("Semantic Kernel", "semantic-kernel"), ("DSPy", "dspy"), ("Agno", "agno"),
   ("CAMEL-AI", "camel"), ("Claude Agent SDK", "claude-agent"), ("Microsoft Agent Framework", "agent-framework"),
   ("OpenAI", "openai"), ("Gemini", "gemini"), ("Anthropic", "anthropic"), ("OpenAPI", "openapi"),
-  ("A2A", "a2a"), ("AG-UI", "ag-ui"), ("Composio and any MCP server", "mcp")
+  ("A2A", "a2a"), ("AG-UI", "ag-ui"), ("Composio", "composio")
 ] %}
 {% set tabs = [
   ("langchain", "LangChain", 'pip install "agent-adapter[langchain]"', 'tools = <f>attach</f>(<s>"langchain"</s>, registry, executor=executor)'),
@@ -28,6 +28,7 @@
         {% endfor %}
       </div>
     </div>
+    <a class="aa-callout aa-reveal" href="{{ 'integrations/composio/' | url }}"><b>Composio</b> Bring Composio's hosted app tools (Gmail, Slack, GitHub...) in through MCP, with your approvals and budgets on every call &rarr;</a>
     <div class="aa-tabs aa-reveal">
       <div class="aa-tablist" role="tablist">
         {% for id, label, _, _ in tabs %}

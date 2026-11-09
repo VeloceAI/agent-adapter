@@ -19,17 +19,17 @@ classes that other code imports. Its docs page shows how to start it.
 
 ## Index by area
 
-| Area | Shows | Examples |
-|---|---|---|
-| [Basics](examples/basics.md) | Tools, the registry, schemas, the executor, models and guides. | 48 |
-| [No-framework backends](examples/backends.md) | Web apps, workers, scripts, serverless, deploy. | 20 |
-| [Agent frameworks](examples/frameworks.md) | Registry tools inside each agent framework. | 27 |
-| [Context compression](examples/compression.md) | Shrink what each model call sends. | 12 |
-| [Approval](examples/approval.md) | Human review, durable stores, resume once. | 11 |
-| [Cost and cache](examples/cost-cache.md) | Ledgers, prices, budgets, caches, embeddings. | 7 |
-| [Parallel fan-out and fan-in](examples/parallel.md) | Several calls at once, then merge. | 3 |
-| [Memory and retrieval](examples/memory.md) | Per-user memory, and RAG with citations. | 3 |
-| [Flows](examples/flows.md) | Graphs of nodes with joins, loops and pauses. | 8 |
-| [Serving and protocols](examples/serving.md) | MCP, A2A, AG-UI, HTTP and OpenAPI. | 14 |
-| [Evals and optimiser](examples/optimiser.md) | Grade an agent on eval cases; improve its harness. | 9 |
-| [Cookbook](examples/cookbook.md) | Short recipes for common production needs. | 8 |
+<div class="aa-gallery" markdown>
+[<b>Basics</b><span>Tools, the registry, schemas, the executor, models and guides.</span><small>48 examples</small>](examples/basics.md){ .aa-gcard }
+[<b>No-framework backends</b><span>Web apps, workers, scripts, serverless, deploy.</span><small>20 examples</small>](examples/backends.md){ .aa-gcard }
+[<b>Agent frameworks</b><span>Registry tools inside each agent framework.</span><small>27 examples</small>](examples/frameworks.md){ .aa-gcard }
+[<b>Context compression</b><span>Shrink what each model call sends.</span><small>12 examples</small>](examples/compression.md){ .aa-gcard }
+[<b>Approval</b><span>Human review, durable stores, resume once.</span><small>11 examples</small>](examples/approval.md){ .aa-gcard }
+[<b>Cost and cache</b><span>Ledgers, prices, budgets, caches, embeddings.</span><small>7 examples</small>](examples/cost-cache.md){ .aa-gcard }
+[<b>Parallel fan-out and fan-in</b><span>Several calls at once, then merge.</span><small>3 examples</small>](examples/parallel.md){ .aa-gcard }
+[<b>Memory and retrieval</b><span>Per-user memory, and RAG with citations.</span><small>3 examples</small>](examples/memory.md){ .aa-gcard }
+[<b>Flows</b><span>Graphs of nodes with joins, loops and pauses.</span><small>8 examples</small>](examples/flows.md){ .aa-gcard }
+[<b>Serving and protocols</b><span>MCP, A2A, AG-UI, HTTP and OpenAPI.</span><small>14 examples</small>](examples/serving.md){ .aa-gcard }
+[<b>Evals and optimiser</b><span>Grade an agent on eval cases; improve its harness.</span><small>9 examples</small>](examples/optimiser.md){ .aa-gcard }
+[<b>Cookbook</b><span>Short recipes for common production needs.</span><small>8 examples</small>](examples/cookbook.md){ .aa-gcard }
+</div>

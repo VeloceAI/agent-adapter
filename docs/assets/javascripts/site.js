@@ -55,6 +55,16 @@
     }
     var c = e.target.closest("[data-aa-copy]");
     if (c) { e.preventDefault(); copy(c.getAttribute("data-aa-copy")); return; }
+    var f = e.target.closest(".aa-filter button");
+    if (f) {
+      var kind = f.getAttribute("data-kind");
+      f.parentNode.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b === f); });
+      var grid = f.closest(".aa-filter").nextElementSibling;
+      grid.querySelectorAll(".aa-gcard").forEach(function (card) {
+        card.hidden = kind !== "all" && card.getAttribute("data-kind") !== kind;
+      });
+      return;
+    }
     var tab = e.target.closest(".aa-tabs [role=tab]");
     if (tab) {
       var box = tab.closest(".aa-tabs");

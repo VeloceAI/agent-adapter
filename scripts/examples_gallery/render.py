@@ -200,12 +200,13 @@ def render_index(examples: Sequence[Example]) -> str:
         "",
         "## Index by area",
         "",
-        "| Area | Shows | Examples |",
-        "|---|---|---|",
+        '<div class="aa-gallery" markdown>',
     ]
     for area in AREAS:
         count = sum(1 for e in examples if e.area == area.slug)
-        lines.append(f"| [{area.title}]({page_path(area)}) | {area.blurb} | {count} |")
+        card = f"<b>{area.title}</b><span>{area.blurb}</span><small>{count} examples</small>"
+        lines.append(f"[{card}]({page_path(area)}){{ .aa-gcard }}")
+    lines.append("</div>")
     return "\n".join(lines) + "\n"
 
 

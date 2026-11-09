@@ -157,7 +157,7 @@ def test_the_framework_page_names_every_integration() -> None:
     nav = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     block = nav.split("  - Integrations:\n", 1)[1].split("\n  - Concepts:", 1)[0]
     names = re.findall(r"^      - ([^:]+): integrations/", block, re.M)
-    skip = {"Compression by framework", "MCP tasks and OAuth"}
+    skip = {"Compression by framework", "MCP tasks and OAuth", "Composio"}
     missing = [n for n in names if n not in skip and n.split(" (")[0] not in text]
     assert missing == []
     assert "MCP tasks" in text

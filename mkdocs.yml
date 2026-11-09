@@ -62,6 +62,7 @@ extra:
 extra_css:
   - stylesheets/extra.css
   - stylesheets/home.css
+  - stylesheets/brand.css
 # Mermaid served from the site itself, so diagrams render offline; the theme uses this global
 # instead of fetching it from a CDN. Its MIT licence sits next to it.
 extra_javascript:
@@ -225,6 +226,7 @@ nav:
       - OpenAPI: integrations/openapi.md
       - MCP: integrations/mcp.md
       - MCP tasks and OAuth: integrations/mcp-tasks.md
+      - Composio: integrations/composio.md
       - OpenAI Agents SDK: integrations/openai-agents.md
       - Pydantic AI: integrations/pydantic-ai.md
       - LlamaIndex: integrations/llamaindex.md

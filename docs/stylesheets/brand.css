@@ -1,0 +1,54 @@
+/* Brand type and buttons, after Composio and CrewAI: a light grotesk for headlines, a serif italic
+   accent, mono uppercase square buttons, a dark header. Fonts are self-hosted (OFL, assets/fonts). */
+@font-face { font-family: "Inter Tight"; font-weight: 100 900; font-display: swap;
+  src: url("../assets/fonts/InterTight-latin.woff2") format("woff2"); }
+@font-face { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url("../assets/fonts/InstrumentSerif-Italic.woff2") format("woff2"); }
+@font-face { font-family: "Geist Mono"; font-weight: 100 900; font-display: swap;
+  src: url("../assets/fonts/GeistMono-latin.woff2") format("woff2"); }
+:root {
+  --aa-sans: "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --aa-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --aa-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --aa-box: #4338ca;
+}
+
+/* Site-wide: dark header and tabs, grotesk headings. */
+.md-header, .md-tabs { background-color: #111113; }
+.md-typeset h1, .md-typeset h2, .md-typeset h3 { font-family: var(--aa-sans); letter-spacing: -.02em; }
+.md-typeset h1 { font-weight: 500; }
+.aa-prompt-btn { border-radius: 0; border-color: #fff; background: #fff; color: #000; font-family: var(--aa-mono);
+  font-weight: 500; text-transform: uppercase; letter-spacing: .02em; }
+.aa-prompt-btn:hover { background: #e5e5e5; }
+
+/* Landing page */
+.aa-home { font-family: var(--aa-sans); }
+.aa-home h1, .aa-home h2 { font-weight: 500; letter-spacing: -.045em; }
+.aa-home h1 { line-height: 1.02; }
+.aa-hl, .aa-hl2 { font-family: var(--aa-serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; }
+.aa-hl2 { color: var(--aa-blue); }
+.aa-heroband .aa-hl { background: var(--aa-box); -webkit-background-clip: border-box; background-clip: border-box; color: #fff;
+  padding: 0 .18em .04em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.aa-pill, .aa-tag, .aa-works-in, .aa-stats li { font-family: var(--aa-mono); text-transform: uppercase; letter-spacing: .1em; }
+.aa-pill { border-radius: 0; font-size: .72em; }
+.aa-stats b { font-family: var(--aa-sans); font-weight: 500; letter-spacing: -.03em; text-transform: none; }
+.aa-stats li { font-size: .78em; }
+.aa-install, .aa-code pre, .aa-call, .aa-tile, .aa-copybtn, .aa-codenote, .aa-tablist [role=tab] { font-family: var(--aa-mono); }
+.aa-install { border-radius: 0; font-weight: 500; }
+.aa-btn { border-radius: 0; font-family: var(--aa-mono); font-weight: 500; font-size: .85em; text-transform: uppercase;
+  letter-spacing: .03em; min-height: 3.2em; padding: 0 1.6em; }
+.aa-btn:hover { transform: none; }
+.aa-btn--primary, .aa-dark .aa-btn--primary,
+[data-md-color-scheme="slate"] .aa-btn--primary { background: #fff; border-color: #fff; color: #000; }
+.aa-btn--primary:hover, .aa-dark .aa-btn--primary:hover,
+[data-md-color-scheme="slate"] .aa-btn--primary:hover { background: #e5e5e5; border-color: #e5e5e5; color: #000; }
+[data-md-color-scheme="default"] .aa-band:not(.aa-dark) .aa-btn--primary { background: #0f0f0f; border-color: #0f0f0f; color: #fff; }
+[data-md-color-scheme="default"] .aa-band:not(.aa-dark) .aa-btn--primary:hover { background: #2a2a2a; }
+.aa-btn:not(.aa-btn--primary) { border-color: color-mix(in srgb, var(--aa-ink) 35%, transparent); }
+.aa-chip { border-radius: .3em; font-weight: 500; }
+.aa-tabs { border-radius: .6em; }
+.aa-tablist [role=tab] { border-radius: .3em; font-weight: 500; font-size: .82em; }
+.aa-card b { font-weight: 600; }
+.aa-corelogo { font-family: var(--aa-sans); font-weight: 600; }
+.aa-dark { background: #0a0a0a; }
+[data-md-color-scheme="default"] .aa-light { background: #f6f6f6; }

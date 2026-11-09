@@ -139,6 +139,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [OpenAPI](https://agent-adapter.veloceai.in/integrations/openapi/): `import_openapi` turns every operation of an OpenAPI 3.x document into a tool
 - [MCP](https://agent-adapter.veloceai.in/integrations/mcp/): Serve registry tools to any MCP client, and import tools from any MCP server
 - [MCP tasks and OAuth](https://agent-adapter.veloceai.in/integrations/mcp-tasks/): Three MCP 2026-07-28 features on top of MCP:
+- [Composio](https://agent-adapter.veloceai.in/integrations/composio/): The tools work while the client stays open
 - [OpenAI Agents SDK](https://agent-adapter.veloceai.in/integrations/openai-agents/): Every registry tool becomes a `FunctionTool` that runs through the executor: validation, hooks, guards, cache, ledger and events apply inside the Agents SDK...
 - [Pydantic AI](https://agent-adapter.veloceai.in/integrations/pydantic-ai/): Every registry tool becomes a Pydantic AI `Tool` (built with `Tool.from_schema` from the tool's neutral JSON schema) that runs through the executor
 - [LlamaIndex](https://agent-adapter.veloceai.in/integrations/llamaindex/): Every registry tool becomes a LlamaIndex `FunctionTool` with `fn_schema=spec.args_model`
