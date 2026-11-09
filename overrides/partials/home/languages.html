@@ -55,9 +55,10 @@ res, err := http.<f>Post</f>(<s>"http://localhost:8000/tools/get_weather/invoke"
     </div>
     <p class="aa-codenote aa-langnote">On a real server, swap <code>allow_anonymous=True</code> for <code>bearer_auth</code>
       and <code>localhost:8000</code> for your own domain.</p>
-    <p class="aa-works-in">Official MCP SDKs, so these connect natively</p>
+    <p class="aa-works-in">Tested end to end in all ten, with each official MCP SDK</p>
     <ul class="aa-logos">
       {% for name, icon in sdks %}<li><span class="aa-logo" aria-hidden="true">{% include ".icons/brand/" ~ icon ~ ".svg" %}</span>{{ name }}</li>{% endfor %}
+      <li><a href="https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients">See the clients &rarr;</a></li>
       <li>+ any language with HTTP</li>
     </ul>
     <div class="aa-ctas">

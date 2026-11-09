@@ -1,0 +1,6 @@
+source "https://rubygems.org"
+
+gem "mcp", "1.9.0"
+gem "faraday", "~> 2.0"
+gem "event_stream_parser", "~> 1.0"
+gem "base64"

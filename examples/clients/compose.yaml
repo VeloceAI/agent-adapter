@@ -1,0 +1,31 @@
+# One Agent Adapter server, one client per language. Run them all: python scripts/check_clients.py
+name: agent-adapter-clients
+
+x-client: &client
+  depends_on:
+    server:
+      condition: service_healthy
+  environment:
+    AA_URL: http://server:8000
+    AA_TOKEN: dev-token
+
+services:
+  server:
+    build: ./server
+    environment:
+      AA_HOST: server:8000
+      AA_TOKEN: dev-token
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8000/healthz', headers={'Host': 'server:8000'}))"]
+      interval: 2s
+      retries: 30
+  python: { <<: *client, build: ./python }
+  typescript: { <<: *client, build: ./typescript }
+  csharp: { <<: *client, build: ./csharp }
+  java: { <<: *client, build: ./java }
+  kotlin: { <<: *client, build: ./kotlin }
+  go: { <<: *client, build: ./go }
+  rust: { <<: *client, build: ./rust }
+  swift: { <<: *client, build: ./swift }
+  ruby: { <<: *client, build: ./ruby }
+  php: { <<: *client, build: ./php }

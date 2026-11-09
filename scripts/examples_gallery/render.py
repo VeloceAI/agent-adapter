@@ -54,8 +54,17 @@ def gallery_pages() -> list[str]:
 
 
 def example_files() -> list[Path]:
-    """Every example script under examples/, caches excluded."""
-    files = [p for p in EXAMPLES.rglob("*.py") if "__pycache__" not in p.parts]
+    """Every example script under examples/, caches excluded.
+
+    examples/clients/ is left out: those clients run in Docker, one per language,
+    with their own README.
+    """
+    clients = EXAMPLES / "clients"
+    files = [
+        p
+        for p in EXAMPLES.rglob("*.py")
+        if "__pycache__" not in p.parts and clients not in p.parents
+    ]
     return sorted(files, key=lambda p: p.relative_to(EXAMPLES).as_posix())
 
 

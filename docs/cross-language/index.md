@@ -24,22 +24,23 @@ flowchart LR
 
 ## Every backend language
 
-MCP has official SDKs in ten languages, so each one connects natively. Any other language
-calls the HTTP routes, or a client generated from `/openapi.json`.
+MCP has official SDKs in ten languages, and all ten are tested end to end: each client in
+[`examples/clients`](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients) calls a live server over MCP with its official SDK, then over
+plain REST. `python scripts/check_clients.py` runs them all in Docker.
 
-| Language | Native route | Plain HTTP |
-|---|---|---|
-| :brand-typescript: TypeScript | MCP TypeScript SDK, or our [TypeScript client](typescript-client.md) | `fetch` |
-| :brand-python: Python | in process, no server needed | `httpx` |
-| :brand-csharp: C# / .NET | MCP C# SDK, Microsoft Agent Framework ([recipe](../connect/maf-dotnet.md)) | `HttpClient` |
-| :brand-java: Java | MCP Java SDK, Spring AI ([recipe](../connect/spring-ai.md)) | `java.net.http` |
-| :brand-kotlin: Kotlin | MCP Kotlin SDK | Ktor client |
-| :brand-go: Go | MCP Go SDK, ADK Go ([recipe](../connect/adk-go.md)) | `net/http` |
-| :brand-rust: Rust | MCP Rust SDK (`rmcp`) | `reqwest` |
-| :brand-ruby: Ruby | MCP Ruby SDK | `Net::HTTP` |
-| :brand-php: PHP | MCP PHP SDK | Guzzle |
-| :brand-swift: Swift | MCP Swift SDK | `URLSession` |
-| :brand-openapi: Anything else | | any HTTP client, or a generated one |
+| Language | Native route | Plain HTTP | Tested client |
+|---|---|---|---|
+| :brand-typescript: TypeScript | MCP TypeScript SDK, or our [TypeScript client](typescript-client.md) | `fetch` | [typescript/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/typescript) |
+| :brand-python: Python | in process, or the MCP Python SDK | `httpx` | [python/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/python) |
+| :brand-csharp: C# / .NET | MCP C# SDK, Microsoft Agent Framework ([recipe](../connect/maf-dotnet.md)) | `HttpClient` | [csharp/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/csharp) |
+| :brand-java: Java | MCP Java SDK, Spring AI ([recipe](../connect/spring-ai.md)) | `java.net.http` | [java/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/java) |
+| :brand-kotlin: Kotlin | MCP Kotlin SDK | Ktor client | [kotlin/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/kotlin) |
+| :brand-go: Go | MCP Go SDK, ADK Go ([recipe](../connect/adk-go.md)) | `net/http` | [go/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/go) |
+| :brand-rust: Rust | MCP Rust SDK (`rmcp`) | `reqwest` | [rust/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/rust) |
+| :brand-ruby: Ruby | MCP Ruby SDK | `Net::HTTP` | [ruby/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/ruby) |
+| :brand-php: PHP | MCP PHP SDK | curl | [php/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/php) |
+| :brand-swift: Swift | MCP Swift SDK | `URLSession` | [swift/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/swift) |
+| :brand-openapi: Anything else | | any HTTP client, or one generated from `/openapi.json` | |
 
 Every route runs the same executor, so approvals, budgets, cost and traces apply the same way.
 
