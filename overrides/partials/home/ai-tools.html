@@ -1,0 +1,12 @@
+{% set ai_tools = [
+  ("Claude Code", "claude-code"), ("Codex", "codex"), ("Cursor", "cursor"), ("GitHub Copilot", "github-copilot"),
+  ("Gemini CLI", "gemini-cli"), ("Windsurf", "windsurf"), ("Antigravity", "antigravity"), ("Kiro", "kiro"),
+  ("Cline", "cline"), ("Roo Code", "roo-code"), ("OpenCode", "opencode"), ("Junie", "junie"),
+  ("Zed", "zed"), ("Amp", "amp"), ("Goose", "goose"), ("Devin", "devin"), ("Trae", "trae"), ("Kilo Code", "kilo-code"),
+] %}
+<ul class="aa-logos">
+  {% for name, icon in ai_tools[:ai_limit | default(99)] %}
+    <li><span class="aa-logo" aria-hidden="true">{% include ".icons/brand/" ~ icon ~ ".svg" %}</span>{{ name }}</li>
+  {% endfor %}
+  <li><a href="{{ 'skill/' | url }}">60+ more</a></li>
+</ul>

@@ -8,32 +8,32 @@ test** that runs a real tool through that framework and the real `Executor`.
 <div class="aa-filter" role="group" aria-label="Filter integrations"><button type="button" data-kind="all" aria-pressed="true">All</button><button type="button" data-kind="framework" aria-pressed="false">Agent frameworks</button><button type="button" data-kind="api" aria-pressed="false">Model APIs</button><button type="button" data-kind="protocol" aria-pressed="false">Protocols and tools</button></div>
 
 <div class="aa-gallery" markdown>
-[<b>Composio</b><span>Hosted app tools (Gmail, Slack, GitHub...) through MCP</span><small>extra: mcp</small>](composio.md){ .aa-gcard .aa-gcard--hl data-kind="protocol" }
-[<b>OpenAI</b><small>extra: none (plain dicts)</small>](openai.md){ .aa-gcard data-kind="api" }
-[<b>Gemini</b><small>extra: gemini</small>](gemini.md){ .aa-gcard data-kind="api" }
-[<b>Anthropic</b><small>extra: none (plain dicts)</small>](anthropic.md){ .aa-gcard data-kind="api" }
-[<b>LangChain</b><small>extra: langchain</small>](langchain.md){ .aa-gcard data-kind="framework" }
-[<b>OpenAPI</b><small>extra: openapi</small>](openapi.md){ .aa-gcard data-kind="protocol" }
-[<b>MCP</b><small>extra: mcp</small>](mcp.md){ .aa-gcard data-kind="protocol" }
-[<b>OpenAI Agents SDK</b><small>extra: openai-agents</small>](openai-agents.md){ .aa-gcard data-kind="framework" }
-[<b>Pydantic AI</b><small>extra: pydantic-ai</small>](pydantic-ai.md){ .aa-gcard data-kind="framework" }
-[<b>LlamaIndex</b><small>extra: llamaindex</small>](llamaindex.md){ .aa-gcard data-kind="framework" }
-[<b>CrewAI</b><small>extra: crewai (own environment)</small>](crewai.md){ .aa-gcard data-kind="framework" }
-[<b>Microsoft Agent Framework</b><small>extra: agent-framework</small>](agent-framework.md){ .aa-gcard data-kind="framework" }
-[<b>Agno</b><small>extra: agno</small>](agno.md){ .aa-gcard data-kind="framework" }
-[<b>Strands Agents</b><small>extra: strands (own environment)</small>](strands.md){ .aa-gcard data-kind="framework" }
-[<b>Haystack</b><small>extra: haystack</small>](haystack.md){ .aa-gcard data-kind="framework" }
-[<b>Claude Agent SDK</b><small>extra: claude-agent</small>](claude-agent.md){ .aa-gcard data-kind="framework" }
-[<b>Semantic Kernel</b><small>extra: semantic-kernel (own environment)</small>](semantic-kernel.md){ .aa-gcard data-kind="framework" }
-[<b>DSPy</b><small>extra: dspy</small>](dspy.md){ .aa-gcard data-kind="framework" }
-[<b>smolagents</b><small>extra: smolagents</small>](smolagents.md){ .aa-gcard data-kind="framework" }
-[<b>AutoGen 0.7</b><small>extra: autogen</small>](autogen.md){ .aa-gcard data-kind="framework" }
-[<b>LangGraph</b><small>extra: langgraph</small>](langgraph.md){ .aa-gcard data-kind="framework" }
-[<b>Google ADK 2.x</b><small>extra: adk (own environment)</small>](adk.md){ .aa-gcard data-kind="framework" }
-[<b>CAMEL-AI</b><small>extra: camel (own environment)</small>](camel.md){ .aa-gcard data-kind="framework" }
-[<b>AG2</b><small>extra: ag2</small>](ag2.md){ .aa-gcard data-kind="framework" }
-[<b>A2A</b><small>extra: a2a</small>](a2a.md){ .aa-gcard data-kind="protocol" }
-[<b>AG-UI</b><small>extra: ag-ui</small>](ag-ui.md){ .aa-gcard data-kind="protocol" }
+[:brand-composio: <b>Composio</b><span>Hosted app tools (Gmail, Slack, GitHub...) through MCP</span><small>extra: mcp</small>](composio.md){ .aa-gcard .aa-gcard--hl data-kind="protocol" }
+[:brand-openai: <b>OpenAI</b><small>extra: none (plain dicts)</small>](openai.md){ .aa-gcard data-kind="api" }
+[:brand-gemini: <b>Gemini</b><small>extra: gemini</small>](gemini.md){ .aa-gcard data-kind="api" }
+[:brand-anthropic: <b>Anthropic</b><small>extra: none (plain dicts)</small>](anthropic.md){ .aa-gcard data-kind="api" }
+[:brand-langchain: <b>LangChain</b><small>extra: langchain</small>](langchain.md){ .aa-gcard data-kind="framework" }
+[:brand-openapi: <b>OpenAPI</b><small>extra: openapi</small>](openapi.md){ .aa-gcard data-kind="protocol" }
+[:brand-mcp: <b>MCP</b><small>extra: mcp</small>](mcp.md){ .aa-gcard data-kind="protocol" }
+[:brand-openai: <b>OpenAI Agents SDK</b><small>extra: openai-agents</small>](openai-agents.md){ .aa-gcard data-kind="framework" }
+[:brand-pydantic-ai: <b>Pydantic AI</b><small>extra: pydantic-ai</small>](pydantic-ai.md){ .aa-gcard data-kind="framework" }
+[:brand-llamaindex: <b>LlamaIndex</b><small>extra: llamaindex</small>](llamaindex.md){ .aa-gcard data-kind="framework" }
+[:brand-crewai: <b>CrewAI</b><small>extra: crewai (own environment)</small>](crewai.md){ .aa-gcard data-kind="framework" }
+[:brand-microsoft: <b>Microsoft Agent Framework</b><small>extra: agent-framework</small>](agent-framework.md){ .aa-gcard data-kind="framework" }
+[:brand-agno: <b>Agno</b><small>extra: agno</small>](agno.md){ .aa-gcard data-kind="framework" }
+[:brand-aws: <b>Strands Agents</b><small>extra: strands (own environment)</small>](strands.md){ .aa-gcard data-kind="framework" }
+[:brand-haystack: <b>Haystack</b><small>extra: haystack</small>](haystack.md){ .aa-gcard data-kind="framework" }
+[:brand-claude: <b>Claude Agent SDK</b><small>extra: claude-agent</small>](claude-agent.md){ .aa-gcard data-kind="framework" }
+[:brand-microsoft: <b>Semantic Kernel</b><small>extra: semantic-kernel (own environment)</small>](semantic-kernel.md){ .aa-gcard data-kind="framework" }
+[:brand-dspy: <b>DSPy</b><small>extra: dspy</small>](dspy.md){ .aa-gcard data-kind="framework" }
+[:brand-huggingface: <b>smolagents</b><small>extra: smolagents</small>](smolagents.md){ .aa-gcard data-kind="framework" }
+[:brand-microsoft: <b>AutoGen 0.7</b><small>extra: autogen</small>](autogen.md){ .aa-gcard data-kind="framework" }
+[:brand-langgraph: <b>LangGraph</b><small>extra: langgraph</small>](langgraph.md){ .aa-gcard data-kind="framework" }
+[:brand-google: <b>Google ADK 2.x</b><small>extra: adk (own environment)</small>](adk.md){ .aa-gcard data-kind="framework" }
+[:brand-camel: <b>CAMEL-AI</b><small>extra: camel (own environment)</small>](camel.md){ .aa-gcard data-kind="framework" }
+[:brand-ag2: <b>AG2</b><small>extra: ag2</small>](ag2.md){ .aa-gcard data-kind="framework" }
+[:brand-a2a: <b>A2A</b><small>extra: a2a</small>](a2a.md){ .aa-gcard data-kind="protocol" }
+[:brand-ag-ui: <b>AG-UI</b><small>extra: ag-ui</small>](ag-ui.md){ .aa-gcard data-kind="protocol" }
 </div>
 
 Not on this list? [Connect anywhere](../connect/index.md) attaches 12 more stacks through MCP,

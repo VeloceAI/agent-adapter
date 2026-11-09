@@ -10,16 +10,10 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 
 - [Home](https://agent-adapter.veloceai.in/): Agent Adapter is an open-source (Apache-2.0), framework-independent Python SDK (version **1.1.0**)
 
-## Use cases
+## Product
 
 - [Use cases](https://agent-adapter.veloceai.in/use-cases/): Each use case names the problem, the features that solve it and an example that runs in this repository with no API keys
-
-## Skill
-
-- [Skill](https://agent-adapter.veloceai.in/skill/): The skill teaches your coding agent the Agent Adapter API, its safety rules and which extras your stack needs
-
-## Watch the reel
-
+- [Agent skill](https://agent-adapter.veloceai.in/skill/): The skill teaches your coding agent the Agent Adapter API, its safety rules and which extras your stack needs
 - [Watch the reel](https://agent-adapter.veloceai.in/reel/): Write a tool once, as a plain Python function
 
 ## Get started
@@ -91,7 +85,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Evals and optimiser](https://agent-adapter.veloceai.in/examples/optimiser/): Grade an agent on eval cases; improve its harness
 - [Cookbook](https://agent-adapter.veloceai.in/examples/cookbook/): Short recipes for common production needs
 
-## Backends
+## Backends and languages
 
 - [FastAPI](https://agent-adapter.veloceai.in/backends/fastapi/): FastAPI runs on an event loop, so routes `await` the executor directly
 - [Flask](https://agent-adapter.veloceai.in/backends/flask/): Flask views are sync
@@ -104,9 +98,6 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Other web frameworks](https://agent-adapter.veloceai.in/backends/other-asgi/): Any async framework can `await executor.run(...)` in its handlers, as the FastAPI guide does
 - [Notebooks and apps](https://agent-adapter.veloceai.in/backends/notebooks/): Jupyter, Streamlit and Gradio already run an event loop, each in its own way
 - [Deploy (Docker, Kubernetes)](https://agent-adapter.veloceai.in/backends/deploy/): Run the HTTP tool server (`create_app`) in a container
-
-## Connect
-
 - [Cross-language](https://agent-adapter.veloceai.in/cross-language/): Your tools stay Python functions in one `Registry`
 - [MCP](https://agent-adapter.veloceai.in/cross-language/mcp/): MCP over **stateless Streamable HTTP** is the universal export
 - [HTTP server](https://agent-adapter.veloceai.in/cross-language/http-server/): REST + SSE over one `Registry`, for what MCP cannot carry: approval decided in Python (with edited arguments), run events, cost per run, provider-shaped...
@@ -253,9 +244,6 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Optimiser](https://agent-adapter.veloceai.in/reference/optimiser/): Improve tool descriptions and prompts against eval cases (Optimiser)
 - [CLI](https://agent-adapter.veloceai.in/reference/cli/): The `agent-adapter` command has subcommands
 - [Changelog](https://agent-adapter.veloceai.in/changelog/): All notable changes to this project are documented here
-
-## Contributing
-
 - [Writing an integration](https://agent-adapter.veloceai.in/contributing/writing-an-integration/): An integration turns registry tools into one framework's native tools
 - [Performance regression tests](https://agent-adapter.veloceai.in/contributing/performance-tests/): A test that guards against exponential or quadratic work must not time the work: seconds change with machine load, so a `< 2 s` assertion flakes
 - [Cutting a release](https://agent-adapter.veloceai.in/contributing/release/): How to ship a new version of Agent Adapter to PyPI

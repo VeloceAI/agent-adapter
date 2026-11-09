@@ -5,6 +5,7 @@
       <h2>Let your AI <span class="aa-hl2">set it up for you</span></h2>
       <p class="aa-sub">Add the Agent Adapter skill to your coding agent once. It then knows the API,
         the safety rules and which extras your stack needs.</p>
+      {% include "partials/home/ai-tools.html" %}
       <div class="aa-tabs">
         <div class="aa-tablist" role="tablist">
           <button type="button" role="tab" aria-controls="aa-sk-any" aria-selected="true">Any agent</button>
@@ -14,7 +15,6 @@
         <div class="aa-code" role="tabpanel" id="aa-sk-any">
           <button class="aa-copybtn" type="button" data-aa-copy="npx skills add VeloceAI/agent-adapter --skill agent-adapter">Copy</button>
           <pre><span class="aa-prompt">$</span> npx skills add VeloceAI/agent-adapter --skill agent-adapter</pre>
-          <p class="aa-codenote">Claude Code, Codex, Cursor, Copilot, Gemini CLI, Windsurf and more.</p>
         </div>
         <div class="aa-code" role="tabpanel" id="aa-sk-claude" hidden>
           <button class="aa-copybtn" type="button" data-aa-copy="/plugin marketplace add VeloceAI/agent-adapter&#10;/plugin install agent-adapter@agent-adapter">Copy</button>

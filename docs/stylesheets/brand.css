@@ -17,7 +17,6 @@
 .md-header, .md-tabs { background-color: #111113; }
 .md-typeset h1, .md-typeset h2, .md-typeset h3 { font-family: var(--aa-sans); letter-spacing: -.02em; }
 .md-typeset h1 { font-weight: 500; }
-  font-weight: 500; text-transform: uppercase; letter-spacing: .02em; }
 
 /* Landing page */
 .aa-home { font-family: var(--aa-sans); }
@@ -50,6 +49,7 @@
 [data-md-color-scheme="default"] .aa-light { background: #f6f6f6; }
 
 .aa-code { display: flow-root; }
+.aa-code[hidden] { display: none; }
 .aa-copybtn { position: static; float: right; margin: 0 0 .5em .5em; border-radius: 0; }
 .aa-copybtn + pre { clear: both; padding-right: 1em; }
 .aa-installs { display: flex; flex-direction: column; align-items: center; gap: .6em; margin-bottom: .2em; }
@@ -81,3 +81,37 @@
 .aa-btn, .aa-install, .aa-copybtn { border-radius: .45em; }
 .aa-pill--new { border-radius: 999px; }
 @media (max-width: 40em) { .aa-heroband .aa-inner { padding: 3.2em 1em 2.6em; border-radius: 1.2em; } }
+
+/* Highlighted headline voice: a marker stroke under the italic line, clear of the line above. */
+.aa-heroband .aa-hl { background: linear-gradient(transparent 62%, rgba(45,212,191,.42) 62%, rgba(99,102,241,.55) 100%);
+  -webkit-box-decoration-break: clone; box-decoration-break: clone; padding: 0 .12em; }
+
+/* Logos (Simple Icons and Font Awesome, bundled with the theme). */
+.aa-logo { display: inline-flex; width: 1.15em; height: 1.15em; margin-right: .45em; vertical-align: -.2em; flex: none; }
+.aa-logo svg { width: 100%; height: 100%; fill: currentColor; }
+.aa-logo--dot::before { content: ""; width: .5em; height: .5em; margin: auto; border-radius: 50%; background: var(--aa-teal); }
+.aa-logos { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: .5em .6em; margin: .2em auto 0; padding: 0; }
+.aa-logos li, .aa-logolist li { margin: 0; display: inline-flex; align-items: center; padding: .45em .8em; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent); background: color-mix(in srgb, currentColor 6%, transparent);
+  font-size: .82em; font-weight: 500; }
+.aa-logos a { color: inherit; }
+.aa-heroband .aa-logos li { color: #fff; }
+.aa-skill .aa-logos { margin: 0 auto 1.4em; max-width: 48em; }
+.md-typeset .aa-logolist ul { list-style: none; display: flex; flex-wrap: wrap; gap: .5em; margin: 1em 0; padding: 0; }
+.md-typeset .aa-logolist li { margin: 0; font-size: .72rem; }
+.md-typeset .aa-logolist .twemoji, .md-typeset .aa-gcard .twemoji { width: 1.15em; height: 1.15em; margin-right: .45em; flex: none; }
+.md-typeset .aa-logolist .twemoji svg, .md-typeset .aa-gcard .twemoji svg { width: 100%; max-height: none; }
+.md-typeset .aa-gcard .twemoji { width: 1.6rem; height: 1.6rem; margin: 0 0 .5em; }
+.aa-works-in { margin-bottom: .6em; }
+.aa-chip { display: inline-flex; align-items: center; }
+.aa-tablist [role=tab] { display: inline-flex; align-items: center; }
+
+/* What it does: three steps. */
+.aa-steps { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; margin: 2.2em 0 0; padding: 0; text-align: left; }
+.aa-steps li { margin: 0; }
+.aa-stepn { display: inline-grid; place-items: center; width: 2em; height: 2em; margin-bottom: .8em; border-radius: 50%;
+  background: var(--md-primary-fg-color); color: #fff; font: 600 .9em/1 var(--aa-mono); }
+.aa-codenote--top { margin: 0 0 .7em; }
+.aa-codenote a { color: var(--aa-blue); font-weight: 600; }
+@media (max-width: 60em) { .aa-steps { grid-template-columns: 1fr; } }
+.md-typeset .aa-gcard .twemoji { color: var(--md-default-fg-color); line-height: 1; }

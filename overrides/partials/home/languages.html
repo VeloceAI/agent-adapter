@@ -1,0 +1,42 @@
+{% set langs = [
+  ("py", "Python", "python", "In your process", 'tools = <f>attach</f>(<s>"langchain"</s>, registry, executor=executor)
+result = <k>await</k> executor.<f>run</f>(<s>"book_tickets"</s>, {...})', "how-to/attach-anywhere/"),
+  ("net", ".NET", "dotnet", "MCP C# SDK, Microsoft Agent Framework", '<k>await using var</k> mcp = <k>await</k> McpClient.<f>CreateAsync</f>(<k>new</k> <f>HttpClientTransport</f>(<k>new</k>() {
+    Endpoint = <k>new</k> Uri(<s>"https://tools.example.com/mcp"</s>) }));
+<k>var</k> tools = <k>await</k> mcp.<f>ListToolsAsync</f>();   <c>// AITools for your agent</c>', "connect/maf-dotnet/"),
+  ("java", "Java", "java", "Spring AI MCP client", '<c># application.yml</c>
+spring.ai.mcp.client.streamable-http.connections:
+  shop-tools:
+    url: <s>https://tools.example.com</s>   <c># our tools become ToolCallbacks</c>', "connect/spring-ai/"),
+  ("ts", "TypeScript", "typescript", "TS client, Vercel AI SDK, Mastra, LangGraph.js", '<k>const</k> res = <k>await</k> <f>fetch</f>(<s>"https://tools.example.com/tools/book_tickets/invoke"</s>, {
+  method: <s>"POST"</s>, headers: { Authorization: <s>`Bearer ${token}`</s> },
+  body: JSON.<f>stringify</f>({ arguments: { place: <s>"Louvre"</s> } }) });', "cross-language/typescript-client/"),
+  ("any", "Go, Rust, any", "go", "Plain HTTP or MCP", 'curl -X POST https://tools.example.com/tools/book_tickets/invoke \
+  -H <s>"Authorization: Bearer $TOKEN"</s> \
+  -d <s>\'{"arguments": {"place": "Louvre", "day": "Sat", "people": 2}}\'</s>', "cross-language/http-server/"),
+] %}
+<section class="aa-band aa-dark">
+  <div class="aa-inner">
+    <h2>Any language, <span class="aa-hl2">any backend</span></h2>
+    <p class="aa-sub">Your tools stay in Python. .NET, Java, TypeScript, Go or any service calls them over MCP or HTTP,
+      and the same approvals, budgets and traces apply to every call.</p>
+    <div class="aa-tabs aa-reveal">
+      <div class="aa-tablist" role="tablist">
+        {% for id, label, icon, _, _, _ in langs %}
+          <button type="button" role="tab" aria-controls="aa-lang-{{ id }}" aria-selected="{{ 'true' if loop.first else 'false' }}"><span class="aa-logo" aria-hidden="true">{% include ".icons/brand/" ~ icon ~ ".svg" %}</span>{{ label }}</button>
+        {% endfor %}
+      </div>
+      {% for id, label, _, how, code, href in langs %}
+        <div class="aa-code" role="tabpanel" id="aa-lang-{{ id }}"{% if not loop.first %} hidden{% endif %}>
+          <p class="aa-codenote aa-codenote--top">{{ how }}</p>
+          <pre>{{ code | safe }}</pre>
+          <p class="aa-codenote"><a href="{{ href | url }}">Full {{ label }} guide &rarr;</a></p>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="aa-ctas">
+      <a class="aa-btn aa-btn--primary" href="{{ 'connect/' | url }}">Connect any stack</a>
+      <a class="aa-btn" href="{{ 'cross-language/' | url }}">MCP, HTTP and OpenAPI</a>
+    </div>
+  </div>
+</section>

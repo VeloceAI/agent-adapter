@@ -18,18 +18,18 @@ flowchart LR
 
 | Stack | Language | Attaches through | Page |
 |---|---|---|---|
-| Hermes Agent | Python | MCP | [Hermes Agent](hermes.md) |
-| Letta | server (Python / TS SDK) | MCP | [Letta](letta.md) |
-| Mastra | TypeScript | MCP or TS client | [Mastra](mastra.md) |
-| Spring AI | Java | MCP | [Spring AI](spring-ai.md) |
-| Microsoft Agent Framework | .NET | MCP | [MAF .NET](maf-dotnet.md) |
-| Genkit | TypeScript | MCP | [Genkit](genkit.md) |
-| ADK Go | Go | MCP | [ADK Go](adk-go.md) |
-| LangGraph.js | TypeScript | MCP | [LangGraph.js](langgraph-js.md) |
-| Vercel AI SDK | TypeScript | TS client or MCP | [Vercel AI SDK](vercel-ai-sdk.md) |
-| OpenAI Responses `mcp` tool | hosted | public MCP | [OpenAI hosted MCP](openai-hosted-mcp.md) |
-| Azure AI Foundry Agent Service | hosted | public MCP | [Azure AI Foundry](azure-foundry.md) |
-| Bedrock AgentCore Gateway | hosted | public MCP | [Bedrock AgentCore](bedrock-agentcore.md) |
+| :brand-hermes: Hermes Agent | Python | MCP | [Hermes Agent](hermes.md) |
+| :brand-letta: Letta | server (Python / TS SDK) | MCP | [Letta](letta.md) |
+| :brand-mastra: Mastra | TypeScript | MCP or TS client | [Mastra](mastra.md) |
+| :brand-spring: Spring AI | Java | MCP | [Spring AI](spring-ai.md) |
+| :brand-microsoft: Microsoft Agent Framework | .NET | MCP | [MAF .NET](maf-dotnet.md) |
+| :brand-firebase: Genkit | TypeScript | MCP | [Genkit](genkit.md) |
+| :brand-go: ADK Go | Go | MCP | [ADK Go](adk-go.md) |
+| :brand-langgraph: LangGraph.js | TypeScript | MCP | [LangGraph.js](langgraph-js.md) |
+| :brand-vercel: Vercel AI SDK | TypeScript | TS client or MCP | [Vercel AI SDK](vercel-ai-sdk.md) |
+| :brand-openai: OpenAI Responses `mcp` tool | hosted | public MCP | [OpenAI hosted MCP](openai-hosted-mcp.md) |
+| :brand-azure: Azure AI Foundry Agent Service | hosted | public MCP | [Azure AI Foundry](azure-foundry.md) |
+| :brand-bedrock: Bedrock AgentCore Gateway | hosted | public MCP | [Bedrock AgentCore](bedrock-agentcore.md) |
 
 Already covered by an integration, no recipe needed: Marvin (through
 [Pydantic AI](../integrations/pydantic-ai.md)), txtai agents (through

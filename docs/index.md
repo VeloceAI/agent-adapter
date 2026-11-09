@@ -39,62 +39,6 @@ The same tool, the same executor and the same safety rules, wherever the call co
 | an agent framework | one module per framework, one extra each | [Integrations](integrations/index.md) |
 | another language | MCP, the HTTP tool server, the TypeScript client | [Cross-language](cross-language/index.md) |
 
-## Safe by default
-
-<div class="grid cards" markdown>
-
--   :material-shield-lock:{ .lg .middle } **Approval that cannot be bypassed**
-
-    ---
-
-    A `confirm` tool runs only after the executor's `ApprovalPort` approves. Each decision is
-    used once, for one call: same run, call id, tool and argument digest. A framework's
-    own "approved" signal never counts alone; a bridge passes only a one-use token the
-    adapter issued. No port: denied. One opt-in exception: an MCP server built with
-    `client_approval=True` makes the MCP client's user the approver instead of the port.
-    [The one-use rule](how-to/human-in-the-loop.md#the-one-use-rule) · [MCP approval](integrations/mcp.md#approval)
-
--   :material-server-security:{ .lg .middle } **A locked-down HTTP server**
-
-    ---
-
-    No authenticator is a startup error unless you opt in to anonymous mode. Run, thread
-    and call ids are scoped to the caller; the first principal owns a run; approvals are
-    visible to the invoker or an approver only; hooks fail closed.
-    [Security model](cross-language/http-server.md#security-model)
-
--   :material-cash-lock:{ .lg .middle } **Budgets, guards and limits**
-
-    ---
-
-    `BudgetHook(max_usd)`, `once_per_run`, `RunLimits`, per-kind caps, rate limits,
-    timeouts and retries, on every call from every surface.
-    [Budgets](how-to/budgets.md)
-
--   :material-eye-off:{ .lg .middle } **No secrets in logs or errors**
-
-    ---
-
-    `LoggingHook` redacts secret-looking keys and never logs `confirm` tool arguments.
-    Foreign exceptions reach the model as `tool-failed`, without their text.
-    [Errors](concepts/errors.md)
-
-</div>
-
-## Features
-
-<div class="grid cards" markdown>
-
--   :material-function-variant:{ .lg .middle } **One definition** — schema from the signature and docstring; portable-schema check at startup. [Tools](concepts/tools.md)
--   :material-call-split:{ .lg .middle } **Parallel execution and flows** — `run_many`, `run_plan` waves, portable `Flow` graphs that compile to LangGraph and ADK. [Flows](concepts/flows.md)
--   :material-cash-check:{ .lg .middle } **Cost and cache** — a priced ledger per call; tool-result, LLM-response and provider prefix caches. [Cost](concepts/cost.md)
--   :material-swap-horizontal:{ .lg .middle } **Model ports** — OpenAI, Gemini, Anthropic, your own function, with fallback and streaming. [Model ports](concepts/models.md)
--   :material-arrow-collapse-vertical:{ .lg .middle } **Context compression** — shrink long histories before each model call, in any framework's own message type. [Context compression](concepts/context-compression.md)
--   :material-chart-timeline:{ .lg .middle } **Tracing** — an event catalogue, sinks and OpenTelemetry GenAI spans. [Tracing](concepts/tracing.md)
--   :material-tune:{ .lg .middle } **Optimiser** — an offline loop that proposes a reviewable prompt diff. [Optimiser](optimiser.md)
-
-</div>
-
 ## Install
 
 Install from [PyPI](https://pypi.org/project/agent-adapter/) (Python 3.11+); the source is on [GitHub](https://github.com/VeloceAI/agent-adapter). Details in [Install](get-started/install.md).

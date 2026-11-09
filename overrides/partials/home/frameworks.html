@@ -1,11 +1,13 @@
 {% set fws = [
-  ("LangChain", "langchain"), ("LangGraph", "langgraph"), ("CrewAI", "crewai"), ("Google ADK", "adk"),
-  ("OpenAI Agents SDK", "openai-agents"), ("Pydantic AI", "pydantic-ai"), ("LlamaIndex", "llamaindex"),
-  ("MCP", "mcp"), ("AutoGen", "autogen"), ("AG2", "ag2"), ("Haystack", "haystack"), ("smolagents", "smolagents"),
-  ("Strands Agents", "strands"), ("Semantic Kernel", "semantic-kernel"), ("DSPy", "dspy"), ("Agno", "agno"),
-  ("CAMEL-AI", "camel"), ("Claude Agent SDK", "claude-agent"), ("Microsoft Agent Framework", "agent-framework"),
-  ("OpenAI", "openai"), ("Gemini", "gemini"), ("Anthropic", "anthropic"), ("OpenAPI", "openapi"),
-  ("A2A", "a2a"), ("AG-UI", "ag-ui"), ("Composio", "composio")
+  ("LangChain", "langchain", "langchain"), ("LangGraph", "langgraph", "langgraph"), ("CrewAI", "crewai", "crewai"),
+  ("Google ADK", "adk", "google"), ("OpenAI Agents SDK", "openai-agents", "openai"),
+  ("Pydantic AI", "pydantic-ai", "pydantic-ai"), ("LlamaIndex", "llamaindex", "llamaindex"), ("MCP", "mcp", "mcp"),
+  ("Composio", "composio", "composio"), ("Claude Agent SDK", "claude-agent", "claude"), ("AutoGen", "autogen", "microsoft"),
+  ("AG2", "ag2", "ag2"), ("Haystack", "haystack", "haystack"), ("smolagents", "smolagents", "huggingface"),
+  ("Strands Agents", "strands", "aws"), ("Semantic Kernel", "semantic-kernel", "microsoft"),
+  ("Microsoft Agent Framework", "agent-framework", "microsoft"), ("DSPy", "dspy", "dspy"), ("Agno", "agno", "agno"),
+  ("CAMEL-AI", "camel", "camel"), ("OpenAI", "openai", "openai"), ("Gemini", "gemini", "gemini"),
+  ("Anthropic", "anthropic", "anthropic"), ("OpenAPI", "openapi", "openapi"), ("A2A", "a2a", "a2a"), ("AG-UI", "ag-ui", "ag-ui")
 ] %}
 {% set tabs = [
   ("langchain", "LangChain", 'pip install "agent-adapter[langchain]"', 'tools = <f>attach</f>(<s>"langchain"</s>, registry, executor=executor)'),
@@ -22,8 +24,8 @@
     <div class="aa-marquee" aria-label="Integrations">
       <div class="aa-track">
         {% for loop_i in [0, 1] %}
-          {% for name, slug in fws %}
-            <a class="aa-chip" href="{{ ('integrations/' ~ slug ~ '/') | url }}"{% if loop_i %} aria-hidden="true" tabindex="-1"{% endif %}>{{ name }}</a>
+          {% for name, slug, icon in fws %}
+            <a class="aa-chip" href="{{ ('integrations/' ~ slug ~ '/') | url }}"{% if loop_i %} aria-hidden="true" tabindex="-1"{% endif %}><span class="aa-logo" aria-hidden="true">{% include ".icons/brand/" ~ icon ~ ".svg" %}</span>{{ name }}</a>
           {% endfor %}
         {% endfor %}
       </div>

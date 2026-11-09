@@ -8,6 +8,34 @@ The skill teaches your coding agent the Agent Adapter API, its safety rules and 
 your stack needs. Add it once; then ask "add Agent Adapter to this project" and the agent
 reads your code, shows a plan and waits for your yes.
 
+<div class="aa-logolist" markdown>
+
+- :brand-claude-code: Claude Code
+- :brand-codex: Codex
+- :brand-cursor: Cursor
+- :brand-github-copilot: GitHub Copilot
+- :brand-gemini-cli: Gemini CLI
+- :brand-windsurf: Windsurf
+- :brand-antigravity: Antigravity
+- :brand-kiro: Kiro
+- :brand-cline: Cline
+- :brand-roo-code: Roo Code
+- :brand-opencode: OpenCode
+- :brand-junie: Junie
+- :brand-zed: Zed
+- :brand-amp: Amp
+- :brand-goose: Goose
+- :brand-devin: Devin
+- :brand-trae: Trae
+- :brand-kilo-code: Kilo Code
+- :brand-replit: Replit
+- :brand-qwen: Qwen Code
+- :brand-mistral: Mistral Vibe
+- :brand-hermes: Hermes Agent
+- and 60+ more agents
+
+</div>
+
 ## Add it
 
 === "Any agent"

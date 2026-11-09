@@ -40,7 +40,6 @@ theme:
         name: Switch to system preference
   features:
     - navigation.tabs
-    - navigation.sections
     - navigation.indexes
     - navigation.top
     - navigation.instant
@@ -86,6 +85,9 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      options:
+        custom_icons:
+          - overrides/.icons
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
@@ -114,9 +116,10 @@ plugins:
             heading_level: 3
 nav:
   - Home: index.md
-  - Use cases: use-cases.md
-  - Skill: skill.md
-  - Watch the reel: reel.md
+  - Product:
+      - Use cases: use-cases.md
+      - Agent skill: skill.md
+      - Watch the reel: reel.md
   - Get started:
       - Install: get-started/install.md
       - Quickstart: get-started/quickstart.md
@@ -181,19 +184,19 @@ nav:
       - Serving and protocols: examples/serving.md
       - Evals and optimiser: examples/optimiser.md
       - Cookbook: examples/cookbook.md
-  - Backends:
-      - FastAPI: backends/fastapi.md
-      - Flask: backends/flask.md
-      - Django: backends/django.md
-      - Celery: backends/celery.md
-      - Scripts and batch jobs: backends/scripts.md
-      - Serverless functions: backends/serverless.md
-      - Queues and consumers: backends/queues.md
-      - Data pipelines: backends/pipelines.md
-      - Other web frameworks: backends/other-asgi.md
-      - Notebooks and apps: backends/notebooks.md
-      - Deploy (Docker, Kubernetes): backends/deploy.md
-  - Connect:
+  - Backends and languages:
+      - Python backends:
+          - FastAPI: backends/fastapi.md
+          - Flask: backends/flask.md
+          - Django: backends/django.md
+          - Celery: backends/celery.md
+          - Scripts and batch jobs: backends/scripts.md
+          - Serverless functions: backends/serverless.md
+          - Queues and consumers: backends/queues.md
+          - Data pipelines: backends/pipelines.md
+          - Other web frameworks: backends/other-asgi.md
+          - Notebooks and apps: backends/notebooks.md
+          - Deploy (Docker, Kubernetes): backends/deploy.md
       - Cross-language:
           - cross-language/index.md
           - MCP: cross-language/mcp.md
@@ -336,9 +339,9 @@ nav:
       - Optimiser: reference/optimiser.md
       - CLI: reference/cli.md
       - Changelog: changelog.md
-  - Contributing:
-      - Writing an integration: contributing/writing-an-integration.md
-      - Performance regression tests: contributing/performance-tests.md
-      - Cutting a release: contributing/release.md
-      - API stability policy: contributing/stability.md
-      - Roadmap: roadmap.md
+      - Contributing:
+          - Writing an integration: contributing/writing-an-integration.md
+          - Performance regression tests: contributing/performance-tests.md
+          - Cutting a release: contributing/release.md
+          - API stability policy: contributing/stability.md
+          - Roadmap: roadmap.md
