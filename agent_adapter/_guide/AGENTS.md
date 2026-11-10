@@ -1,6 +1,6 @@
 # Agent Adapter: guide for AI coding agents
 
-Version 1.1.0. Generated from the package's own code, so it matches
+Version 1.1.1. Generated from the package's own code, so it matches
 this install. Print it with `agent-adapter guide`. This is the concise guide; `agent-adapter guide --full` adds every signature.
 
 ## What it is
