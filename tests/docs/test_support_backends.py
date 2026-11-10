@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from tests.docs.backends_matrix import BACKENDS, NODE, Backend, Check
-from tests.docs.test_support_matrix import _constant, _nox, _pyproject
+from tests.docs.test_support_matrix import _constant, _h1, _nox, _pyproject
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
@@ -133,7 +133,7 @@ def render() -> str:
         "|---|---|---|---|---|---|",
     ]
     for b in BACKENDS:
-        title = (DOCS / b.guide).read_text(encoding="utf-8").splitlines()[0].removeprefix("# ")
+        title = _h1(DOCS / b.guide)
         examples = "<br>".join(f"`{e}`" for e in b.examples) or "none"
         rows.append(
             f"| {b.name} | {b.attach} | {b.extra} | [{title}]({b.guide}) | {examples} | "

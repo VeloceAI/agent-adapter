@@ -13,18 +13,9 @@
 
 <p align="center"><a href="https://agent-adapter.veloceai.in/assets/video/agent-adapter-reel.mp4"><img src="docs/assets/video/agent-adapter-reel-play.jpg" alt="Watch Agent Adapter in 29 seconds" width="270"></a><br><sub>Watch it in 29 seconds · <a href="https://agent-adapter.veloceai.in/reel/">share it</a></sub></p>
 
-<p align="center">
-  Version 1.1.0 · Python 3.11+ · Apache-2.0 · 21 frameworks and engines · Coverage gate 90%
-</p>
+<p align="center">Version 1.1.0 · Python 3.11+ · Apache-2.0 · 21 frameworks and engines · Coverage gate 90%</p>
 
-<p align="center">
-  <a href="https://www.producthunt.com/posts/agent-adapter?utm_source=badge-featured&utm_medium=badge&utm_campaign=agent-adapter" target="_blank">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1310997&theme=dark">
-      <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1310997&theme=light" alt="Agent Adapter on Product Hunt" width="250" height="54">
-    </picture>
-  </a>
-</p>
+<p align="center"><a href="https://www.producthunt.com/posts/agent-adapter?utm_source=badge-featured&utm_medium=badge&utm_campaign=agent-adapter" target="_blank"><picture><source media="(prefers-color-scheme: dark)" srcset="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1310997&theme=dark"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1310997&theme=light" alt="Agent Adapter on Product Hunt" width="250" height="54"></picture></a></p>
 
 <p align="center">
   <a href="#quickstart">Quickstart</a> · <a href="#why-agent-adapter">Why</a> · <a href="#how-it-works">How it works</a> · <a href="#a-tour-in-code">Tour</a> ·

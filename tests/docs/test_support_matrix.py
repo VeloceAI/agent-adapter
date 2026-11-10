@@ -81,10 +81,15 @@ def _pins(requirements: list[str]) -> str:
     return ", ".join(parts)
 
 
+def _h1(path: Path) -> str:
+    """The page's first `# ` heading; front matter (search title, description) comes before it."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return next(line[2:].strip() for line in lines if line.startswith("# "))
+
+
 def _title(target: str) -> tuple[str, str]:
     page = f"integrations/{target.replace('_', '-')}.md"
-    heading = (ROOT / "docs" / page).read_text(encoding="utf-8").splitlines()[0]
-    return heading.removeprefix("# ").strip(), page
+    return _h1(ROOT / "docs" / page), page
 
 
 def _gate(target: str) -> str:
