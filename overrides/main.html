@@ -10,10 +10,21 @@
   <link rel="apple-touch-icon" sizes="180x180" href="{{ 'assets/apple-touch-icon.png' | url }}{{ v }}">
 {% endblock %}
 
+{#- The home title already names the product, so it gets no " - Agent Adapter" suffix. -#}
+{% block htmltitle %}
+  {% if page and page.is_homepage and page.meta.title %}
+    <title>{{ page.meta.title }}</title>
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}
+
 {#- Link previews in chat and mail; og:url and og:image follow site_url; the description is
     the page's front matter or first paragraph (scripts/docs_hooks.py). -#}
 {% block extrahead %}
-  {% if page and page.meta and page.meta.title %}
+  {% if page and page.is_homepage and page.meta.title %}
+    {% set og_title = page.meta.title %}
+  {% elif page and page.meta and page.meta.title %}
     {% set og_title = page.meta.title ~ " - " ~ config.site_name %}
   {% elif page and page.title and not page.is_homepage %}
     {% set og_title = (page.title | striptags) ~ " - " ~ config.site_name %}
@@ -25,8 +36,10 @@
   {% else %}
     {% set og_description = config.site_description %}
   {% endif %}
+  {% set image_alt = config.site_name ~ ": the agentic framework that runs your tools anywhere, safely" %}
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{{ config.site_name | e }}">
+  <meta property="og:locale" content="en_US">
   <meta property="og:title" content="{{ og_title | e }}">
   {#- Unescaped like the theme's own description tag: docs_hooks stores it escaped. -#}
   <meta property="og:description" content="{{ og_description }}">
@@ -37,7 +50,7 @@
     <meta property="og:image" content="{{ config.site_url }}assets/social-card.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="{{ config.site_name | e }} logo">
+    <meta property="og:image:alt" content="{{ image_alt | e }}">
     {% if page and page.file and page.file.src_uri == "reel.md" %}
       <meta property="og:video" content="{{ config.site_url }}assets/video/agent-adapter-reel.mp4">
       <meta property="og:video:type" content="video/mp4">
@@ -46,4 +59,14 @@
     {% endif %}
   {% endif %}
   <meta name="twitter:card" content="summary_large_image">
+  {% if config.extra.x_handle %}
+    <meta name="twitter:site" content="@{{ config.extra.x_handle }}">
+  {% endif %}
+  <meta name="twitter:title" content="{{ og_title | e }}">
+  <meta name="twitter:description" content="{{ og_description }}">
+  {% if config.site_url %}
+    <meta name="twitter:image" content="{{ config.site_url }}assets/social-card.png">
+    <meta name="twitter:image:alt" content="{{ image_alt | e }}">
+  {% endif %}
+  {% if page and page.is_homepage %}{% include "partials/jsonld.html" %}{% endif %}
 {% endblock %}

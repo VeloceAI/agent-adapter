@@ -1,3 +1,8 @@
+---
+title: "LangChain tools with approvals and cost tracking"
+description: "Turn plain Python functions into LangChain tools, or import LangChain tools. Every call gets approvals, budgets, retries, caching and traces."
+---
+
 # LangChain
 
 :material-check-circle:{ .status-ok } Available · export and import · `pip install "agent-adapter[langchain]"` (`langchain-core`)

@@ -1,3 +1,8 @@
+---
+title: "MCP server in Python: serve and import tools"
+description: "Run an MCP server in Python from the tools you already have, or import tools from any MCP server. Approvals, limits, caching and cost apply to every call."
+---
+
 # MCP
 
 :material-check-circle:{ .status-ok } Available · `pip install "agent-adapter[mcp]"` · `mcp` 2.3+ (v2 API)

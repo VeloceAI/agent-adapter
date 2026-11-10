@@ -1,3 +1,8 @@
+---
+title: "Install Agent Adapter with pip"
+description: "Install Agent Adapter from PyPI with pip install agent-adapter. Apache-2.0, Python 3.11+, with optional extras for LangChain, CrewAI, MCP and more."
+---
+
 # Install
 
 Agent Adapter is on [PyPI](https://pypi.org/project/agent-adapter/) under the Apache-2.0

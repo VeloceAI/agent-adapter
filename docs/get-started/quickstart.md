@@ -1,3 +1,8 @@
+---
+title: "Quickstart: your first AI agent tool in five minutes"
+description: "Start with one Python function and one call. Define two AI agent tools, render them for two providers and run them through an executor. Five minutes."
+---
+
 # Quickstart
 
 Start with one function and one call. Then define two tools, render them for two

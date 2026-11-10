@@ -1,3 +1,8 @@
+---
+title: "Human-in-the-loop approvals for AI agent tools"
+description: "Pause a risky tool call until a person approves, edits or denies it, then resume the run. Each decision runs the call at most once."
+---
+
 # Human in the loop
 
 Pause a risky call until a person reviews it, then resume it: approved, edited or denied.

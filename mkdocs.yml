@@ -53,6 +53,7 @@ theme:
 extra:
   web3forms_key: ""  # public form key from web3forms.com; once set, the contact form sends directly
   contact_email: hello@veloceai.in  # until then, Send opens the visitor's email app addressed here
+  x_handle: veloceai_labs  # twitter:site on link previews; the org's X account
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/VeloceAI/agent-adapter

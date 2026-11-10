@@ -1,3 +1,8 @@
+---
+title: "LLM cost tracking: prices and the ledger"
+description: "LLM cost tracking for every model and paid API call. A versioned price table turns tokens into dollars, and a ledger records each call for reports and budgets."
+---
+
 # Cost: prices and the ledger
 
 `agent_adapter.cost` turns token usage into dollars. A versioned price table holds every

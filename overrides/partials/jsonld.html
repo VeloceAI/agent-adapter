@@ -1,0 +1,38 @@
+{#- Structured data for search engines: who makes it, what it is, where the code lives. -#}
+{% set site = config.site_url %}
+{% set org = {
+  "@type": "Organization",
+  "@id": "https://veloceai.in/#org",
+  "name": "Veloce AI",
+  "url": "https://veloceai.in/",
+  "logo": site ~ "assets/apple-touch-icon.png",
+  "email": config.extra.contact_email,
+  "sameAs": ["https://github.com/VeloceAI", "https://x.com/" ~ config.extra.x_handle]
+} %}
+{% set app = {
+  "@type": ["SoftwareApplication", "SoftwareSourceCode"],
+  "@id": site ~ "#software",
+  "name": config.site_name,
+  "description": "Open-source agentic framework for Python. Write AI agent tools once and run them in LangChain, CrewAI, MCP and any framework, with human-in-the-loop approvals, budgets and LLM cost tracking.",
+  "url": site,
+  "image": site ~ "assets/social-card.png",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Windows, macOS, Linux",
+  "softwareRequirements": "Python 3.11+",
+  "programmingLanguage": "Python",
+  "codeRepository": config.repo_url,
+  "downloadUrl": "https://pypi.org/project/agent-adapter/",
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "isAccessibleForFree": true,
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "keywords": "agentic framework, AI agent tools, LangChain tools, CrewAI tools, MCP server Python, human-in-the-loop approvals, LLM cost tracking",
+  "publisher": {"@id": "https://veloceai.in/#org"}
+} %}
+{% set website = {
+  "@type": "WebSite",
+  "@id": site ~ "#website",
+  "name": config.site_name,
+  "url": site,
+  "publisher": {"@id": "https://veloceai.in/#org"}
+} %}
+<script type="application/ld+json">{{ {"@context": "https://schema.org", "@graph": [org, app, website]} | tojson }}</script>

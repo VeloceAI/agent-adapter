@@ -1,3 +1,8 @@
+---
+title: "Approvals: human in the loop for agent tools"
+description: "Set confirm= on a tool and it asks before it runs. Approve it, deny it, edit its arguments, or park the call and resume it later."
+---
+
 # Approval (human in the loop)
 
 A tool with `confirm=` set asks an approval port before it runs. The port approves,

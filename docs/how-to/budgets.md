@@ -1,3 +1,8 @@
+---
+title: "LLM budgets: cap spend per run or user"
+description: "Cap what an agent run or a conversation may spend, and how many calls it may make. Budgets read the cost ledger before each call."
+---
+
 # Budgets
 
 Cap what a run or a conversation may spend, and how many calls it may make. The ledger

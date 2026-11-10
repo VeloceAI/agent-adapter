@@ -1,3 +1,8 @@
+---
+title: "MCP server for any language"
+description: "Serve Python tools over MCP Streamable HTTP so agents in TypeScript, Go, Java or .NET can call them, with approvals and cost tracking on every call."
+---
+
 # Cross-language: MCP
 
 :material-check-circle:{ .status-ok } Available · `pip install "agent-adapter[mcp]"`

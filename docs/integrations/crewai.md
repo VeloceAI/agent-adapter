@@ -1,3 +1,8 @@
+---
+title: "CrewAI tools with approvals, budgets and traces"
+description: "Use one registry of Python functions as CrewAI tools. Each call runs with human-in-the-loop approvals, budgets, LLM cost tracking and traces."
+---
+
 # CrewAI
 
 :material-check-circle:{ .status-ok } Available · `pip install "agent-adapter[crewai]"` · `crewai>=1.15,<2` · own environment

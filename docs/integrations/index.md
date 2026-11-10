@@ -1,3 +1,8 @@
+---
+title: "Integrations: LangChain, CrewAI, MCP and 20 more"
+description: "Plug your tools into 23 agent frameworks and protocols, including LangChain, CrewAI, OpenAI Agents, Pydantic AI and MCP. Write a tool once, use it everywhere."
+---
+
 # Integrations
 
 Each integration is one module under `agent_adapter.integrations` and, where it needs a

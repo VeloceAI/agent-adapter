@@ -1,3 +1,8 @@
+---
+title: "Features: approvals, budgets, cost tracking and traces"
+description: "What Agent Adapter does for AI agent tools: human-in-the-loop approvals, budgets, LLM cost tracking, caching, traces, flows and evals, with a guide for each."
+---
+
 # Features
 
 What Agent Adapter does, grouped by area, with a link to each guide. Everything is available

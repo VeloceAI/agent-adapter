@@ -1,3 +1,8 @@
+---
+title: "Move LangChain tools to any framework"
+description: "Move your LangChain @tool functions into one registry so CrewAI, MCP and other frameworks can use them, while your LangChain agents keep working."
+---
+
 # From LangChain tools
 
 Your tools are LangChain `@tool` functions. Move them into a registry so any framework
