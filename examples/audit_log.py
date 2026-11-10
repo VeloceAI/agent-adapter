@@ -62,7 +62,8 @@ async def main(folder: Path) -> None:
     csv_text = export(folder, format="csv", key=KEY)
     print(csv_text.splitlines()[0])
     # --8<-- [end:verify]
-    assert "4111" not in csv_text  # arguments never reach the log
+    # The spaced form: bare "4111" can occur by chance in the hex macs and run ids.
+    assert "4111 1111" not in csv_text  # arguments never reach the log
 
     # --8<-- [start:tamper]
     segment = next(folder.glob("audit-*.jsonl"))
