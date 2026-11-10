@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 VENDOR = ROOT / "docs" / "assets" / "javascripts" / "vendor"
 VERSION = "11.17.2"
 SCRIPT = f"assets/javascripts/vendor/mermaid-{VERSION}.min.js"
+LOADER = "assets/javascripts/mermaid-lazy.js"
 # sha256 of dist/mermaid.min.js in the npm tarball mermaid-11.17.2.tgz, whose sha512
 # integrity matched the registry's (V6K3C8EBdEsPFZXSKMJe6ppQOENxuHARr9GvHX4hh47lAbhMRD9qf4oE...).
 SHA256 = "581ed7d74bd9048d0e3a91363927d72ef22942d7722546b27f7cc29e35390eb8"
@@ -30,14 +31,17 @@ def test_the_vendored_file_is_the_verified_release_with_its_licence() -> None:
     assert {p.name for p in VENDOR.iterdir()} == {script.name, f"mermaid-{VERSION}.LICENSE.txt"}
 
 
-def test_the_built_config_loads_it_before_the_narrow_screen_tweak() -> None:
+def test_the_built_config_loads_it_lazily_before_the_narrow_screen_tweak() -> None:
     config_module = pytest.importorskip("mkdocs.config")
     pytest.importorskip("material")
     pytest.importorskip("mkdocstrings")
     config = config_module.load_config(str(ROOT / "mkdocs.yml"))
     scripts = [str(getattr(item, "path", item)) for item in config.extra_javascript]
-    assert scripts[:2] == [SCRIPT, "assets/javascripts/diagrams.js"]
+    assert scripts[:2] == [LOADER, "assets/javascripts/diagrams.js"]
+    assert SCRIPT not in scripts
     assert all(getattr(item, "defer", False) for item in config.extra_javascript)
+    loader = (ROOT / "docs" / LOADER).read_text(encoding="utf-8")
+    assert f'"vendor/mermaid-{VERSION}.min.js"' in loader
     assert (ROOT / "docs" / SCRIPT).is_file()
 
 

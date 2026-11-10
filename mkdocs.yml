@@ -66,10 +66,10 @@ extra_css:
   - stylesheets/home.css
   - stylesheets/brand.css
   - stylesheets/theme.css
-# Mermaid served from the site itself, so diagrams render offline; the theme uses this global
-# instead of fetching it from a CDN. Its MIT licence sits next to it.
+# Mermaid is served from the site itself (MIT licence beside it) and loads only on pages with a
+# diagram: mermaid-lazy.js stands in for the global the theme would otherwise fetch from a CDN.
 extra_javascript:
-  - path: assets/javascripts/vendor/mermaid-11.17.2.min.js
+  - path: assets/javascripts/mermaid-lazy.js
     defer: true
   - path: assets/javascripts/diagrams.js
     defer: true
