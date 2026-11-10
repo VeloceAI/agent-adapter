@@ -1,3 +1,8 @@
+---
+title: "ADK Go: call Python tools over MCP"
+description: "Connect a Go ADK agent to your Python tools through mcptoolset and the official MCP Go SDK, with approvals and cost tracking on the server."
+---
+
 # Connect: ADK Go
 
 :material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

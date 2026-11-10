@@ -1,3 +1,8 @@
+---
+title: "Claude Agent SDK tools with approvals"
+description: "Give Claude Agent SDK agents your Python tools through an MCP bridge, with approvals, LLM cost tracking and traces on every call."
+---
+
 # Claude Agent SDK
 
 :material-check-circle:{ .status-ok } Available · in-process SDK MCP server · a bridge pairs it

@@ -1,3 +1,8 @@
+---
+title: "AutoGen tools with approvals and cost tracking"
+description: "Use your Python functions as AutoGen 0.7 tools, with human-in-the-loop approvals, LLM cost tracking and traces on every call."
+---
+
 # AutoGen
 
 :material-check-circle:{ .status-ok } Available · `BaseTool` per spec · `pip install "agent-adapter[autogen]"`

@@ -1,3 +1,8 @@
+---
+title: "Semantic Kernel tools with approvals"
+description: "Use your Python functions as Semantic Kernel functions, with approvals through the auto-invocation filter, LLM cost tracking and traces."
+---
+
 # Semantic Kernel
 
 :material-check-circle:{ .status-ok } Available · kernel functions and a plugin ·

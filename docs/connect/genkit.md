@@ -1,3 +1,8 @@
+---
+title: "Genkit: call Python tools over MCP"
+description: "Use the @genkit-ai/mcp plugin to give Genkit's ai.generate your Python tools, with approvals and cost tracking on every call."
+---
+
 # Connect: Genkit
 
 :material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

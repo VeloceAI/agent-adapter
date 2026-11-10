@@ -1,3 +1,8 @@
+---
+title: "AG2 tools with approvals and cost tracking"
+description: "Register your Python functions as AG2 tools. Each call runs with human-in-the-loop approvals, LLM cost tracking, caching and traces."
+---
+
 # AG2
 
 :material-check-circle:{ .status-ok } Available · `FunctionTool` per spec · approval gate as

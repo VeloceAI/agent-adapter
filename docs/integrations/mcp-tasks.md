@@ -1,3 +1,8 @@
+---
+title: "MCP tasks, URL approval and OAuth in Python"
+description: "Long-running MCP tasks, approval by URL and OAuth on top of the Agent Adapter MCP server, following the MCP 2026-07-28 spec."
+---
+
 # MCP tasks, URL approval and OAuth
 
 :material-check-circle:{ .status-ok } Available · `pip install "agent-adapter[mcp]"` · `mcp` 2.3+ · MCP 2026-07-28

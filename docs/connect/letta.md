@@ -1,3 +1,8 @@
+---
+title: "Letta: register Python tools over MCP"
+description: "Register your MCP URL with Letta once; its server then forwards each tool call to your Python tools, with approvals and cost tracking."
+---
+
 # Connect: Letta
 
 :material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

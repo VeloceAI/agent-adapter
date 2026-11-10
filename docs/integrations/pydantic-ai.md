@@ -1,3 +1,8 @@
+---
+title: "Pydantic AI tools with approvals and cost tracking"
+description: "Every tool becomes a Pydantic AI Tool built from its JSON schema, with human-in-the-loop approvals, LLM cost tracking and traces on each call."
+---
+
 # Pydantic AI
 
 :material-check-circle:{ .status-ok } Available · `pip install "agent-adapter[pydantic-ai]"` · `pydantic-ai-slim>=2.60`

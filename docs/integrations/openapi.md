@@ -1,3 +1,8 @@
+---
+title: "OpenAPI to AI agent tools"
+description: "Turn every operation in an OpenAPI 3.x document into an AI agent tool. Calls go over httpx and get approvals, cost tracking and traces like any tool."
+---
+
 # OpenAPI
 
 :material-check-circle:{ .status-ok } Available · importer · `pip install "agent-adapter[openapi]"` (`httpx`, `pyyaml`)

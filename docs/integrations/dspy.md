@@ -1,3 +1,8 @@
+---
+title: "DSPy tools with approvals and cost tracking"
+description: "Use your Python functions as DSPy tools, with human-in-the-loop approvals, LLM cost tracking, caching and traces on every call."
+---
+
 # DSPy
 
 :material-check-circle:{ .status-ok } Available · `dspy.Tool` per spec · `pip install "agent-adapter[dspy]"`

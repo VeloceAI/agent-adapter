@@ -1,3 +1,8 @@
+---
+title: "LangGraph.js: use Python tools over MCP"
+description: "Turn your Python tools into LangChain.js tools with @langchain/mcp-adapters and use them in createAgent or any LangGraph.js graph."
+---
+
 # Connect: LangGraph.js
 
 :material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

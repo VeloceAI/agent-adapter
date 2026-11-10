@@ -1,3 +1,8 @@
+---
+title: "Microsoft Agent Framework .NET: Python tools over MCP"
+description: "Give a .NET Microsoft Agent Framework agent your Python tools as AITools through the official MCP C# SDK, with approvals and cost tracking."
+---
+
 # Connect: Microsoft Agent Framework (.NET)
 
 :material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

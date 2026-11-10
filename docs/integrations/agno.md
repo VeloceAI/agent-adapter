@@ -1,3 +1,8 @@
+---
+title: "Agno tools with approvals and cost tracking"
+description: "Turn your Python functions into Agno tools. Every call goes through one executor with human-in-the-loop approvals, LLM cost tracking and traces."
+---
+
 # Agno
 
 :material-check-circle:{ .status-ok } Available · `Function` per spec · approval from your

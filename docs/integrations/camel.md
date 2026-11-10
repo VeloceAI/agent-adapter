@@ -1,3 +1,8 @@
+---
+title: "CAMEL-AI tools with approvals and cost tracking"
+description: "Use your Python functions as CAMEL-AI tools. Every call runs through one executor with approvals, LLM cost tracking, caching and traces."
+---
+
 # CAMEL-AI
 
 :material-check-circle:{ .status-ok } Available · `FunctionTool` per spec · approval from the

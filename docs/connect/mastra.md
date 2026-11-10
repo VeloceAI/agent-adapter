@@ -1,3 +1,8 @@
+---
+title: "Mastra: use Python tools over MCP"
+description: "Load your Python tools into Mastra in one MCP call, or use the TypeScript client to keep human-in-the-loop approvals working end to end."
+---
+
 # Connect: Mastra
 
 :material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) or the [TypeScript client](../cross-language/typescript-client.md) · their docs checked 2026-10-30

@@ -1,3 +1,8 @@
+---
+title: "Google ADK tools with approvals and cost tracking"
+description: "Use your Python functions as Google ADK tools. Each call runs through one executor with human-in-the-loop approvals, LLM cost tracking and traces."
+---
+
 # Google ADK
 
 :material-check-circle:{ .status-ok } Available · `BaseTool` per spec · flows compile to a

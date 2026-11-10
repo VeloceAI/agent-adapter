@@ -1,3 +1,8 @@
+---
+title: "Microsoft Agent Framework tools with approvals"
+description: "Use your Python functions as Microsoft Agent Framework tools. Every call runs the full pipeline: approvals, budgets, cost tracking, caching and traces."
+---
+
 # Microsoft Agent Framework
 
 :material-check-circle:{ .status-ok } Available · `FunctionTool` per spec · approval from your

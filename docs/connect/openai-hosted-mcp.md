@@ -1,3 +1,8 @@
+---
+title: "OpenAI hosted MCP: let the Responses API call your tools"
+description: "Let the OpenAI Responses API call your Python tools through its mcp tool, with auth, approvals and cost tracking on your own server."
+---
+
 # Connect: OpenAI hosted MCP (Responses API)
 
 :material-check-circle:{ .status-ok } Recipe · through our public [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

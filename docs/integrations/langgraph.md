@@ -1,3 +1,8 @@
+---
+title: "LangGraph tools with approvals and cost tracking"
+description: "Run your tools inside LangGraph with human-in-the-loop approvals, timeouts, retries, caching and LLM cost tracking on every call."
+---
+
 # LangGraph
 
 :material-check-circle:{ .status-ok } Available · tool nodes, interrupt approvals, compiled flows · `pip install "agent-adapter[langgraph]"` (`langgraph`, `langgraph-checkpoint`)

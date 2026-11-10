@@ -1,3 +1,8 @@
+---
+title: "AG-UI: stream your agent to any UI"
+description: "Stream one of your agent functions to CopilotKit or any other AG-UI frontend over the AG-UI event protocol, from plain Python."
+---
+
 # AG-UI
 
 :material-check-circle:{ .status-ok } Available · `pip install "agent-adapter[ag-ui]"` · `ag-ui-protocol>=1.0,<2` (protocol 1.0)

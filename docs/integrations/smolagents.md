@@ -1,3 +1,8 @@
+---
+title: "smolagents tools with approvals and cost tracking"
+description: "Use your Python functions as smolagents tools. Each call runs the full async pipeline: approvals, LLM cost tracking, caching and traces."
+---
+
 # smolagents
 
 :material-check-circle:{ .status-ok } Available · `Tool` subclass per spec · `pip install "agent-adapter[smolagents]"`

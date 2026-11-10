@@ -1,3 +1,8 @@
+---
+title: "Gemini function calling with approvals and cost tracking"
+description: "Send your tools to Gemini as function declarations and answer its calls through one executor, with approvals, LLM cost tracking and traces."
+---
+
 # Gemini
 
 :material-check-circle:{ .status-ok } Available · function declarations, call dispatch, genai automatic function calling · `google-genai` optional

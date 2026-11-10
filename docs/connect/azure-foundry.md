@@ -1,3 +1,8 @@
+---
+title: "Azure AI Foundry agents: Python tools over MCP"
+description: "Let Azure AI Foundry Agent Service call your Python tools through its mcp tool, with auth, approvals and cost tracking on every call."
+---
+
 # Connect: Azure AI Foundry Agent Service
 
 :material-check-circle:{ .status-ok } Recipe · through our public [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

@@ -1,3 +1,8 @@
+---
+title: "OpenAI function calling with approvals and cost tracking"
+description: "Render your tools for OpenAI function calling and run each tool call through one executor, with approvals, LLM cost tracking, caching and traces."
+---
+
 # OpenAI
 
 :material-check-circle:{ .status-ok } Available · Chat Completions and Responses API · no SDK needed

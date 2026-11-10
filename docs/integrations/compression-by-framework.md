@@ -1,3 +1,8 @@
+---
+title: "Context compression for every agent framework"
+description: "Compress long chat histories in each framework's own message format: compress_for converts the list, compresses it and gives back the same type."
+---
+
 # Compression by framework
 
 Every framework keeps its own message list. `compress_for` converts that list to the

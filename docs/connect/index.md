@@ -1,3 +1,8 @@
+---
+title: "Connect any agent stack to Python tools"
+description: "Exact configs to connect Mastra, Vercel AI SDK, Spring AI, .NET, Go, Genkit, Letta, OpenAI, Azure and Bedrock agents to your Python tools over MCP."
+---
+
 # Connect anywhere
 
 :material-check-circle:{ .status-ok } Recipes · our side needs `pip install "agent-adapter[server]"`

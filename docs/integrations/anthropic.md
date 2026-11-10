@@ -1,3 +1,8 @@
+---
+title: "Anthropic tool use with approvals and cost tracking"
+description: "Render your tools for the Claude Messages API and run each tool_use block through one executor, with approvals, LLM cost tracking, caching and traces."
+---
+
 # Anthropic
 
 :material-check-circle:{ .status-ok } Available · Messages API tools · no SDK needed

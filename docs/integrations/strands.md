@@ -1,3 +1,8 @@
+---
+title: "Strands Agents tools with approvals and cost tracking"
+description: "Use your Python functions as Strands Agents tools, with human-in-the-loop approvals, LLM cost tracking, caching and traces on every call."
+---
+
 # Strands Agents
 
 :material-check-circle:{ .status-ok } Available · `AgentTool` per spec · approval hook ·

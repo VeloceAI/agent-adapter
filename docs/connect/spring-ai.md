@@ -1,3 +1,8 @@
+---
+title: "Spring AI: call Python tools from Java over MCP"
+description: "Spring AI's MCP client Boot starter turns your Python tools into ToolCallbacks, so a Java ChatClient calls them like local tools."
+---
+
 # Connect: Spring AI
 
 :material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

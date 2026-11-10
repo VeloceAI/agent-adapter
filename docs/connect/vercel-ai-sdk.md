@@ -1,3 +1,8 @@
+---
+title: "Vercel AI SDK: use Python tools from TypeScript"
+description: "Use your Python tools from Vercel AI SDK 7: the TypeScript client keeps approvals working end to end, or connect over MCP in one call."
+---
+
 # Connect: Vercel AI SDK
 
 :material-check-circle:{ .status-ok } Recipe · through the [TypeScript client](../cross-language/typescript-client.md) or our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

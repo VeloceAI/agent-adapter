@@ -1,3 +1,8 @@
+---
+title: "OpenAI Agents SDK tools with approvals"
+description: "Every tool becomes an OpenAI Agents SDK FunctionTool, with validation, approvals, guards, caching, LLM cost tracking and traces on each call."
+---
+
 # OpenAI Agents SDK
 
 :material-check-circle:{ .status-ok } Available · `pip install "agent-adapter[openai-agents]"` · `openai-agents>=0.24`

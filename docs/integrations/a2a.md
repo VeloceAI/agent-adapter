@@ -1,3 +1,8 @@
+---
+title: "A2A agents: serve and import tools"
+description: "Serve your Python tools as an A2A agent, or import a remote A2A agent's skills as tools. Every call gets approvals, cost tracking and traces."
+---
+
 # A2A
 
 :material-check-circle:{ .status-ok } Available · `pip install "agent-adapter[a2a]"` · `a2a-sdk[http-server]` 1.3+ (A2A protocol 1.0)

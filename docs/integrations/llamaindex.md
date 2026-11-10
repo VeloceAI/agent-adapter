@@ -1,3 +1,8 @@
+---
+title: "LlamaIndex tools with approvals and cost tracking"
+description: "Every tool becomes a LlamaIndex FunctionTool. Both call paths run through one executor with approvals, LLM cost tracking, caching and traces."
+---
+
 # LlamaIndex
 
 :material-check-circle:{ .status-ok } Available · `pip install "agent-adapter[llamaindex]"` · `llama-index-core>=0.14,<0.15`

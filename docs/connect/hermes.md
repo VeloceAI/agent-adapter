@@ -1,3 +1,8 @@
+---
+title: "Hermes Agent: add Python tools over MCP"
+description: "Add your Python tools to Hermes Agent with one entry in its MCP config, with approvals and cost tracking on every call."
+---
+
 # Connect: Hermes Agent
 
 :material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

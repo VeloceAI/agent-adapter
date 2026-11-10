@@ -1,3 +1,8 @@
+---
+title: "Bedrock AgentCore Gateway: Python tools over MCP"
+description: "Put your Python tools behind Amazon Bedrock AgentCore Gateway as one MCP endpoint, with gateway auth, approvals and cost tracking."
+---
+
 # Connect: Amazon Bedrock AgentCore Gateway
 
 :material-check-circle:{ .status-ok } Recipe · through our public [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30

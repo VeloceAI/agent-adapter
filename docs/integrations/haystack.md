@@ -1,3 +1,8 @@
+---
+title: "Haystack tools with approvals and cost tracking"
+description: "Use your Python functions as Haystack Agent tools. Sync and async runs both go through one executor with approvals, cost tracking and traces."
+---
+
 # Haystack
 
 :material-check-circle:{ .status-ok } Available · `Tool` per spec · confirmation hook ·
