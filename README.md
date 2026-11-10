@@ -18,6 +18,15 @@
 </p>
 
 <p align="center">
+  <a href="https://www.producthunt.com/posts/agent-adapter?utm_source=badge-featured&utm_medium=badge&utm_campaign=agent-adapter" target="_blank">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1310997&theme=dark">
+      <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1310997&theme=light" alt="Agent Adapter on Product Hunt" width="250" height="54">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
   <a href="#quickstart">Quickstart</a> · <a href="#why-agent-adapter">Why</a> · <a href="#how-it-works">How it works</a> · <a href="#a-tour-in-code">Tour</a> ·
   <a href="#see-your-runs-and-chat-with-your-agent">Viewer and chat</a> · <a href="#install">Install</a> · <a href="https://agent-adapter.veloceai.in/">Docs</a> ·
   <a href="docs/use-cases.md">Use cases</a> · <a href="docs/skill.md">Agent skill</a> · <a href="docs/get-started/ai-prompt.md">Prompt for any AI</a>
