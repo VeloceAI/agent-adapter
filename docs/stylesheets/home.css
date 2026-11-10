@@ -57,7 +57,7 @@
   margin: 3em auto 0; padding: 0; color: var(--aa-dim); font-size: .85em; }
 .aa-stats li { margin: 0; }
 .aa-stats b { display: block; color: var(--aa-ink); font-size: 1.7em; letter-spacing: -.02em; }
-.aa-ph { margin: 2em 0 0; text-align: center; }
+.aa-ph { margin: 2em 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: .8em; }
 .aa-ph img { display: inline-block; }
 
 /* Framework strip and code tabs */
