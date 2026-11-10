@@ -1783,6 +1783,7 @@ DSPy: registry tools as `dspy.Tool`s that run through the executor.
 
 - `DSPyIntegration()`: Exports `dspy.Tool`s; DSPy has no approval gate, so the executor's port decides.
 - `INTEGRATION`: `DSPyIntegration` instance
+- `dspy_compress_prompt(prompt: Any, policy: CompressionPolicy, *, pinned: Pinned | None = None, model_max_tokens: int | None = None) -> tuple[Any, CompressionReport]`: What a DSPy `Adapter.format` returned, compressed, and a report.
 - `dspy_tool(spec: ToolSpec, *, executor: ToolRunner | None = None) -> Any`: One `dspy.Tool` for `spec`; `acall` is native, sync `__call__` goes through `run_sync`.
 - `dspy_tools(registry: Registry, *, executor: ToolRunner | None = None) -> list[Any]`: A `dspy.Tool` for every registry tool exported to DSPy.
 

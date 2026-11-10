@@ -10,6 +10,9 @@ from agent_adapter.core.registry import Registry, check_target
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.exec.defaults import runner_for
 from agent_adapter.integrations.base import IntegrationBase, ToolRunner
+from agent_adapter.integrations.dspy_compress import (
+    dspy_compress_prompt,  # registers the format
+)
 from agent_adapter.runtime.sync import run_sync
 from agent_adapter.schema.transforms import to_plain
 
@@ -109,4 +112,4 @@ def _dspy() -> Any:
 INTEGRATION = DSPyIntegration()
 
 
-__all__ = ["INTEGRATION", "DSPyIntegration", "dspy_tool", "dspy_tools"]
+__all__ = ["INTEGRATION", "DSPyIntegration", "dspy_compress_prompt", "dspy_tool", "dspy_tools"]

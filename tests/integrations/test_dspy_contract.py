@@ -66,6 +66,9 @@ class DSPyHarness:
         return await native.acall(**args)
 
     def describe(self, native: Any) -> tuple[str, str, dict[str, Any]]:
+        if hasattr(native, "as_function_tool"):  # DSPy 3.5: the lm15 declaration sent natively
+            declared = native.as_function_tool()
+            return declared.name, declared.description, declared.parameters
         function = native.format_as_litellm_function_call()["function"]
         return function["name"], function["description"], function["parameters"]
 
@@ -213,7 +216,19 @@ def test_integration_has_no_native_approval_gate():
     )
 
 
+# DSPy 3.5's ReAct asks for `tool_calls` and ends with a `submit` call; 3.4's names one tool
+# per turn and extracts the answer after `finish`.
+TOOL_CALLS_REACT = "tool_calls" in dspy.ReAct("q -> a", tools=[]).react.signature.output_fields
+
+
 def _react_lm() -> DummyLM:
+    if TOOL_CALLS_REACT:
+        return DummyLM(
+            [
+                {"next_thought": "Look up the rate.", "tool_calls": _calls("gst_rate", item="tea")},
+                {"next_thought": "Done.", "tool_calls": _calls("submit", answer="18.0")},
+            ]
+        )
     return DummyLM(
         [
             {
@@ -227,6 +242,17 @@ def _react_lm() -> DummyLM:
     )
 
 
+def _calls(name: str, **args: Any) -> dict[str, Any]:
+    return {"tool_calls": [{"name": name, "args": args}]}
+
+
+def _first_observation(prediction: Any) -> Any:
+    if TOOL_CALLS_REACT:
+        turn = prediction.history.messages[0]["tool_calls"]
+        return turn.tool_call_results.tool_call_results[0].value
+    return prediction.trajectory["observation_0"]
+
+
 def test_react_runs_the_tool_through_the_executor(rate):
     hook = RecordingHook()
     react = dspy.ReAct(
@@ -235,7 +261,7 @@ def test_react_runs_the_tool_through_the_executor(rate):
     with dspy.context(lm=_react_lm()):
         prediction = react(question="GST on tea?")
     assert prediction.answer == "18.0"
-    assert prediction.trajectory["observation_0"] == 18.0
+    assert _first_observation(prediction) == 18.0
     assert hook.phases() == ["before_tool", "after_tool"]
 
 
@@ -243,7 +269,7 @@ async def test_react_async_runs_the_tool_through_acall(rate):
     react = dspy.ReAct("question -> answer", tools=[dspy_tool(rate, executor=FakeRunner())])
     with dspy.context(lm=_react_lm()):
         prediction = await react.acall(question="GST on tea?")
-    assert prediction.trajectory["observation_0"] == 18.0
+    assert _first_observation(prediction) == 18.0
 
 
 async def test_cancelling_acall_cancels_the_tool():

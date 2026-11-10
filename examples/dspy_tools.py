@@ -1,6 +1,7 @@
 """Run registry tools in DSPy: `acall` directly, then inside `dspy.ReAct` (offline LM)."""
 
 import asyncio
+from typing import Any
 
 import dspy
 from dspy.utils.dummies import DummyLM
@@ -20,7 +21,14 @@ def shipping_rate(region: str) -> float:
 
 
 def offline_lm() -> DummyLM:
-    """Scripted ReAct turns: call shipping_rate, finish, then answer."""
+    """Scripted ReAct turns: call shipping_rate, then answer (DSPy 3.5 ReAct, or 3.4's)."""
+    if "tool_calls" in dspy.ReAct("q -> a", tools=[]).react.signature.output_fields:
+        return DummyLM(
+            [
+                {"next_thought": "Look it up.", "tool_calls": calls("shipping_rate", region="us")},
+                {"next_thought": "Done.", "tool_calls": calls("submit", answer="18.0")},
+            ]
+        )
     return DummyLM(
         [
             {
@@ -32,6 +40,10 @@ def offline_lm() -> DummyLM:
             {"reasoning": "The tool said 18.", "answer": "18.0"},
         ]
     )
+
+
+def calls(name: str, **args: Any) -> dict[str, Any]:
+    return {"tool_calls": [{"name": name, "args": args}]}
 
 
 async def main() -> None:

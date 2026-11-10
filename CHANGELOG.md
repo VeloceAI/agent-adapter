@@ -4,6 +4,20 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the
 project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `dspy_compress_prompt(prompt, policy)` in `agent_adapter.integrations.dspy`, and the `"dspy"`
+  compression format for the lm15 messages in a DSPy 3.5 `Prompt`. It takes what
+  `Adapter.format` returns on DSPy 3.5 or 3.4 and gives back the same kind.
+
+### Fixed
+
+- DSPy 3.5 support. Tools already ran unchanged; the compression adapter example failed
+  because DSPy 3.5 adapters return a `Prompt`, not chat dicts. The examples and contract
+  tests now cover DSPy 3.5 (XMLAdapter default, the `tool_calls` and `submit` ReAct) and 3.4.
+
 ## [1.1.0] - 2026-11-05
 
 The first public release: open source under Apache-2.0 and published on PyPI.

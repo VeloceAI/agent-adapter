@@ -138,7 +138,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Haystack](https://agent-adapter.veloceai.in/integrations/haystack/): `Agent.run_async` awaits the tool; `Agent.run` (sync) runs it through `run_sync`
 - [Claude Agent SDK](https://agent-adapter.veloceai.in/integrations/claude-agent/): Claude sees each tool as `mcp__<server>__<tool>`, where `<server>` is the bridge's `name` (use it as the `mcp_servers` key)
 - [Semantic Kernel](https://agent-adapter.veloceai.in/integrations/semantic-kernel/): Each parameter carries its property schema (`$ref`s inlined) as `schema_data`
-- [DSPy](https://agent-adapter.veloceai.in/integrations/dspy/): DSPy 3.4+ pulls in litellm, openai and boto3 (about 300 MB), so the extra is not part of `all` and its contract tests run in their own `nox -s...
+- [DSPy](https://agent-adapter.veloceai.in/integrations/dspy/): Works with DSPy 3.4 and 3.5
 - [smolagents](https://agent-adapter.veloceai.in/integrations/smolagents/): smolagents tools are synchronous
 - [AutoGen](https://agent-adapter.veloceai.in/integrations/autogen/): For AutoGen 0.7 (`autogen-core`, `autogen-agentchat`)
 - [LangGraph](https://agent-adapter.veloceai.in/integrations/langgraph/): Registry tools run inside LangGraph through an `Executor`, so hooks, approval, timeouts, retries, the cache and the ledger apply (`executor=None` uses the...

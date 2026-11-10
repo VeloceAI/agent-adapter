@@ -78,7 +78,7 @@ Export tools, approval and flows to agent frameworks. Each module imports its SD
 
 ::: agent_adapter.integrations.dspy
     options:
-      members: [DSPyIntegration, INTEGRATION, dspy_tool, dspy_tools]
+      members: [DSPyIntegration, INTEGRATION, dspy_compress_prompt, dspy_tool, dspy_tools]
 
 ## `agent_adapter.integrations.smolagents`
 

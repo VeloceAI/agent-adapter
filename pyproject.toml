@@ -86,7 +86,7 @@ graphiti = ["graphiti-core>=0.31,<1"]
 all = [
     "agent-adapter[openai,gemini,anthropic,redis,otel,langchain,langgraph,mcp]",
     "agent-adapter[openai-agents,pydantic-ai,llamaindex,openapi,agent-framework,agno]",
-    # Not dspy: it pulls in LiteLLM, which this package never installs by default.
+    # Not dspy: 3.4 pulls in LiteLLM, which this package never installs by default.
     "agent-adapter[haystack,smolagents,claude-agent,autogen,server,server-wsgi]",
     "agent-adapter[ag2,a2a,ag-ui,sqlalchemy,dynamodb]",
 ]
@@ -190,6 +190,7 @@ omit = [
     "agent_adapter/integrations/agent_framework.py",
     "agent_adapter/integrations/agno.py",
     "agent_adapter/integrations/dspy.py",
+    "agent_adapter/integrations/dspy_compress.py",
     "agent_adapter/integrations/strands.py",
     "agent_adapter/integrations/haystack.py",
     "agent_adapter/integrations/claude_agent.py",

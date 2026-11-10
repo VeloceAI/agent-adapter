@@ -28,8 +28,8 @@ flowchart LR
 | Anthropic Messages dicts | `"anthropic"` | Anthropic |
 | Gemini `contents` (dicts or `types.Content`) | `"gemini"` | Gemini, Google ADK |
 | Pydantic AI, Agno, Strands, smolagents, AutoGen and AG2 messages | `"pydantic_ai"`, `"agno"`, `"strands"`, `"smolagents"`, `"autogen"`, `"ag2"` | registered when you import that framework's integration module |
-| LlamaIndex `ChatMessage`, Semantic Kernel `ChatMessageContent`, Agent Framework `Message`, CAMEL-AI `MemoryRecord` | `"llamaindex"`, `"semantic_kernel"`, `"agent_framework"`, `"camel"` | registered when you import that framework's integration module |
-| CrewAI `LLMMessage`, the messages a DSPy adapter builds | `"openai"` | they are OpenAI chat dicts |
+| LlamaIndex `ChatMessage`, Semantic Kernel `ChatMessageContent`, Agent Framework `Message`, CAMEL-AI `MemoryRecord`, the lm15 messages in a DSPy 3.5 `Prompt` | `"llamaindex"`, `"semantic_kernel"`, `"agent_framework"`, `"camel"`, `"dspy"` | registered when you import that framework's integration module |
+| CrewAI `LLMMessage`, the messages a DSPy 3.4 adapter builds | `"openai"` | they are OpenAI chat dicts |
 
 `format="auto"` (the default) detects it; plain `{"role", "content"}` dicts count as
 OpenAI. Pin native messages with `pinned=lambda message: ...`: no marker is added to them.
@@ -57,7 +57,7 @@ from `agent_adapter.context.formats`.
 | AutoGen | `AssistantAgent(model_context=autogen_model_context(policy))` | `autogen` | [Agent frameworks](#agent-frameworks) |
 | AG2 | `Agent(assembly=[ag2_compress_policy(policy)])` | `ag2` | [Agent frameworks](#agent-frameworks) |
 | CrewAI | `register_before_llm_call_hook(...)` | `openai` | [More frameworks](#more-agent-frameworks) |
-| DSPy | `dspy.configure(adapter=...)`, a `ChatAdapter` subclass | `openai` | [More frameworks](#more-agent-frameworks) |
+| DSPy | `dspy.configure(adapter=...)`, a `ChatAdapter` subclass whose `format` calls `dspy_compress_prompt` (it takes a 3.5 `Prompt` or 3.4 chat dicts and returns the same kind) | `dspy` (3.5), `openai` (3.4) | [More frameworks](#more-agent-frameworks) |
 | LlamaIndex | before `llm.achat(messages)`, or on an agent's `chat_history=` | `llamaindex` | [More frameworks](#more-agent-frameworks) |
 | Semantic Kernel | before `get_chat_message_contents(chat_history=...)` | `semantic_kernel` | [More frameworks](#more-agent-frameworks) |
 | CAMEL-AI | `ChatAgent(memory=ChatHistoryMemory(...))` with a context creator | `camel` | [More frameworks](#more-agent-frameworks) |
@@ -126,7 +126,7 @@ the rest of the run; the others shorten only what each model call sends.
 
 ## More agent frameworks
 
-CrewAI and DSPy send OpenAI chat dicts, so they use `openai`. The CrewAI hook shortens
+CrewAI sends OpenAI chat dicts, so it uses `openai`. The CrewAI hook shortens
 the agent's own list in place. The other four send the model a shorter copy, and the
 history keeps every message. Tool rounds that Semantic Kernel or a LlamaIndex agent run
 inside one call are not seen by these hooks; Agent Framework middleware sees every call.

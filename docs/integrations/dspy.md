@@ -7,13 +7,13 @@ description: "Use your Python functions as DSPy tools, with human-in-the-loop ap
 
 :material-check-circle:{ .status-ok } Available · `dspy.Tool` per spec · `pip install "agent-adapter[dspy]"`
 
-DSPy 3.4+ pulls in litellm, openai and boto3 (about 300 MB), so the extra is not part of
-`all` and its contract tests run in their own `nox -s contract-dspy` session.
+Works with DSPy 3.4 and 3.5. DSPy 3.4 pulls in litellm, openai and boto3 (about 300 MB),
+so the extra is not part of `all` and its contract tests run in their own
+`nox -s contract-dspy` session. DSPy 3.5 makes LiteLLM optional (`dspy[litellm]`).
 
-Keep it apart from the `openai` extra. LiteLLM caps `openai<3`, while `OpenAIModel` needs
-`openai>=3.41`. Installing both makes pip backtrack into a LiteLLM sdist that needs Rust.
-Install `agent-adapter[dspy]` in its own environment; DSPy calls the model through its own
-`dspy.LM`.
+With DSPy 3.4, or `dspy[litellm]`, keep it apart from the `openai` extra. LiteLLM caps
+`openai<3`, while `OpenAIModel` needs `openai>=3.41`. Installing both makes pip backtrack
+into a LiteLLM sdist that needs Rust. DSPy calls the model through its own `dspy.LM`.
 
 ## Functions
 
@@ -21,6 +21,7 @@ Install `agent-adapter[dspy]` in its own environment; DSPy calls the model throu
 |---|---|
 | `dspy_tool(spec, *, executor=None)` | one `dspy.Tool` (a subclass) for `spec` |
 | `dspy_tools(registry, *, executor=None)` | a tool for every registry tool whose `targets` include `dspy` |
+| `dspy_compress_prompt(prompt, policy, *, pinned=None, model_max_tokens=None)` | what `Adapter.format` returned, compressed, and a report: see [compression](compression-by-framework.md#more-agent-frameworks) |
 | `INTEGRATION` | the [integration](../contributing/writing-an-integration.md) object (`get_integration("dspy")`) |
 
 `executor=None` uses the default executor at call time (`set_default_executor`).
@@ -31,7 +32,9 @@ Install `agent-adapter[dspy]` in its own environment; DSPy calls the model throu
 --8<-- "examples/dspy_tools.py:tools"
 ```
 
-Inside `dspy.ReAct` (`react(...)` and `await react.acall(...)` both work):
+Inside `dspy.ReAct` (`react(...)` and `await react.acall(...)` both work). DSPy 3.5's ReAct
+sends each turn's `tool_calls` and ends with its `submit` tool; 3.4's names one tool per turn.
+The tools work the same in both:
 
 ```python
 --8<-- "examples/dspy_tools.py:react"
@@ -43,7 +46,7 @@ sequenceDiagram
   participant T as dspy.Tool (adapter)
   participant E as Executor
   participant S as ToolSpec
-  R->>T: await acall(**next_tool_args)
+  R->>T: await acall(**args)
   T->>E: run_spec(spec, args, ctx)
   E->>S: validate, hooks, approval, timeout, retries, cache, ledger
   S-->>E: value or error
