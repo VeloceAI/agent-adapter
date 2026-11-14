@@ -17,7 +17,6 @@ flowchart LR
 
 | Task | Why | Done when |
 |---|---|---|
-| Make the two "worst case stays fast" subtests in `tests/viewer/js/` count work | they time an 80 KB markdown input and fail when the machine is busy (seen 2026-11-08) | they pass while another suite runs beside them |
 | Bump the workflow actions (`checkout`, `setup-python`, `upload-artifact`, `download-artifact`) | GitHub warns they target the deprecated Node.js 20 | the release run shows no Node.js warning |
 
 ## 2. Decisions waiting on the owner

@@ -84,6 +84,7 @@ AREA_OF = {
     "tutorial_langgraph": "frameworks",
     "tutorial_research": "parallel",
     "viewer_fan_out": "parallel",
+    "voice_agent": "approval",
 }
 PREFIX_AREAS = (
     ("a2a_", "serving"),

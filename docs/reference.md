@@ -47,6 +47,7 @@ flowchart LR
 | [HTTP server](reference/server.md) | `agent_adapter.server`, `.server.asgi`, `.server.service` |
 | [Handlers](reference/handlers.md) | `agent_adapter.handlers` |
 | [Chat contract](reference/chat.md) | `agent_adapter.chat`: what a chat agent receives and returns |
+| [Voice agents](reference/voice.md) | `agent_adapter.voice`: turns, safe interruptions, spoken approval, offline fakes |
 | [Run viewer](reference/viewer.md) | `agent_adapter.viewer`: `record()`, the recorder and the local viewer |
 | [Model APIs, protocols and importers](reference/integrations-providers.md) | `integrations.openai`, `.gemini`, `.anthropic`, `.langchain`, `.openapi`, `.mcp`, `.a2a`, `.ag_ui` |
 | [Agent frameworks](reference/integrations-frameworks.md) | `integrations.langgraph`, `.adk`, `.openai_agents` and 14 more |

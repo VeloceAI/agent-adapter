@@ -104,6 +104,18 @@ Export tools, approval and flows to agent frameworks. Each module imports its SD
     options:
       members: [AG2Integration, INTEGRATION, ag2_compress_policy, ag2_tool, ag2_tools]
 
+## `agent_adapter.integrations.livekit`
+
+::: agent_adapter.integrations.livekit
+    options:
+      members: [INTEGRATION, LiveKitIntegration, LiveKitSpeaker, attach_voice_agent, livekit_tool, livekit_tools]
+
+## `agent_adapter.integrations.pipecat`
+
+::: agent_adapter.integrations.pipecat
+    options:
+      members: [INTEGRATION, PipecatIntegration, PipecatTool, pipecat_tool, pipecat_tools, voice_processor]
+
 ## `agent_adapter.integrations.adk.compile`
 
 `agent_adapter.integrations.adk.compile` re-exports, documented under the canonical path: [`compile_flow`](#agent_adapter.integrations.adk.compile_flow).

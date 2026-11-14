@@ -36,6 +36,8 @@ _FRAMEWORKS = (
     "autogen",
     "camel",
     "ag2",
+    "livekit",
+    "pipecat",
 )
 _SUBMODULES = ("adk.compile", "adk.tools", "langgraph.approval", "langgraph.compile")
 _INSTALL = "Each module imports its SDK lazily: install the extra first"
@@ -186,6 +188,12 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
         "The types a chat agent receives for one turn and what it may return, shared by the "
         "chat page and evals. Guide: [Chat with your agent](../how-to/chat-with-your-agent.md).",
         ("agent_adapter.chat",),
+    ),
+    "voice": (
+        "Voice agents",
+        "Turns, safe interruptions and spoken approval around the executor, on any audio "
+        "stack, plus offline fakes. Guide: [Build a voice agent](../how-to/voice-agents.md).",
+        ("agent_adapter.voice", "agent_adapter.voice.testing"),
     ),
     "viewer": (
         "Run viewer",

@@ -8,6 +8,7 @@ from typing import Protocol, runtime_checkable
 
 from agent_adapter.core.ports import ApprovalPort, CachePort, EventSink, LedgerPort
 from agent_adapter.core.tool import ToolSpec
+from agent_adapter.exec._commit import RepeatWindow
 from agent_adapter.exec.guards import RunLimits, _RunTracker
 from agent_adapter.exec.retry import Backoff
 from agent_adapter.hooks.base import Hook
@@ -51,3 +52,4 @@ class _Settings:
     rng: Callable[[], float]
     runs: _RunTracker
     policy: ToolPolicy | None = None
+    repeats: RepeatWindow | None = None

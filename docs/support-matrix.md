@@ -57,6 +57,8 @@ languages need no agent framework. Each one, how it attaches and what tests it:
 | [AG2](integrations/ag2.md) | `ag2` | `ag2` | `ag2>=1.2.2,<2` | in `all` | `contract-ag2`, `contract-all-compatible` | 1.2.2 to below 2.0 |
 | [A2A](integrations/a2a.md) | `a2a` | `a2a` | `a2a-sdk[http-server]>=1.3,<2` | in `all` | `contract-a2a`, `contract-all-compatible` | none |
 | [AG-UI](integrations/ag-ui.md) | `ag_ui` | `ag-ui` | `ag-ui-protocol>=1.0,<2` | in `all` | `contract-ag_ui`, `contract-all-compatible` | 1.0 to below 2.0 |
+| [LiveKit](integrations/livekit.md) | `livekit` | `livekit` | `livekit-agents>=1.8,<2` | own: WebRTC and media binaries | `contract-livekit` | none |
+| [Pipecat](integrations/pipecat.md) | `pipecat` | `pipecat` | `pipecat-ai>=1.13,<2` | own: audio and model clients | `contract-pipecat` | none |
 
 | Extra | Pinned range | In `all` | Installed by nox sessions |
 |---|---|---|---|
@@ -87,6 +89,8 @@ languages need no agent framework. Each one, how it attaches and what tests it:
 | `ag2` | `ag2>=1.2.2,<2` | yes | `contract-ag2`, `contract-all-compatible` |
 | `a2a` | `a2a-sdk[http-server]>=1.3,<2` | yes | `contract-a2a`, `docs-examples`, `contract-all-compatible` |
 | `ag-ui` | `ag-ui-protocol>=1.0,<2` | yes | `contract-ag_ui`, `contract-all-compatible` |
+| `livekit` | `livekit-agents>=1.8,<2` | no | `contract-livekit` |
+| `pipecat` | `pipecat-ai>=1.13,<2` | no | `contract-pipecat` |
 | `sqlalchemy` | `sqlalchemy[asyncio]>=2.0.30,<3` | yes | `contract-all-compatible` |
 | `dynamodb` | `aioboto3>=13,<16` | yes | `contract-all-compatible` |
 | `temporal` | `temporalio>=1.35,<2` | no | `contract-temporal` |

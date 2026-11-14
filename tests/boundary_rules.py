@@ -47,6 +47,7 @@ SUBPACKAGES = {
     "handlers",
     "cli",
     "viewer",
+    "voice",
 }
 # `handlers` (queues, serverless), `cli` (the command), `viewer` (run recorder and local
 # page) and `audit` (the audit sink) are leaf entry points: no other package imports them.
@@ -74,6 +75,8 @@ ALLOWED = {
     "audit": {"base", "core", "runtime", "tracing", "hooks", "exec", "audit"},
     # The chat contract above exec and memory, so neither imports the other for it.
     "chat": {"base", "core", "exec", "memory", "chat"},
+    # Voice turns run the tool loop through the executor; nothing below imports voice.
+    "voice": {"base", "core", "runtime", "hooks", "exec", "voice"},
     # hooks only for `is_secret_field` (approval memory never names secret fields).
     "approval": {"base", "runtime", "tracing", "hooks", "approval"},
     "hooks": {"base", "core", "runtime", "tracing", "hooks"},
@@ -171,6 +174,8 @@ INTEGRATION_ROOTS = {
     "ag_ui": ("ag_ui", "starlette"),
     "camel": ("camel", "jsonschema"),
     "ag2": ("ag2",),
+    "livekit": ("livekit",),
+    "pipecat": ("pipecat",),
     "temporal": ("temporalio",),
     "dbos": ("dbos",),
 }

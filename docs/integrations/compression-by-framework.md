@@ -63,7 +63,7 @@ from `agent_adapter.context.formats`.
 | CAMEL-AI | `ChatAgent(memory=ChatHistoryMemory(...))` with a context creator | `camel` | [More frameworks](#more-agent-frameworks) |
 | Microsoft Agent Framework | `Agent(middleware=[...])`, a chat middleware | `agent_framework` | [More frameworks](#more-agent-frameworks) |
 | Claude Agent SDK | its harness compacts its own context | — | — |
-| MCP, MCP tasks, A2A, AG-UI, OpenAPI | tools and protocols: no model history here | — | — |
+| MCP, MCP tasks, A2A, AG-UI, OpenAPI, LiveKit, Pipecat | tools, protocols and voice: no model history here | — | — |
 
 ## OpenAI
 

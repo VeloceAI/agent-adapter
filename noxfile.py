@@ -42,6 +42,8 @@ EXTRAS: dict[str, str] = {
     "ag2": "ag2",
     "a2a": "a2a",
     "ag_ui": "ag-ui",
+    "livekit": "livekit",
+    "pipecat": "pipecat",
 }
 SESSION_ENV: dict[str, dict[str, str]] = {"pydantic_ai": {"PYDANTIC_AI_NO_BANNER": "1"}}
 # Packages a contract session installs beyond its extra.

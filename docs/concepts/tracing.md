@@ -81,8 +81,8 @@ Rules:
   current span is.
 - A closing event with no open span still makes a span (start = `ts − latency_ms`). A
   malformed closing event still ends its span (then is logged).
-- `tool.retry`, `tool.cached`, `approval.requested`, `approval.decided` and
-  `approval.expired` become span events on the open tool span, carrying only `attempt`,
+- `tool.retry`, `tool.cached`, `tool.progress`, `tool.interrupted`, `approval.requested`,
+  `approval.decided` and `approval.expired` become span events on the open tool span, carrying only `attempt`,
   `delay_s`, `error_kind`, `approval_id`, `approved`, `edited` and `outcome` (never a reason,
   a decider or other free text). `guardrail.redacted` is a span event on the tool or model
   span with `guard`, `stage` and `count`.

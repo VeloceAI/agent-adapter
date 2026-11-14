@@ -43,6 +43,8 @@ NEEDS: dict[str, str] = {
     "ag2": "AG2 tools",
     "a2a": "A2A server and client",
     "ag-ui": "AG-UI event stream (CopilotKit and other UIs)",
+    "livekit": "LiveKit voice agents: tools and a `VoiceAgent` on a session (preview)",
+    "pipecat": "Pipecat voice pipelines: tools and a `VoiceAgent` processor (preview)",
     "sqlalchemy": "Postgres or any SQLAlchemy database as the approval store",
     "dynamodb": "DynamoDB approval store (AWS serverless)",
     "server": "HTTP tool server (ASGI) with MCP mounted",

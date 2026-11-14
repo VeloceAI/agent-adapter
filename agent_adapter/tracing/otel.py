@@ -92,6 +92,8 @@ class OTelSink:
             EventType.TOOL_PENDING: lambda e: self._close(_TOOL, e, self._tool_started, g.approval),
             EventType.TOOL_CACHED: self._tool_note,
             EventType.TOOL_RETRY: self._tool_note,
+            EventType.TOOL_PROGRESS: self._tool_note,
+            EventType.TOOL_INTERRUPTED: self._tool_note,
             EventType.APPROVAL_REQUESTED: self._tool_note,
             EventType.APPROVAL_DECIDED: self._tool_note,
             EventType.APPROVAL_EXPIRED: self._tool_note,

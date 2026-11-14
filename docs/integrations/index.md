@@ -39,6 +39,8 @@ test** that runs a real tool through that framework and the real `Executor`.
 [:brand-ag2: <b>AG2</b><small>extra: ag2</small>](ag2.md){ .aa-gcard data-kind="framework" }
 [:brand-a2a: <b>A2A</b><small>extra: a2a</small>](a2a.md){ .aa-gcard data-kind="protocol" }
 [:brand-ag-ui: <b>AG-UI</b><small>extra: ag-ui</small>](ag-ui.md){ .aa-gcard data-kind="protocol" }
+[:material-microphone: <b>LiveKit</b><small>extra: livekit (preview)</small>](livekit.md){ .aa-gcard data-kind="framework" }
+[:material-microphone: <b>Pipecat</b><small>extra: pipecat (preview)</small>](pipecat.md){ .aa-gcard data-kind="framework" }
 </div>
 
 Not on this list? [Connect anywhere](../connect/index.md) attaches 12 more stacks through MCP,
@@ -73,6 +75,8 @@ REST or the TS client.
 | [AG2](ag2.md) | `FunctionTool`s via `ag2_tools(registry, approval=port)` | one-use token gate in tool middleware | :material-check-circle:{ .status-ok } Available |
 | [A2A](a2a.md) | `a2a_app`, `a2a_executor`, `agent_card` | `connect_a2a`, `import_a2a` importer; approvals via `input-required` | :material-check-circle:{ .status-ok } Available |
 | [AG-UI](ag-ui.md) | `AGUIBridge` event stream (SSE), `agui_endpoint` | approvals as interrupts; resumes ask your port | :material-check-circle:{ .status-ok } Available |
+| [LiveKit](livekit.md) | raw-schema `function_tool`s; effects hold interruptions | `attach_voice_agent(session, agent)`; own environment | :material-flask-outline:{ .status-planned } Preview |
+| [Pipecat](pipecat.md) | `register_function` per spec; effects never cancelled | `voice_processor()` for a `VoiceAgent`; own environment | :material-flask-outline:{ .status-planned } Preview |
 
 Where your app runs (FastAPI, Flask, Celery, scripts) is covered on
 [Sync code and backends](../how-to/sync-backends.md) and the backend guides:
@@ -96,6 +100,8 @@ downgrading another one. `pip check` and every contract test run on that set in 
 | | `semantic-kernel`: pins `pydantic<2.14` |
 | | `adk`: pins `opentelemetry<=1.44`, older than the `otel` extra resolves to |
 | | `camel`: needs `mcp<2` (the `mcp` extra needs `>=2.3`) and pins `pydantic<=2.12.0` (google-genai in `all` needs `>=2.12.5`) |
+| | `livekit`: WebRTC and media binaries |
+| | `pipecat`: audio and model clients |
 | | `dspy`: pulls in LiteLLM (about 300 MB), which caps `openai<3`, below the `openai` extra; the adapter itself never uses it |
 
 Install an own-environment extra in a separate venv, for example

@@ -90,7 +90,7 @@ module.
 | `core/` | `ToolSpec`, `Registry`, `ToolContext`, messages, ports, the error hierarchy | `tool.py`, `registry.py`, `errors.py`, `ports.py` |
 | `schema/` | portable JSON-schema checks; OpenAI, Gemini and Anthropic rewrites | `portable.py`, `transforms.py` |
 | `runtime/` | `run_sync`, a long-lived loop for sync code, ids, the current context | `__init__.py` |
-| `exec/` | the `Executor`: run, run_many, plans, parallel, retry, guards, resume; the tool loop; agents as tools and handoffs; checkpoint stores and crash-safe runs (`checkpoints/`, `_durable.py`) | `executor.py`, `_call_steps.py`, `tool_loop.py`, `agents.py`, `handoffs.py`, `checkpoints/__init__.py` |
+| `exec/` | the `Executor`: run, run_many, plans, parallel, retry, guards, resume; calls that change things finish when cancelled and repeats are dropped (`_commit.py`); `progress()`; the tool loop; agents as tools and handoffs; checkpoint stores and crash-safe runs (`checkpoints/`, `_durable.py`) | `executor.py`, `_call_steps.py`, `tool_loop.py`, `agents.py`, `handoffs.py`, `checkpoints/__init__.py` |
 | `hooks/` | before, after and error hooks: `LoggingHook`, `BudgetHook`, `GuardrailHook`, `RateLimitHook`; content guards (`PIIGuard`, `CallableGuard`, Presidio, NeMo) in `builtin/guards/`; shared budget counters (`BudgetStore`, SQLite, Redis, SQLAlchemy) in `builtin/budgets/` | `__init__.py`, `builtin/guards/base.py`, `builtin/budgets/__init__.py` |
 | `approval/` | ports (`AutoApprove`, `CallbackApproval`, `DeferredApproval`), batches; stores in memory, SQLite, Redis, SQLAlchemy and DynamoDB; approval memory (past decisions, proposed rules) | `builtin.py`, `deferred.py`, `store.py`, `memory.py`, `rules.py` |
 | `cache/` | backends, keys, the tool and LLM caches, the prompt-prefix layout | `__init__.py` |
@@ -99,6 +99,7 @@ module.
 | `embeddings/` | `EmbeddingPort`, `CallableEmbedder`, the embedding cache | `__init__.py` |
 | `memory/` | `MemoryPort`, SQLite and callable backends, Mem0/Zep/Graphiti adapters, `memory_tools`, retention | `__init__.py`, `sqlite.py`, `tools.py` |
 | `chat/` | the chat agent contract (`ChatMessage`, `ChatSession`, `Attachment`, `ChatAgent`), shared by the viewer and evals | `contract.py` |
+| `voice/` | `VoiceAgent` (turns, safe interruptions, played-text history), `VoiceApproval` (only the caller's clear yes), the `Speaker` port, offline fakes in `testing.py` | `agent.py`, `approval.py`, `_speech.py` |
 | `sandbox/` | `SandboxPort`, `DockerSandbox`, `CallableSandbox` (hosted), the dev-only `LocalSubprocessSandbox`, `code_tool` (always approved) | `port.py`, `_base.py`, `docker.py`, `tool.py` |
 | `policy/` | one policy file (YAML, TOML, JSON or dict) applied to an executor: access, approvals, guards, budgets, limits per tool, team and env | `__init__.py`, `policy.py`, `model.py`, `condition.py` |
 | `audit/` | the signed, hash-chained audit log of security events (a leaf sink like the viewer), `verify`, `export`, stores | `__init__.py`, `sink.py`, `verify.py` |

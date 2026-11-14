@@ -16,6 +16,8 @@ CATALOGUE = {
     "tool.retry": {"tool", "attempt", "delay_s", "error_kind"},
     "tool.cached": {"tool"},
     "tool.pending": {"tool", "approval_id"},
+    "tool.progress": set(),
+    "tool.interrupted": {"tool"},
     "approval.requested": {"tool", "approval_id"},
     "approval.decided": {"tool", "approval_id", "approved", "edited"},
     "approval.expired": {"tool", "approval_id", "outcome"},

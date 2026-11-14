@@ -204,6 +204,7 @@ _SUBPACKAGES = frozenset(
         "server",
         "tracing",
         "viewer",
+        "voice",
     }
 )
 

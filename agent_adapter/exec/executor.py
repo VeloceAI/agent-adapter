@@ -25,6 +25,7 @@ from agent_adapter.core.registry import Registry
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.core.types import ApprovalDecision, ToolCall, ToolResult
 from agent_adapter.exec._batches import Batches
+from agent_adapter.exec._commit import RepeatWindow
 from agent_adapter.exec._settings import ToolPolicy, _Settings
 from agent_adapter.exec._sugar import (
     ToolRef,
@@ -71,6 +72,7 @@ class Executor(Batches, SyncTwins):
         rng: Callable[[], float] = random.random,
         max_tracked_runs: int = 10_000,
         policy: ToolPolicy | None = None,
+        dedupe_window_s: float | None = None,
     ) -> None:
         check_options(registry, approval)
         if policy is not None and not isinstance(policy, ToolPolicy):
@@ -100,6 +102,7 @@ class Executor(Batches, SyncTwins):
             "rng": rng,
             "max_tracked_runs": max_tracked_runs,
             "policy": policy,
+            "dedupe_window_s": dedupe_window_s,
         }
         bad_hooks = [h for h in self._options["hooks"] if not isinstance(h, Hook)]
         if bad_hooks:
@@ -123,6 +126,7 @@ class Executor(Batches, SyncTwins):
             rng=rng,
             runs=_RunTracker(max_tracked_runs),
             policy=policy,
+            repeats=_repeats(dedupe_window_s, clock),
         )
 
     def __reduce__(self) -> tuple[Any, ...]:
@@ -397,6 +401,14 @@ def _limits(policy: ToolPolicy | None, limits: RunLimits) -> RunLimits:
     if not isinstance(found, RunLimits):
         raise ToolUsageError(f"policy.limits must return RunLimits, got {type(found).__name__}")
     return found
+
+
+def _repeats(seconds: float | None, clock: Callable[[], float]) -> RepeatWindow | None:
+    if seconds is None:
+        return None
+    if seconds <= 0:
+        raise ToolUsageError(f"dedupe_window_s must be > 0 or None, got {seconds!r}")
+    return RepeatWindow(seconds, clock)
 
 
 def bind_model(executor: Executor, model: LLMPort, ctx: ToolContext) -> InstrumentedModel:

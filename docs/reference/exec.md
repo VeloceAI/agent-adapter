@@ -8,7 +8,7 @@ Running tool calls: retries, plans and the tool loop. Concepts: [Executor](../co
 
 ::: agent_adapter.exec
     options:
-      members: [AgentDepthExceeded, Backoff, HandoffModel, LoopAgent, OnError, SyncTwins, ToolLoopResult, agent_depth, agent_tool, default_executor, handoff, is_control_flow, recover_tool_loop, register_control_flow, reset_default_executor, runner_for]
+      members: [AgentDepthExceeded, Backoff, HandoffModel, LoopAgent, OnError, SyncTwins, ToolLoopResult, agent_depth, agent_tool, changes_things, default_executor, handoff, is_control_flow, listen_progress, progress, recover_tool_loop, register_control_flow, reset_default_executor, runner_for]
 
 Also exported here, documented under the canonical path: [`Executor`](top-level.md#agent_adapter.Executor), [`RunLimits`](top-level.md#agent_adapter.RunLimits), [`Step`](top-level.md#agent_adapter.Step), [`acall`](top-level.md#agent_adapter.acall), [`call`](top-level.md#agent_adapter.call), [`configure`](top-level.md#agent_adapter.configure), [`run_tool_loop`](top-level.md#agent_adapter.run_tool_loop), [`set_default_executor`](top-level.md#agent_adapter.set_default_executor).
 

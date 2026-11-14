@@ -106,20 +106,22 @@ test("headings drop a closing # run only after a space", () => {
   assert.equal(AA.markdown.parse("#hashtag")[0].type, "para");
 });
 
-// Each case is a shape that used to backtrack or rescan; all must stay linear.
+// Each case is a shape that used to backtrack or rescan; all must stay linear. Each makes
+// its text at a scale (1 = the size named); the test renders half and full size.
+const rep = (unit, count, scale) => unit.repeat(Math.round(count * scale));
 const SLOW = {
-  "heading with 10,000 inner spaces": "# a" + " ".repeat(10000) + "b",
-  "8 KB heading of spaces and hashes": "# " + "a #".repeat(2730),
-  "80 KB run of [a](": "[a](".repeat(20000),
-  "80 KB run of [\](": "[\](".repeat(20000),
-  "80 KB run of unclosed ``a`": "``a`".repeat(20000),
-  "table delimiter with 20,000 spaces": "| a |\n|-" + " ".repeat(20000) + "x",
-  "rule-like line with 20,000 spaces": "-" + " ".repeat(20000) + "x",
-  "80 KB of ** and _ openers": "**a _b ".repeat(11000),
-  "a URL of 40,000 dots": "see https://a" + ".".repeat(40000) + " now",
-  "180 KB of refused URLs (zero-width spaces)": "(http://​".repeat(20000),
-  "refused URLs with control characters": "(http://\u0001".repeat(20000),
-  "refused URLs with bidi marks": "(http://‮".repeat(20000),
+  "heading with 10,000 inner spaces": (k) => "# a" + rep(" ", 10000, k) + "b",
+  "8 KB heading of spaces and hashes": (k) => "# " + rep("a #", 2730, k),
+  "80 KB run of [a](": (k) => rep("[a](", 20000, k),
+  "80 KB run of [\](": (k) => rep("[\](", 20000, k),
+  "80 KB run of unclosed ``a`": (k) => rep("``a`", 20000, k),
+  "table delimiter with 20,000 spaces": (k) => "| a |\n|-" + rep(" ", 20000, k) + "x",
+  "rule-like line with 20,000 spaces": (k) => "-" + rep(" ", 20000, k) + "x",
+  "80 KB of ** and _ openers": (k) => rep("**a _b ", 11000, k),
+  "a URL of 40,000 dots": (k) => "see https://a" + rep(".", 40000, k) + " now",
+  "180 KB of refused URLs (zero-width spaces)": (k) => rep("(http://​", 20000, k),
+  "refused URLs with control characters": (k) => rep("(http://\u0001", 20000, k),
+  "refused URLs with bidi marks": (k) => rep("(http://‮", 20000, k),
 };
 
 test("a refused bare URL stays plain text, whole", () => {
@@ -128,12 +130,23 @@ test("a refused bare URL stays plain text, whole", () => {
   assert.ok(node.textContent.includes("https://exa​mple.org/x and"));
 });
 
-for (const [name, text] of Object.entries(SLOW)) {
-  test("worst case stays fast: " + name, () => {
+// Linear work doubles when the text doubles; backtracking grows four times or more. A busy
+// machine slows both sizes alike, so the ratio holds where a fixed time limit would not.
+const bestMs = (text) => {
+  let best = Infinity;
+  for (let i = 0; i < 3; i++) {
     const started = performance.now();
     render(text);
-    const ms = performance.now() - started;
-    assert.ok(ms < 100, name + " took " + ms.toFixed(1) + " ms");
+    best = Math.min(best, performance.now() - started);
+  }
+  return best;
+};
+
+for (const [name, make] of Object.entries(SLOW)) {
+  test("worst case stays linear: " + name, () => {
+    const half = bestMs(make(0.5));
+    const full = bestMs(make(1));
+    assert.ok(full < 3 * half + 15, `${name}: ${half.toFixed(1)} ms at half size, ${full.toFixed(1)} ms at full`);
   });
 }
 

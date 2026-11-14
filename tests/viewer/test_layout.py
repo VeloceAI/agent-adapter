@@ -127,11 +127,15 @@ def flow_shaped(stages: int, fan: int) -> dict[str, Any]:
     return graph(edges, loops=tuple(loops))
 
 
-def test_layout_of_200_nodes_takes_under_50_ms() -> None:
-    big = flow_shaped(stages=20, fan=9)
+def test_layout_of_200_nodes_stays_linear_and_fast() -> None:
+    # Doubling the graph roughly doubles the time; a busy machine slows both sizes alike,
+    # so the ratio holds where a fixed 50 ms limit failed under load (~20 ms when idle).
+    half, big = flow_shaped(stages=10, fan=9), flow_shaped(stages=20, fan=9)
     assert len(big["nodes"]) == 201
+    small = min(_timed(half) for _ in range(3))
     best = min(_timed(big) for _ in range(3))
-    assert best < 0.05, f"layout took {best * 1000:.1f} ms"
+    assert best < 3 * small + 0.01, f"{small * 1000:.1f} ms at 100 nodes, {best * 1000:.1f} at 200"
+    assert best < 0.5, f"layout took {best * 1000:.1f} ms"
     placed = layout(big)
     assert crossings(placed) == 0
 

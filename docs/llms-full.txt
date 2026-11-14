@@ -55,6 +55,8 @@ the newest release inside each pinned range is tested. An extra marked
 | AG2 tools | `pip install "agent-adapter[ag2]"` | `ag2>=1.2.2,<2`; checked at use: 1.2.2 to below 2.0 |
 | A2A server and client | `pip install "agent-adapter[a2a]"` | `a2a-sdk[http-server]>=1.3,<2` |
 | AG-UI event stream (CopilotKit and other UIs) | `pip install "agent-adapter[ag-ui]"` | `ag-ui-protocol>=1.0,<2`; checked at use: 1.0 to below 2.0 |
+| LiveKit voice agents: tools and a `VoiceAgent` on a session (preview) | `pip install "agent-adapter[livekit]"` | `livekit-agents>=1.8,<2`; own environment (WebRTC and media binaries) |
+| Pipecat voice pipelines: tools and a `VoiceAgent` processor (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
 | Postgres or any SQLAlchemy database as the approval store | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
 | DynamoDB approval store (AWS serverless) | `pip install "agent-adapter[dynamodb]"` | `aioboto3>=13,<16` |
 | flows as Temporal workflows (`agent_adapter.integrations.temporal`) | `pip install "agent-adapter[temporal]"` | `temporalio>=1.35,<2` |
@@ -66,7 +68,7 @@ the newest release inside each pinned range is tested. An extra marked
 | Mem0 memory backend (`Mem0Memory`) | `pip install "agent-adapter[mem0]"` | `mem0ai>=2.2,<3` |
 | Zep memory backend (`ZepMemory`) | `pip install "agent-adapter[zep]"` | `zep-cloud>=4.1,<5` |
 | Graphiti knowledge-graph memory (`GraphitiMemory`) | `pip install "agent-adapter[graphiti]"` | `graphiti-core>=0.31,<1` |
-| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `mem0`, `nemo`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `zep` |
+| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `zep` |
 | running this repository's tests and linters | `pip install -e ".[dev]"` (in a checkout) | `pytest>=8`, `pytest-asyncio>=0.24`, `pytest-cov>=5`, `pytest-xdist>=3.8,<4`, `pytest-testmon>=2.3,<3`, `ruff>=0.6`, `mypy>=1.11`, `nox>=2024.10`, `hatchling>=1.27`, `tzdata>=2024.1`, `fakeredis>=2.26`, `lupa>=2.2`, `sqlalchemy[asyncio]>=2.0.30,<3`, `aiosqlite>=0.20,<1`, `moto[dynamodb]>=5,<6` |
 | building this repository's docs site | `pip install -e ".[docs]"` (in a checkout) | `mkdocs-material>=9.5`, `mkdocstrings[python]>=0.26` |
 
@@ -989,7 +991,7 @@ Agent Adapter: framework-independent tools, parallel execution and flows for LLM
 - `Decision`: alias of `ApprovalDecision`
 - `DeferredApproval(store: ApprovalStore) -> None`: ApprovalPort for out-of-band review (HTTP server, queues); emits no events itself.
 - `Event(type: str, run_id: str = '', call_id: str = '', parent_id: str = '', ts: float = <factory>, data: Mapping[str, Any] = <factory>) -> None`: A trace event (see `tracing.events` for the catalogue).
-- `Executor(registry: Registry | None = None, *, hooks: Sequence[Hook] = (), approval: ApprovalPort | None = None, cache: CachePort | None = None, ledger: LedgerPort | None = None, sink: EventSink | None = None, limits: RunLimits | None = None, backoff: Backoff | None = None, namespace: str = 'aa', clock: Callable[[], float] = monotonic, sleep: Callable[[float], Awaitable[None]] = sleep, rng: Callable[[], float] = random, max_tracked_runs: int = 10000, policy: ToolPolicy | None = None) -> None`: Runs tools with run guards, hooks, approval, cache, retries, ledger and events.
+- `Executor(registry: Registry | None = None, *, hooks: Sequence[Hook] = (), approval: ApprovalPort | None = None, cache: CachePort | None = None, ledger: LedgerPort | None = None, sink: EventSink | None = None, limits: RunLimits | None = None, backoff: Backoff | None = None, namespace: str = 'aa', clock: Callable[[], float] = monotonic, sleep: Callable[[float], Awaitable[None]] = sleep, rng: Callable[[], float] = random, max_tracked_runs: int = 10000, policy: ToolPolicy | None = None, dedupe_window_s: float | None = None) -> None`: Runs tools with run guards, hooks, approval, cache, retries, ledger and events.
 - `FallbackModel(models: Sequence[LLMPort], *, fall_on: tuple[type[ModelError], ...] = ..., sink: EventSink | None = None) -> None`: An `LLMPort` over `models`: the next one answers after a `fall_on` error.
 - `Flow(name: str, *, state: type[S], description: str = '') -> None`: A portable graph flow over a pydantic state model; every builder method returns `self`.
 - `FlowRunner(executor: Executor, *, approval: ApprovalPort | None = None, hooks: Sequence[Hook] = (), sink: EventSink | None = None, max_steps: int = 100, concurrency: int | None = None, model: LLMPort | None = None, checkpoint_key: bytes | None = None, seal_encoder: Callable[[object], object] | None = None, seal_decoder: Callable[[str, object], object] | None = None, trace_state: bool = False, checkpoints: CheckpointStore | None = None) -> None`: Runs a `Flow` locally: nodes on the executor, supersteps, merges, routes and pauses.
@@ -1294,10 +1296,13 @@ Executor: runs tools with guards, hooks, approval, cache, retries, batches, plan
 - `agent_depth() -> int`: How many agent tools are running around the current call (0 outside any).
 - `agent_tool(agent: LoopAgent | TaskAgent, *, name: str, description: str, executor: Executor | None = None, max_depth: int = 3, timeout: float | None = None, confirm: ConfirmRule = False, tags: Iterable[str] = ()) -> ToolSpec`: A tool (kind "agent") that runs `agent` on the model's `task` inside the calling run.
 - `call`: see `agent_adapter`
+- `changes_things(spec: ToolSpec) -> bool`: True when the tool declares an effect (`additive` or `destructive`).
 - `configure`: see `agent_adapter`
 - `default_executor() -> Executor`: The default Executor, created on first use, on the default registry.
 - `handoff(to: LoopAgent | TaskAgent, *, name: str, description: str, executor: Executor | None = None, max_depth: int = 3, timeout: float | None = None) -> ToolSpec`: An agent tool tagged "handoff": under a `HandoffModel`, its answer is the loop's answer.
 - `is_control_flow(exc: BaseException) -> bool`: True for CancelledError, a registered type, a class named GraphBubbleUp in the MRO, or an exception group holding any of them.
+- `listen_progress(listener: ProgressListener) -> Iterator[None]`: Send `progress(...)` texts of the tools run inside this block to `listener`.
+- `progress(text: str) -> None`: Tell the host what a slow tool is doing; never a result, never sent to the model.
 - `async recover_tool_loop(model: LLMPort, registry: Registry, run_id: str, *, checkpoints: CheckpointStore, checkpoint_key: bytes | None = None, rerun_in_doubt: bool = False, max_steps: int = 8, executor: Executor | None = None, ctx: ToolContext | None = None, output_schema: OutputSchema | None = None, tool_choice: Literal['auto', 'none', 'required'] | str = 'auto', concurrency: int | None = None, stage: str = 'tool_loop', request_options: Mapping[str, Any] | None = None, compression: CompressionPolicy | None = None, on_text: TextCallback | None = None, on_event: EventCallback | None = None) -> ToolLoopResult`: Continue a durable tool loop from its last checkpoint; finished tool calls replay.
 - `register_control_flow(*types: type[BaseException]) -> None`: Treat `types` (and subclasses) as control flow in the executor and the approval ports.
 - `reset_default_executor() -> None`: Drop the default Executor and its default sinks; the next use starts fresh.
@@ -1599,6 +1604,17 @@ Run viewer: record runs to JSONL files, browse them and chat locally (`agent-ada
 - `record(executor: Executor | None = None, *, folder: str | PathLike[str] = '.agent_adapter/runs', capture_content: bool = False, keep_runs: int = 200, source: str = '', capture_confirm_content: bool = False) -> Recorder`: Record every run of `executor` under `folder`.
 - `serve(agent: ChatAgent | None = None, *, model: LLMPort | None = None, registry: Registry | None = None, executor: Executor | None = None, folder: str | PathLike[str] = '.agent_adapter/runs', port: int = 8780, open_browser: bool = True, system: str = '', max_steps: int = 8, turn_timeout: float = 300.0, approval_timeout: float = 600.0, reviewer: str = 'local', chat_dir: str | PathLike[str] = '.agent_adapter/chats', stream: bool = True, evals: str | PathLike[str] = '.agent_adapter/evals', user_id: str = '', memory: GuardedMemory | None = None, memory_save: str = 'none', memory_every: int = 1, recall_k: int = 5, out: TextIO | None = None) -> None`: Chat with `agent` (or the built-in loop over `model` and `registry`) in the viewer.
 
+### `agent_adapter.voice`
+
+Voice agents: safe interruptions, spoken approval and one ledger, on any audio stack.
+
+- `CallableSpeaker(say: Callable[[str], Awaitable[None] | None], stop: Callable[[], Awaitable[None] | None] | None = None) -> None`: A `Speaker` from plain functions: `say(text)` and an optional `stop()`, sync or async.
+- `Speaker` (protocol: say, stop): Speaks text aloud: LiveKit, Pipecat, a phone line, a browser, any TTS.
+- `VoiceAgent(model: LLMPort, executor: Executor, speaker: Speaker, *, instructions: str = '', registry: Registry | None = None, max_steps: int = 8, run_id: str | None = None, dedupe_window_s: float | None = 120.0, minute_item: str | None = None) -> None`: A voice agent from a model, an executor and a speaker; works with any audio stack.
+- `VoiceApproval(*, timeout_s: float = 10.0, prompt: Callable[[ApprovalRequest], str] = default_prompt, yes_words: frozenset[str] = ...) -> None`: Approval port for voice: says a prompt, then waits for the caller's next final words.
+- `YES_WORDS = ...`
+- `is_yes(text: str, words: frozenset[str] = ...) -> bool`: True only when every word is a yes word: "yeah no", "yes but" and "" are all no.
+
 ### `agent_adapter.integrations.a2a`
 
 A2A: serve registry tools as an A2A agent, and import a remote agent's skills as tools.
@@ -1839,6 +1855,17 @@ LangGraph: tool nodes, `Send` tasks, reducers, interrupt approvals, flows, compr
 - `tool_node(registry: Registry, *, executor: ToolRunner | None = None, messages_key: str = 'messages', concurrency: int | None = None) -> ToolNode`: A LangGraph node that runs the last AI message's tool calls through the executor.
 - `tool_task(spec: ToolSpec, *, executor: ToolRunner | None = None, into: str) -> ToolTask`: A node for `Send(node, args)`: runs `spec` with `args`, returns `{into: value}`.
 
+### `agent_adapter.integrations.livekit`
+
+LiveKit Agents: registry tools as raw-schema function tools, and a VoiceAgent on a session.
+
+- `INTEGRATION`: `LiveKitIntegration` instance
+- `LiveKitIntegration()`: Exports raw-schema function tools; the call id comes from `RunContext.function_call`.
+- `LiveKitSpeaker(session: Any) -> None`: A `Speaker` on an `AgentSession`: only the `VoiceAgent` decides when speech is cut.
+- `attach_voice_agent(session: Any, agent: VoiceAgent) -> EventPump`: Drive `agent` from a LiveKit `AgentSession` started without an `llm`.
+- `livekit_tool(spec: ToolSpec, *, executor: ToolRunner | None = None) -> Any`: A LiveKit `RawFunctionTool` for `spec`, run through the executor.
+- `livekit_tools(registry: Registry, *, executor: ToolRunner | None = None) -> list[Any]`: `livekit_tool` for every registry tool exported to `livekit`.
+
 ### `agent_adapter.integrations.llamaindex`
 
 LlamaIndex: registry tools as `FunctionTool`s, and the `llamaindex` compression format.
@@ -1907,6 +1934,17 @@ OpenAPI 3.x importer: one tool per operation, called over httpx.
 - `OpenAPIIntegration()`: Imports tools (`import_openapi`); it has no tool export.
 - `QueryAuth(name: str, value: str) -> None`: A fixed query parameter, e.g.
 - `import_openapi(registry: Registry, spec: Mapping[str, Any] | str | PathLike[str], *, base_url: str | None = None, auth: Auth | None = None, headers: Mapping[str, str] | None = None, operations: Iterable[str] | None = None, prefix: str = '', timeout: float = 30.0, client_factory: Callable[..., Any] | None = None, **policy: Any) -> list[ToolSpec]`: Add one tool per operation of an OpenAPI 3.x document (all or nothing).
+
+### `agent_adapter.integrations.pipecat`
+
+Pipecat: registry tools registered on an LLM service, and a VoiceAgent as a frame processor.
+
+- `INTEGRATION`: `PipecatIntegration` instance
+- `PipecatIntegration()`: Exports `PipecatTool`s (schema plus handler); the call id is `tool_call_id`.
+- `PipecatTool(schema: Any, handler: Callable[[Any], Any], cancel_on_interruption: bool) -> None`: A schema for `ToolsSchema` and the handler to register on the LLM service.
+- `pipecat_tool(spec: ToolSpec, *, executor: ToolRunner | None = None) -> PipecatTool`: The schema and handler for `spec`; errors reach the model as `{"error": {...}}`.
+- `pipecat_tools(llm: Any, registry: Registry, *, executor: ToolRunner | None = None) -> Any`: Register every registry tool exported to `pipecat` on `llm`; returns their `ToolsSchema`.
+- `voice_processor() -> Any`: A frame processor that puts a `VoiceAgent` in the LLM's place in a pipeline.
 
 ### `agent_adapter.integrations.pydantic_ai`
 

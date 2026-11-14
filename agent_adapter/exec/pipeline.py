@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import dataclasses
 import logging
 import time
@@ -29,6 +30,7 @@ from agent_adapter.core.types import ErrorInfo, LedgerEntry, ToolCall, ToolResul
 from agent_adapter.exec._approve import approve
 from agent_adapter.exec._call_content import NOT_PASSED, emit_finished
 from agent_adapter.exec._call_steps import NOT_STORED, CallSteps
+from agent_adapter.exec._commit import changes_things, finish_once_started, repeat_key
 from agent_adapter.exec._journal import Journal, JournalSlot
 from agent_adapter.exec._resume import current_journal, restore_visit, visit_snapshot
 from agent_adapter.exec._settings import _Settings
@@ -84,11 +86,30 @@ async def _execute(
         own_id = call.id or call_id or slot.result.call_id
         return dataclasses.replace(slot.result, call_id=own_id)
     run = _Call(settings, call, ctx, call_id, single=single)
-    with use_context(run.ctx):
-        result = await run.execute(spec, registry)
-    if slot is not None and journal is not None:
-        await journal.settle(slot, result)
+
+    async def body() -> ToolResult:
+        with use_context(run.ctx):
+            done = await run.execute(spec, registry)
+        if slot is not None and journal is not None:
+            await journal.settle(slot, done)
+        return done
+
+    if not _changes_things(call, spec, registry):
+        return await body()
+    result, interrupted = await finish_once_started(body(), lambda: run.committed)
+    if interrupted:
+        run.emit(EventType.TOOL_INTERRUPTED, tool=run.name)
+        raise asyncio.CancelledError  # the caller was cancelled; the call finished and is recorded
     return result
+
+
+def _changes_things(call: ToolCall, spec: ToolSpec | None, registry: Registry | None) -> bool:
+    if spec is None and registry is not None:
+        try:
+            spec = registry.get(call.name)
+        except ToolNotFound:
+            return False
+    return spec is not None and changes_things(spec)
 
 
 def _claim(
@@ -140,6 +161,7 @@ class _Call(CallSteps):
         )
         self._event_ctx = ToolContext(run_id=ctx.run_id, call_id=self.parent_id)
         self.attempts = 0
+        self.committed = False  # a tool that changes things has started: finish and record it
         self.spec: ToolSpec | None = None
         self.passed: Any = NOT_PASSED  # the arguments, once the before-tool guards passed
         self.started = settings.clock()
@@ -190,6 +212,19 @@ class _Call(CallSteps):
         return found if policy is None else policy.effective(found)
 
     async def _admitted(self, spec: ToolSpec) -> tuple[ToolResult, Any]:
+        window = self.settings.repeats
+        key = repeat_key(self.ctx.run_id, spec, self.arguments) if window is not None else None
+        if window is None or key is None:
+            return await self._admitted_once(spec)
+        result, stored, earlier = await window.run(key, lambda: self._admitted_once(spec))
+        if earlier is None:
+            return result, stored
+        logger.info("tool %s: repeat of a finished call dropped (call %s)", spec.name, self.call_id)
+        self.passed = self.arguments
+        self.emit(EventType.TOOL_CACHED, tool=spec.name)
+        return self._ok(earlier.value, cached=True), NOT_STORED
+
+    async def _admitted_once(self, spec: ToolSpec) -> tuple[ToolResult, Any]:
         runs = self.settings.runs
         identity = _call_identity(self.call_id, spec.name, self.arguments)
         state = runs.admit(self.ctx.run_id, identity, **self._guards(spec))
@@ -284,6 +319,7 @@ class _Call(CallSteps):
             cap=settings.limits.per_kind.get(spec.kind),
         ):
             next_attempt = self._attempt_fn(spec, validated)
+            self.committed = changes_things(spec)
             outcome = await _attempt(
                 lambda: _guarded(next_attempt()),
                 retries=spec.retries,

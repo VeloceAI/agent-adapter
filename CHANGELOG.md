@@ -6,6 +6,38 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Voice agents: `agent_adapter.voice.VoiceAgent` runs a conversation around your executor on
+  any audio stack (feed it `user_started_speaking()` and `user_said(text)`, give it a
+  `Speaker`). Talking over the agent stops its speech and its turn at once; a started tool
+  that changes things finishes once and is reported in the next turn; only the sentences
+  that played stay in the history. `VoiceApproval` says the prompt and approves only on the
+  caller's own clear yes (silence, "yeah no" or model text deny). Offline fakes in
+  `agent_adapter.voice.testing`; guide: Build a voice agent.
+- Call minutes in the ledger: `VoiceAgent(minute_item="provider:name")` bills the call's
+  minutes on `close()`, and `agent.meter(item, units)` bills any other unit, through the
+  ledger's unit prices.
+- LiveKit and Pipecat connectors (preview, checked against stand-ins of their APIs):
+  `livekit_tools` and `pipecat_tools` run registry tools through the executor, and tools
+  that change things are never cut half-way (`disallow_interruptions()`,
+  `cancel_on_interruption=False`). `attach_voice_agent(session, agent)` and
+  `voice_processor()` put a `VoiceAgent` on a LiveKit session or in a Pipecat pipeline.
+  Extras `livekit` and `pipecat`; `changes_things(spec)` is now public in `agent_adapter.exec`.
+- `Executor(dedupe_window_s=...)`: a repeat of a finished or running call that changes
+  things, with the same run, tool and arguments, returns the first result (any call id).
+- `progress(text)` and `listen_progress(listener)` in `agent_adapter.exec`: a slow tool says
+  what it is doing; the text goes to the listener only, and the new `tool.progress` event
+  carries just the call id.
+- `scripts/interrupt_bench.py`: an offline benchmark of double and half-done bookings when
+  callers interrupt.
+
+### Changed
+
+- A tool declared `effects="additive"` or `"destructive"` now finishes when its caller is
+  cancelled; the call is recorded, a new `tool.interrupted` event is emitted, then the
+  cancellation goes on. Read-only tools and tools with no `effects` still stop at once.
+
 ## [1.1.1] - 2026-11-11
 
 ### Added

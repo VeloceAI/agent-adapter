@@ -26,6 +26,8 @@ class EventType:
     TOOL_RETRY = "tool.retry"
     TOOL_CACHED = "tool.cached"
     TOOL_PENDING = "tool.pending"
+    TOOL_PROGRESS = "tool.progress"
+    TOOL_INTERRUPTED = "tool.interrupted"
     APPROVAL_REQUESTED = "approval.requested"
     APPROVAL_DECIDED = "approval.decided"
     APPROVAL_EXPIRED = "approval.expired"
@@ -85,6 +87,10 @@ REQUIRED_DATA: Mapping[str, frozenset[str]] = {
     EventType.TOOL_RETRY: frozenset({"tool", "attempt", "delay_s", "error_kind"}),
     EventType.TOOL_CACHED: frozenset({"tool"}),
     EventType.TOOL_PENDING: frozenset({"tool", "approval_id"}),
+    # Never the progress text: it goes to the progress listener only.
+    EventType.TOOL_PROGRESS: frozenset(),
+    # The caller was cancelled while a call that changes things ran; it finished and is recorded.
+    EventType.TOOL_INTERRUPTED: frozenset({"tool"}),
     EventType.APPROVAL_REQUESTED: frozenset({"tool", "approval_id"}),
     # edited: the reviewer changed the arguments (never which values).
     EventType.APPROVAL_DECIDED: frozenset({"tool", "approval_id", "approved", "edited"}),
