@@ -16,8 +16,8 @@ from agent_adapter.core.registry import Registry, check_target
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.exec import changes_things, listen_progress
 from agent_adapter.integrations._default_runner import lazy_runner
-from agent_adapter.integrations._voice_bridge import EventPump
 from agent_adapter.integrations.base import IntegrationBase, ToolRunner, model_visible_error
+from agent_adapter.voice.pump import EventPump
 
 if TYPE_CHECKING:
     from agent_adapter.voice import VoiceAgent

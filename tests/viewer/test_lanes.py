@@ -84,6 +84,20 @@ def test_spans_show_retries_timeouts_errors_and_cache_hits() -> None:
     assert spans["p/m"]["cost_usd"] == 0.25
 
 
+def test_a_voice_call_shows_spoken_lines_and_a_cut_it_finished_through() -> None:
+    (span,) = build_spans(
+        events(
+            event("tool.started", 1.0, "b", tool="book", kind=""),
+            event("tool.progress", 1.1, "b"),
+            event("tool.progress", 1.2, "b"),
+            event("tool.interrupted", 1.3, "b", tool="book"),
+            event("tool.finished", 1.5, "b", tool="book", latency_ms=500, attempts=1),
+        )
+    )
+    assert (span["spoken"], span["interrupted"], span["status"]) == (2, True, "ok")
+    assert [m["type"] for m in span["marks"]] == ["tool.progress"] * 2 + ["tool.interrupted"]
+
+
 def test_compression_is_a_span_ending_at_its_event_with_tokens_before_and_after() -> None:
     (span,) = build_spans(
         events(

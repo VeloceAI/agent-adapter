@@ -13,6 +13,8 @@
   function chips(span) {
     const out = [];
     if (span.retries) out.push(["retry ×" + span.retries, "warn"]);
+    if (span.interrupted) out.push(["caller cut in · finished once", "warn"]);
+    if (span.spoken) out.push(["spoke ×" + span.spoken, ""]);
     if (span.timeout) out.push(["timeout", "bad"]);
     if (span.cached) out.push(["cache hit", ""]);
     if (span.family === "memory" && typeof span.count === "number") out.push([span.count + " record(s)", ""]);

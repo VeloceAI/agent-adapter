@@ -61,8 +61,8 @@ Then send it the caller's events from your speech-to-text:
 |---|---|---|---|
 | [LiveKit](../integrations/livekit.md) | `attach_voice_agent(session, agent)` does both | | `LiveKitSpeaker(session)` |
 | [Pipecat](../integrations/pipecat.md) | `voice_processor()` does both | | `processor.speaker` |
-| Phone or WebSocket | your VAD | your STT's final result | your TTS stream |
-| Browser | the Web Speech API's `speechstart` | its final `result` | `speechSynthesis` over a socket |
+| Browser, app or phone gateway | [`VoiceSocket`](voice-transports.md) does both | | `channel.speaker` |
+| OpenAI Realtime, Gemini Live | [`RealtimeAgent`](voice-transports.md#openai-realtime-and-gemini-live) runs the tools | | the model speaks |
 
 ## Rules it keeps
 

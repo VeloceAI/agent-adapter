@@ -8,7 +8,8 @@ description: "Register your Python tools on a Pipecat LLM service with approvals
 :material-flask-outline:{ .status-planned } Preview · `register_function` per spec ·
 `pip install "agent-adapter[pipecat]"` (`pipecat-ai` 1.13 to below 2)
 
-Checked against a stand-in of the Pipecat API (1.16.0); no live contract run yet.
+Contract tests run against the real `pipecat-ai` 1.16.0 classes (`LLMService`,
+`FunctionCallParams`, `FrameProcessor`); not yet run in a live pipeline.
 
 Two ways in:
 

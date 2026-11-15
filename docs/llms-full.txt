@@ -1609,6 +1609,7 @@ Run viewer: record runs to JSONL files, browse them and chat locally (`agent-ada
 Voice agents: safe interruptions, spoken approval and one ledger, on any audio stack.
 
 - `CallableSpeaker(say: Callable[[str], Awaitable[None] | None], stop: Callable[[], Awaitable[None] | None] | None = None) -> None`: A `Speaker` from plain functions: `say(text)` and an optional `stop()`, sync or async.
+- `EventPump(agent: VoiceAgent) -> None`: Hands caller events to a `VoiceAgent` one at a time, in order.
 - `Speaker` (protocol: say, stop): Speaks text aloud: LiveKit, Pipecat, a phone line, a browser, any TTS.
 - `VoiceAgent(model: LLMPort, executor: Executor, speaker: Speaker, *, instructions: str = '', registry: Registry | None = None, max_steps: int = 8, run_id: str | None = None, dedupe_window_s: float | None = 120.0, minute_item: str | None = None) -> None`: A voice agent from a model, an executor and a speaker; works with any audio stack.
 - `VoiceApproval(*, timeout_s: float = 10.0, prompt: Callable[[ApprovalRequest], str] = default_prompt, yes_words: frozenset[str] = ...) -> None`: Approval port for voice: says a prompt, then waits for the caller's next final words.

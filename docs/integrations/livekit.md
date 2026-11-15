@@ -8,7 +8,8 @@ description: "Run your Python tools from LiveKit Agents with approvals, cost tra
 :material-flask-outline:{ .status-planned } Preview · raw-schema `function_tool` per spec ·
 `pip install "agent-adapter[livekit]"` (`livekit-agents` 1.8 to below 2)
 
-Checked against a stand-in of the `livekit.agents` API (1.8.12); no live contract run yet.
+Contract tests run against the real `livekit-agents` 1.8.12 objects (`RawFunctionTool`,
+`RunContext`, `SpeechHandle`); not yet run in a live room.
 
 Two ways in:
 

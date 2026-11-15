@@ -18,12 +18,24 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Call minutes in the ledger: `VoiceAgent(minute_item="provider:name")` bills the call's
   minutes on `close()`, and `agent.meter(item, units)` bills any other unit, through the
   ledger's unit prices.
-- LiveKit and Pipecat connectors (preview, checked against stand-ins of their APIs):
+- LiveKit and Pipecat connectors (preview; contract tests on livekit-agents 1.8.12 and
+  pipecat-ai 1.16.0, not yet a live call):
   `livekit_tools` and `pipecat_tools` run registry tools through the executor, and tools
   that change things are never cut half-way (`disallow_interruptions()`,
   `cancel_on_interruption=False`). `attach_voice_agent(session, agent)` and
   `voice_processor()` put a `VoiceAgent` on a LiveKit session or in a Pipecat pipeline.
   Extras `livekit` and `pipecat`; `changes_things(spec)` is now public in `agent_adapter.exec`.
+- Voice transports: `VoiceSocket` runs a voice agent over one WebSocket (the client sends
+  `played` per line, so the history after a cut is exact); `SilenceTurns` and the
+  `TurnDetector` port find turns in raw PCM; `EventPump` feeds a `VoiceAgent` from any
+  transport's callbacks without blocking them.
+- Speech-to-speech models: `RealtimeAgent` with `OpenAIRealtime()` or `GeminiLive(model)`
+  runs the model's tool calls through the executor: cancelled read-only calls stop, calls
+  that change things finish and are reported, repeats return the first result, and
+  `confirm` tools need the caller's own transcribed yes.
+- `interrupt-bench` adds approval-spoofing scenarios and a "keeps running, result
+  dropped" contender; the run viewer marks spoken progress lines and calls that finished
+  through a cut.
 - `Executor(dedupe_window_s=...)`: a repeat of a finished or running call that changes
   things, with the same run, tool and arguments, returns the first result (any call id).
 - `progress(text)` and `listen_progress(listener)` in `agent_adapter.exec`: a slow tool says

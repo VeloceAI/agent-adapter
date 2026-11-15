@@ -141,6 +141,7 @@ nav:
       - Human in the loop: how-to/human-in-the-loop.md
       - Run flows on Temporal or DBOS: how-to/durable-engines.md
       - Build a voice agent: how-to/voice-agents.md
+      - Voice transports and realtime models: how-to/voice-transports.md
       - Budgets: how-to/budgets.md
       - Team budgets: how-to/team-budgets.md
       - Caching: how-to/caching.md

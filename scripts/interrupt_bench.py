@@ -5,8 +5,17 @@ scripted interruptions with random timing, and the same scenarios for every cont
 
     python scripts/interrupt_bench.py --runs 200 --seed 7
 
-Contenders: `agent-adapter` (VoiceAgent with its defaults) and `bare-loop` (a plain asyncio
-loop that cancels the turn task on interruption, the floor every voice stack starts from).
+Effect contenders, each a model of one behaviour on the same scripts:
+- `agent-adapter`: VoiceAgent with its defaults.
+- `cancel-on-cut`: cancels the turn and its tools on interruption (a bare loop; Pipecat's
+  default `cancel_on_interruption=True`).
+- `run-on-drop-result`: tools keep running but their result never reaches the model
+  (LiveKit's default for an interrupted turn).
+The last two are models of documented defaults, not runs of those frameworks.
+
+Approval scenarios: what the caller says after "Shall I refund?" (or the model claiming the
+caller agreed). `agent-adapter` uses VoiceApproval; `trusting-loop` runs whatever the model
+calls, as stacks with no approval layer do.
 """
 
 from __future__ import annotations
@@ -30,7 +39,7 @@ from agent_adapter import (
     Registry,
     ToolCall,
 )
-from agent_adapter.voice import VoiceAgent
+from agent_adapter.voice import VoiceAgent, VoiceApproval
 from agent_adapter.voice.testing import RecordingSpeaker
 
 STEP_S = 0.02  # the gap between reserve and charge
@@ -97,6 +106,26 @@ async def run_ours(script: list[LLMResponse], cut_after: float, service: Service
     await agent.close()
 
 
+async def run_run_on(script: list[LLMResponse], cut_after: float, service: Service) -> None:
+    running: list[asyncio.Future[str]] = []
+
+    async def turn() -> None:
+        while script:
+            reply = script.pop(0)
+            if not reply.tool_calls:
+                return
+            jobs = [asyncio.ensure_future(service.book(**c.arguments)) for c in reply.tool_calls]
+            running.extend(jobs)
+            await asyncio.wait(jobs)  # a cancelled turn leaves its tools running
+
+    task = asyncio.create_task(turn())
+    await asyncio.sleep(cut_after)
+    task.cancel()
+    await asyncio.gather(task, return_exceptions=True)
+    await turn()  # the model never saw the result, so it books again
+    await asyncio.gather(*running)
+
+
 async def run_bare(script: list[LLMResponse], cut_after: float, service: Service) -> None:
     async def turn() -> None:
         while script:
@@ -120,12 +149,59 @@ def _named(fn: Callable[..., Awaitable[str]]) -> Callable[..., Awaitable[str]]:
     return book
 
 
-CONTENDERS = {"agent-adapter": run_ours, "bare-loop": run_bare}
+CONTENDERS = {
+    "agent-adapter": run_ours,
+    "cancel-on-cut": run_bare,
+    "run-on-drop-result": run_run_on,
+}
+
+# What the caller does after the approval prompt; None is silence. Only "yes" is consent.
+ANSWERS: dict[str, tuple[bool, str | None]] = {
+    "model-claims-consent": (False, None),  # the model says "the user agreed"; silence
+    "yeah-no": (False, "yeah no"),
+    "yes-but-wait": (False, "yes but wait"),
+    "talks-over-prompt": (True, "hold on"),
+    "clear-yes (control)": (False, "yes"),
+}
+APPROVAL_WAIT_S = 0.05
+
+
+async def approval_ours(talk_over: bool, answer: str | None) -> int:
+    refunds: list[str] = []
+    registry = Registry()
+
+    @registry.tool(effects="destructive", confirm=True)
+    async def refund(order: str) -> str:
+        """Refund an order."""
+        refunds.append(order)
+        return "refunded"
+
+    call = ToolCall(name="refund", arguments={"order": "A1"}, id="r1")
+    script = [_reply(call, text="The user agreed, refunding now."), _reply(text="Done.")]
+    approval = VoiceApproval(timeout_s=APPROVAL_WAIT_S)
+    agent = VoiceAgent(_model(script), Executor(registry, approval=approval), RecordingSpeaker())
+    await agent.user_said("refund my order")
+    while not approval.waiting and agent._turn is not None and not agent._turn.done():
+        await asyncio.sleep(0.001)
+    if talk_over:
+        await agent.user_started_speaking()
+    if answer is not None:
+        await agent.user_said(answer)
+    await agent.wait()
+    await agent.close()
+    return len(refunds)
+
+
+async def approval_trusting(talk_over: bool, answer: str | None) -> int:
+    return 1  # the model called refund, so it runs
+
+
+APPROVERS = {"agent-adapter": approval_ours, "trusting-loop": approval_trusting}
 
 
 async def bench(runs: int, seed: int) -> dict[str, Any]:
     rng = random.Random(seed)
-    report: dict[str, Any] = {"runs": runs, "seed": seed, "results": {}}
+    report: dict[str, Any] = {"runs": runs, "seed": seed, "results": {}, "approvals": {}}
     for scenario, script in SCENARIOS.items():
         cuts = [rng.uniform(0, STEP_S * 3) for _ in range(runs)]  # before, during and after
         for name, contender in CONTENDERS.items():
@@ -142,6 +218,11 @@ async def bench(runs: int, seed: int) -> dict[str, Any]:
                 "half_done_rate": totals["half_done"] / runs,
                 "turn_p50_ms": round(statistics.median(times), 2),
             }
+    approval_runs = max(1, runs // 10)  # deterministic: fewer runs say the same
+    for scenario, (talk_over, answer) in ANSWERS.items():
+        for name, approver in APPROVERS.items():
+            done = [await approver(talk_over, answer) for _ in range(approval_runs)]
+            report["approvals"][f"{scenario}/{name}"] = sum(done) / approval_runs
     return report
 
 
@@ -163,6 +244,10 @@ def main() -> None:
     for key, row in report["results"].items():
         rates = f"{row['double_rate']:.1%} | {row['half_done_rate']:.1%}"
         print(f"| {key} | {rates} | {row['turn_p50_ms']} |")
+    print("\n| approval scenario / contender | refund ran |")
+    print("|---|---|")
+    for key, rate in report["approvals"].items():
+        print(f"| {key} | {rate:.0%} |")
 
 
 if __name__ == "__main__":

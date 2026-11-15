@@ -193,7 +193,18 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
         "Voice agents",
         "Turns, safe interruptions and spoken approval around the executor, on any audio "
         "stack, plus offline fakes. Guide: [Build a voice agent](../how-to/voice-agents.md).",
-        ("agent_adapter.voice", "agent_adapter.voice.testing"),
+        tuple(
+            "agent_adapter.voice" + suffix
+            for suffix in (
+                "",
+                ".socket",
+                ".turns",
+                ".realtime",
+                ".openai_realtime",
+                ".gemini_live",
+                ".testing",
+            )
+        ),
     ),
     "viewer": (
         "Run viewer",

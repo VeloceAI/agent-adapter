@@ -9,7 +9,7 @@ import pytest
 from agent_adapter import Registry
 from agent_adapter.core.errors import MissingDependency, ToolError
 from agent_adapter.exec import Executor, progress
-from agent_adapter.integrations._voice_bridge import EventPump, spawn
+from agent_adapter.integrations._voice_bridge import spawn
 from agent_adapter.integrations.livekit import (
     INTEGRATION,
     LiveKitSpeaker,
@@ -18,6 +18,7 @@ from agent_adapter.integrations.livekit import (
     livekit_tools,
 )
 from agent_adapter.voice import VoiceAgent
+from agent_adapter.voice.pump import EventPump
 from agent_adapter.voice.testing import settle
 from tests.fakes.models import ScriptedModel, calls, text
 from tests.fakes.sinks import RecordingSink

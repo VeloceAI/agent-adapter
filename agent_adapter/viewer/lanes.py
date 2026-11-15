@@ -41,6 +41,8 @@ _MEMORY_VERBS = {
 }
 _MARKS = {
     "tool.retry",
+    "tool.progress",
+    "tool.interrupted",
     "approval.requested",
     "approval.decided",
     "approval.expired",
@@ -86,6 +88,10 @@ def build_spans(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
             current["marks"].append({"type": kind, "ts": ts, "event": index})
             if kind == "tool.retry":
                 current["retries"] += 1
+            elif kind == "tool.progress":  # a voice agent spoke while the tool worked
+                current["spoken"] = current.get("spoken", 0) + 1
+            elif kind == "tool.interrupted":  # the caller cut in; the call still finished once
+                current["interrupted"] = True
         elif kind in END_TYPES:
             _close(current, END_TYPES[kind], ts, data, index)
     found = [spans[key] for key in order]

@@ -6,7 +6,37 @@ Turns, safe interruptions and spoken approval around the executor, on any audio 
 
 ::: agent_adapter.voice
     options:
-      members: [CallableSpeaker, Speaker, VoiceAgent, VoiceApproval, YES_WORDS, is_yes]
+      members: [CallableSpeaker, EventPump, Speaker, VoiceAgent, VoiceApproval, YES_WORDS, is_yes]
+
+## `agent_adapter.voice.socket`
+
+::: agent_adapter.voice.socket
+    options:
+      members: [TextSocket, VoiceSocket, text_socket]
+
+## `agent_adapter.voice.turns`
+
+::: agent_adapter.voice.turns
+    options:
+      members: [SilenceTurns, TurnDetector, TurnEvent]
+
+## `agent_adapter.voice.realtime`
+
+::: agent_adapter.voice.realtime
+    options:
+      members: [CallerSaid, CallsCancelled, RealtimeAgent, RealtimeCodec, RealtimeEvent, SpeechStarted, ToolCalled]
+
+## `agent_adapter.voice.openai_realtime`
+
+::: agent_adapter.voice.openai_realtime
+    options:
+      members: [OpenAIRealtime]
+
+## `agent_adapter.voice.gemini_live`
+
+::: agent_adapter.voice.gemini_live
+    options:
+      members: [GeminiLive]
 
 ## `agent_adapter.voice.testing`
 
