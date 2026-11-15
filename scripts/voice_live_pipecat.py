@@ -25,84 +25,24 @@ import time
 from pathlib import Path
 from typing import Any
 
-from agent_adapter import CallableModel, LLMRequest, LLMResponse, Message, Registry, ToolCall
-from agent_adapter.exec import Executor, progress
+from voice_live_common import (
+    FRAME,
+    LINES,
+    Bookings,
+    answered,
+    caller_lines,
+    log,
+    model_paths,
+    registry,
+    scripted_model,
+    to_pcm16,
+)
+
+from agent_adapter.exec import Executor
 from agent_adapter.integrations.pipecat import voice_processor
 from agent_adapter.voice import VoiceAgent
 from agent_adapter.voice.silero import SileroTurns
 from agent_adapter.voice.smart_turn import RATE, SmartTurn
-
-FRAME = 320  # 20 ms at 16 kHz
-LINES = ("Book two seats for the jazz show on Friday, please.", "Wait, did that go through?")
-CHARGE_S = 3.0
-T0 = time.monotonic()
-
-
-def log(text: str) -> None:
-    print(f"  {time.monotonic() - T0:6.2f}s  {text}", flush=True)
-
-
-class Bookings:
-    """Reserve, then charge after CHARGE_S: a cut in between leaves it half-done."""
-
-    def __init__(self) -> None:
-        self.reserved = self.charged = 0
-        self.started = asyncio.Event()
-
-    async def book(self, show: str, seats: int) -> str:
-        self.reserved += 1
-        self.started.set()
-        log(f"[tool] book started: reserved {seats} seats for {show}, charging...")
-        await asyncio.sleep(CHARGE_S)
-        self.charged += 1
-        log("[tool] book finished: charged")
-        return f"booking J-1042, {seats} seats for the {show} show"
-
-
-def registry(bookings: Bookings) -> Registry:
-    tools = Registry()
-
-    @tools.tool(effects="destructive")
-    async def book(show: str, seats: int) -> str:
-        """Book seats for a show and charge the card on file."""
-        progress("Booking that now, one moment.")
-        return await bookings.book(show, seats)
-
-    return tools
-
-
-def _reply(text: str = "", *calls: ToolCall) -> LLMResponse:
-    message = Message(role="assistant", content=text, tool_calls=calls)
-    finish = "tool_calls" if calls else "stop"
-    return LLMResponse(
-        provider="script",
-        model="script",
-        text=text,
-        tool_calls=calls,
-        finish_reason=finish,
-        message=message,
-    )
-
-
-def scripted_model() -> CallableModel:
-    """Books when asked; asked "did it work?" without seeing a result, it books again."""
-    count = 0
-
-    async def answer(request: LLMRequest) -> LLMResponse:
-        nonlocal count
-        last = request.messages[-1]
-        if last.role == "tool":
-            return _reply(f"All done: {last.content}.")
-        notes = [str(m.content) for m in request.messages if "Already done" in str(m.content)]
-        if notes:
-            return _reply("Yes, it went through. " + notes[-1].split("finished: ")[-1].strip("'.)"))
-        if any(word in str(last.content).lower() for word in ("book", "did", "through")):
-            count += 1
-            seats = {"show": "jazz", "seats": 2}
-            return _reply("", ToolCall(name="book", arguments=seats, id=f"call_{count}"))
-        return _reply("Sorry, could you say that again?")
-
-    return CallableModel(answer, provider="script", model="script")
 
 
 def _pipecat_parts(silero: Path, smart: Path) -> tuple[Any, Any]:
@@ -150,31 +90,14 @@ def _pipecat_parts(silero: Path, smart: Path) -> tuple[Any, Any]:
             return False
 
         async def run_tts(self, text: str, context_id: str) -> Any:
-            import numpy as np
-
             log(f"[agent] says: {text!r}")
             samples, rate = await asyncio.to_thread(self.engine.synthesize, text)
-            pcm = (np.clip(np.asarray(samples), -1, 1) * 32_767).astype(np.int16).tobytes()
+            pcm = to_pcm16(samples, rate)
             yield TTSAudioRawFrame(
                 audio=pcm, sample_rate=rate, num_channels=1, context_id=context_id
             )
 
     return Turns, MoonshineTTS
-
-
-def caller_lines() -> list[bytes]:
-    """The scripted caller's two lines, spoken by a second Kokoro voice, as 16 kHz PCM."""
-    import numpy as np
-    from moonshine_voice import TextToSpeech
-
-    tts = TextToSpeech().language("en_us").voice("kokoro_am_michael").load()
-    out = []
-    for line in LINES:
-        samples, rate = tts.synthesize(line)
-        audio = np.asarray(samples, dtype=np.float32)
-        audio = np.interp(np.arange(0, len(audio), rate / RATE), np.arange(len(audio)), audio)
-        out.append((np.clip(audio, -1, 1) * 32_767).astype(np.int16).tobytes())
-    return out
 
 
 async def scripted_caller(task: Any, lines: list[bytes], bookings: Bookings, agent: VoiceAgent,
@@ -206,14 +129,9 @@ async def scripted_caller(task: Any, lines: list[bytes], bookings: Bookings, age
     await quiet_until(lambda: False, cut_s)
     log(f"[caller] cuts in: {LINES[1]!r}")
     await play(lines[1])
-    await quiet_until(lambda: bool(bookings.charged) and _answered(agent), 25)
+    await quiet_until(lambda: bool(bookings.charged) and answered(agent), 25)
     await quiet_until(lambda: False, 5)  # let the answer play
     await task.queue_frame(EndFrame())
-
-
-def _answered(agent: VoiceAgent) -> bool:
-    last = agent.history[-1] if agent.history else None
-    return last is not None and last.role == "assistant" and not last.tool_calls
 
 
 async def run(args: argparse.Namespace, silero: Path, smart: Path) -> int:
@@ -296,17 +214,11 @@ def main() -> None:
     parser.add_argument("--silero", type=Path)
     parser.add_argument("--smart-turn", type=Path)
     args = parser.parse_args()
-    import pipecat
     from loguru import logger
 
     logger.remove()
     logger.add(sys.stderr, level=os.environ.get("PIPECAT_LOG", "WARNING"))
-    base = Path(pipecat.__file__).parent
-    silero = args.silero or base / "audio/vad/data/silero_vad.onnx"
-    smart = (
-        args.smart_turn
-        or sorted((base / "audio/turn/smart_turn/data").glob("smart-turn-v3*cpu*.onnx"))[-1]
-    )
+    silero, smart = model_paths(args.silero, args.smart_turn)
     sys.exit(asyncio.run(run(args, silero, smart)))
 
 

@@ -125,26 +125,25 @@ booking, then asks "did it work?" (100 runs each):
 LiveKit keeps an interrupted tool running and keeps its result, so it passes this test on
 its own; the connector adds approvals, the run ledger and the repeat window.
 
-## Hear it live in Pipecat
+## Hear it live: Pipecat and LiveKit
 
-`python scripts/voice_live_pipecat.py` runs a `VoiceAgent` in a real Pipecat pipeline with
-local audio and no keys; only the model is scripted. Caller audio goes through our
-`SmartTurn(SileroTurns(...))`, Moonshine speech-to-text, `voice_processor()`, Moonshine's
-Kokoro voice and Pipecat's `LocalAudioTransport` to the speakers. Install
-`agent-adapter[pipecat,vad]`, `pipecat-ai[local]` and `moonshine-voice` (MIT; the voice is
-Apache-2.0) in their own environment; Moonshine downloads about 360 MB of models once.
+Two scripts run a `VoiceAgent` with real audio and no keys; only the model is scripted.
+Both use our `SmartTurn(SileroTurns(...))`, Moonshine speech-to-text and Moonshine's Kokoro
+voice (MIT; the voice is Apache-2.0; about 360 MB of models, downloaded once):
+
+- `scripts/voice_live_pipecat.py`: a Pipecat pipeline with `voice_processor()` and
+  `LocalAudioTransport` to the speakers;
+- `scripts/voice_live_livekit.py`: an `AgentSession` with `attach_voice_agent` in a room on
+  a local `livekit-server --dev`; the caller joins over WebRTC and plays the agent aloud.
 
 The caller asks to "book two seats for the jazz show", then talks over the agent while the
-seats are reserved but not charged: "Wait, did that go through?" Runs on a Windows laptop:
+seats are reserved but not charged: "Wait, did that go through?" On a Windows laptop:
 
-| Caller cuts in | Charged | Agent's answer |
+| Caller cuts in | Pipecat | LiveKit room |
 |---|---|---|
-| 0.3, 0.8 and 1.5 s into the booking | once | "Yes, it went through. booking J-1042, ..." |
-| 2.5 s: heard only after the booking ended, so the scripted model booked again | once (repeat window) | "All done: booking J-1042, ..." |
+| 0.3, 0.8 and 1.5 s into the booking | charged once; "Yes, it went through" | the same |
+| 2.5 s: heard after the booking ended, the scripted model booked again | once (repeat window) | the same |
 
-Speech stopped when the caller spoke. `--mic 40` makes you the caller (use headphones).
-
-!!! note "What this run does not show"
-    The scripted caller (a second Kokoro voice) enters the pipeline as real-time audio
-    frames, not through a microphone. `--mic` was only started in a quiet room; no person
-    has booked by voice yet, and a live LiveKit room is not checked yet.
+!!! note "What these runs do not show"
+    The caller is a second Kokoro voice sent as real-time audio frames, not a microphone.
+    `--mic` (Pipecat) was only started in a quiet room; no person has booked by voice yet.

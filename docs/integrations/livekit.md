@@ -9,8 +9,15 @@ description: "Run your Python tools from LiveKit Agents with approvals, cost tra
 `pip install "agent-adapter[livekit]"` (`livekit-agents` 1.8 to below 2)
 
 Contract tests run against the real `livekit-agents` 1.8.12 objects, and
-`interrupt_bench_frameworks.py` runs tools through a real `AgentSession` with interruptions;
-not yet run in a live room with audio.
+`interrupt_bench_frameworks.py` runs tools through a real `AgentSession` with interruptions.
+`voice_live_livekit.py` runs `attach_voice_agent` in a live room on a local
+`livekit-server --dev`, with a scripted caller over WebRTC who cuts in mid-booking: charged
+once in every run ([results](../how-to/voice-agents.md#hear-it-live-pipecat-and-livekit)).
+Our turn detectors and Moonshine run there as a LiveKit streaming STT
+(`turn_handling={"turn_detection": "stt"}`). The caller's track is published with
+`dtx=False`: with DTX on, the first word after quiet ("Wait") came through clipped. The cut
+was heard about 0.9 s after the caller began (0.45 s in the Pipecat run, which has no
+WebRTC hop), and after the Opus codec Moonshine sometimes heard "8. Did that go through?".
 
 Two ways in:
 

@@ -50,6 +50,10 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Pipecat pipeline with local audio, our Silero + Smart Turn detectors, Moonshine
   speech-to-text and text-to-speech (all local, no keys) and a scripted model. A caller who
   cuts in mid-booking gets one charge in every run; `--mic` makes you the caller.
+- `scripts/voice_live_livekit.py` does the same on a LiveKit `AgentSession` in a live room on
+  a local `livekit-server --dev`: the scripted caller joins over WebRTC, our turn detectors
+  and Moonshine run as a LiveKit streaming STT, `attach_voice_agent` drives the
+  `VoiceAgent`. Charged once in every run.
 - `Executor.dedupe_window_s` reports the executor's repeat window.
 - `interrupt-bench` adds approval-spoofing scenarios and a "keeps running, result
   dropped" contender; the run viewer marks spoken progress lines and calls that finished

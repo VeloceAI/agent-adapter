@@ -13,7 +13,7 @@ Contract tests run against the real `pipecat-ai` 1.16.0 classes, and
 (0% half-done bookings, against 84% on Pipecat's defaults). `voice_live_pipecat.py` runs
 `voice_processor()` with real local audio, local speech-to-text and text-to-speech, and a
 scripted caller who cuts in mid-booking: charged once in every run
-([results](../how-to/voice-agents.md#hear-it-live-in-pipecat)). No person has run it by
+([results](../how-to/voice-agents.md#hear-it-live-pipecat-and-livekit)). No person has run it by
 voice yet.
 
 Two ways in:
