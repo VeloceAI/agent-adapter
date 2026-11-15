@@ -149,8 +149,8 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [AG2](https://agent-adapter.veloceai.in/integrations/ag2/): AG2 1.x is the `ag2` package (`from ag2 import Agent`)
 - [A2A](https://agent-adapter.veloceai.in/integrations/a2a/): Serve registry tools as an A2A agent, and import a remote A2A agent's skills as tools
 - [AG-UI](https://agent-adapter.veloceai.in/integrations/ag-ui/): Frameworks that ship their own AG-UI adapter (Pydantic AI, LangGraph, ADK, MAF, CrewAI) already carry our tools inside them
-- [LiveKit](https://agent-adapter.veloceai.in/integrations/livekit/): Contract tests run against the real `livekit-agents` 1.8.12 objects (`RawFunctionTool`, `RunContext`, `SpeechHandle`); not yet run in a live room
-- [Pipecat](https://agent-adapter.veloceai.in/integrations/pipecat/): Contract tests run against the real `pipecat-ai` 1.16.0 classes (`LLMService`, `FunctionCallParams`, `FrameProcessor`); not yet run in a live pipeline
+- [LiveKit](https://agent-adapter.veloceai.in/integrations/livekit/): Contract tests run against the real `livekit-agents` 1.8.12 objects, and `interrupt_bench_frameworks.py` runs tools through a real `AgentSession` with...
+- [Pipecat](https://agent-adapter.veloceai.in/integrations/pipecat/): Contract tests run against the real `pipecat-ai` 1.16.0 classes, and `interrupt_bench_frameworks.py` drives a real pipeline's function calls and...
 
 ## Concepts
 

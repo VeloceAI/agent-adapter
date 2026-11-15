@@ -12,7 +12,7 @@ speech-to-speech model that hears and speaks by itself.
 | You have | Use |
 |---|---|
 | A browser, app or phone gateway that does speech to text and text to speech | `VoiceSocket` |
-| Raw audio and your own speech to text | `SilenceTurns` (or your VAD) feeding `EventPump` |
+| Raw audio and your own speech to text | `SilenceTurns`, `SileroTurns` or `SmartTurn` feeding `EventPump` |
 | OpenAI Realtime or Gemini Live | `RealtimeAgent` with `OpenAIRealtime()` or `GeminiLive(model)` |
 | LiveKit or Pipecat | [LiveKit](../integrations/livekit.md), [Pipecat](../integrations/pipecat.md) |
 
@@ -44,8 +44,18 @@ exactly what the caller heard. A `websockets` connection is a `TextSocket` as it
 
 ## Raw audio: turn detection
 
-`SilenceTurns` reads 16-bit mono PCM and says when a turn starts and ends; Silero VAD or
-Smart Turn fit the same `TurnDetector` port (`feed(pcm) -> ["started" | "ended"]`).
+Each detector reads 16-bit mono PCM and says when a turn starts and ends, behind one
+`TurnDetector` port (`feed(pcm) -> ["started" | "ended"]`).
+
+| Detector | Hears | Needs |
+|---|---|---|
+| `SilenceTurns()` | loudness | nothing |
+| `SileroTurns(model_path)` | speech, not noise | `pip install "agent-adapter[vad]"`, `silero_vad.onnx` (MIT) |
+| `SmartTurn(model_path, SileroTurns(...))` | whether the caller has finished, from how they spoke | the same, plus `smart-turn-v3` ONNX (BSD-2-Clause) |
+
+Both models run locally on the CPU with ONNX Runtime; Pipecat ships copies of both files.
+`SmartTurn` asks the model at each pause: "so maybe we could, um" keeps the turn open, and
+it ends anyway after `max_wait_ms` (3 s) of quiet. Its features match Pipecat's exactly.
 
 ```python
 from agent_adapter.voice import EventPump
@@ -61,6 +71,16 @@ for event in turns.feed(frame):
 
 `EventPump` keeps events in order and never blocks your audio loop, even while a cut waits
 for a booking to finish.
+
+Measured with `python scripts/turn_check.py` (synthetic speech, then a laptop microphone
+hearing the same speech from its speakers):
+
+| Case | Loudness | Silero | Silero + Smart Turn |
+|---|---|---|---|
+| Two sentences, quiet room | both found | both found | both found |
+| Two sentences, loud hiss | stuck "speaking" | both found | both found |
+| "so maybe we could, um", then quiet | ended at the pause | ended at the pause | held, ended after 3 s |
+| Live microphone, three sentences | all found | all found | all found, "um" held |
 
 ## OpenAI Realtime and Gemini Live
 

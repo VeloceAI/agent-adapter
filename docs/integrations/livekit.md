@@ -8,8 +8,9 @@ description: "Run your Python tools from LiveKit Agents with approvals, cost tra
 :material-flask-outline:{ .status-planned } Preview · raw-schema `function_tool` per spec ·
 `pip install "agent-adapter[livekit]"` (`livekit-agents` 1.8 to below 2)
 
-Contract tests run against the real `livekit-agents` 1.8.12 objects (`RawFunctionTool`,
-`RunContext`, `SpeechHandle`); not yet run in a live room.
+Contract tests run against the real `livekit-agents` 1.8.12 objects, and
+`interrupt_bench_frameworks.py` runs tools through a real `AgentSession` with interruptions;
+not yet run in a live room with audio.
 
 Two ways in:
 
@@ -43,6 +44,7 @@ agent = Agent(instructions="You book museum tickets.", tools=livekit_tools(regis
 | A tool with `effects="additive"` or `"destructive"` starts | it calls `disallow_interruptions()`, so LiveKit keeps its result when the caller talks over the agent |
 | The caller has already cut in | the tool is not started; the model gets a `ToolError` saying so |
 | A `read_only` tool runs | LiveKit's own interruption rules apply |
+| The model asks for the same booking again (a new call id) | the first result returns; one run per session, 120 s window unless your executor sets `dedupe_window_s` |
 | A tool calls `progress("One moment")` | `session.say` speaks it; it never enters the chat context |
 | A tool error, denial, guardrail or run limit | the model gets a LiveKit `ToolError` with the kind and message |
 

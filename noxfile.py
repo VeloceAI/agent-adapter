@@ -168,6 +168,15 @@ def models(session: nox.Session) -> None:
     session.run("pytest", *paths, *_odm_cov(session, *MODEL_ODMS), env=_coverage_env(session))
 
 
+@nox.session(python=PYTHONS, default=False)
+def vad(session: nox.Session) -> None:
+    """SileroTurns and SmartTurn with ONNX Runtime and NumPy installed."""
+    session.install("-e", ".[dev,vad]")
+    modules = ("agent_adapter.voice.silero", "agent_adapter.voice.smart_turn")
+    session.run("pytest", "tests/voice/test_vad.py", *_odm_cov(session, *modules),
+                env=_coverage_env(session))  # fmt: skip
+
+
 @nox.session(name="docs-examples", python=PYTHONS, default=False)
 def docs_examples(session: nox.Session) -> None:
     """Backend, tutorial and agent-guide examples with their frameworks and SDKs installed."""

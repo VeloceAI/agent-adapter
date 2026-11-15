@@ -183,6 +183,11 @@ class Executor(Batches, SyncTwins):
         """The policy every call's spec passes through (`Policy.apply` sets it), or None."""
         return self._settings.policy
 
+    @property
+    def dedupe_window_s(self) -> float | None:
+        """Seconds a repeat of a finished or running effectful call returns the first result."""
+        return self._options["dedupe_window_s"]  # type: ignore[no-any-return]
+
     def replace(self, **changes: Any) -> Executor:
         """A new Executor with some constructor arguments replaced; `self` is unchanged.
 

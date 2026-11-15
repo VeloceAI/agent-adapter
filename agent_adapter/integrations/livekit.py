@@ -15,7 +15,7 @@ from agent_adapter.core.context import ToolContext
 from agent_adapter.core.registry import Registry, check_target
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.exec import changes_things, listen_progress
-from agent_adapter.integrations._default_runner import lazy_runner
+from agent_adapter.integrations._voice_bridge import VoiceRunner, session_run_id
 from agent_adapter.integrations.base import IntegrationBase, ToolRunner, model_visible_error
 from agent_adapter.voice.pump import EventPump
 
@@ -37,12 +37,16 @@ def livekit_tool(spec: ToolSpec, *, executor: ToolRunner | None = None) -> Any:
     """
     INTEGRATION.require()
     check_target(spec, TARGET)
-    from livekit.agents import function_tool
+    from livekit.agents import RunContext, function_tool
 
-    runner = lazy_runner(executor)
+    runner = VoiceRunner(executor)
 
     async def handler(raw_arguments: dict[str, object], context: Any) -> Any:
         return await _call(spec, raw_arguments, context, runner)
+
+    # LiveKit passes the RunContext to the parameter whose type hint is RunContext; a string
+    # hint (this module's `from __future__ import annotations`) would not resolve.
+    handler.__annotations__ = {"raw_arguments": dict[str, object], "context": RunContext}
 
     schema = {"name": spec.name, "description": spec.description, "parameters": spec.json_schema()}
     return function_tool(handler, raw_schema=schema)
@@ -130,7 +134,9 @@ class LiveKitIntegration(IntegrationBase):
     def bind_context(self, native: Any) -> ToolContext:
         call_id = getattr(getattr(native, "function_call", None), "call_id", "")
         return ToolContext(
-            call_id=call_id if isinstance(call_id, str) else "", extras={self.name: native}
+            run_id=session_run_id(getattr(native, "session", None)),
+            call_id=call_id if isinstance(call_id, str) else "",
+            extras={self.name: native},
         )
 
 

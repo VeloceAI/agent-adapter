@@ -201,6 +201,8 @@ ODM_ROOTS: dict[str, set[str]] = {
     "memory/zep.py": {"zep_cloud"},
     "memory/graphiti.py": {"graphiti_core"},
     "retrieval/llamaindex.py": {"llama_index"},
+    "voice/silero.py": {"onnxruntime", "numpy"},
+    "voice/smart_turn.py": {"onnxruntime", "numpy"},
     **{
         f"integrations/{name}": {*own, *_INTEGRATION_COMMON}
         for name, own in INTEGRATION_ROOTS.items()

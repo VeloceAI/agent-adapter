@@ -67,3 +67,25 @@ async def test_an_effect_is_not_started_after_the_caller_cut_in():
     with pytest.raises(ToolError, match="not run"):
         await tool._func({"seat": "4A"}, context(handle, Session()))
     assert booked == []
+
+
+async def test_livekit_fills_the_context_argument_through_its_own_call_path():
+    from livekit.agents.llm.utils import prepare_function_arguments
+
+    booked.clear()
+    tool = livekit_tool(registry.get("book"), executor=Executor(registry))
+    run = context(SpeechHandle.create(allow_interruptions=True), Session())
+    args, kwargs = prepare_function_arguments(
+        fnc=tool, json_arguments='{"seat": "4A"}', call_ctx=run
+    )
+    assert await tool(*args, **kwargs) == "booking #4A"
+
+
+async def test_a_reissued_booking_in_one_session_runs_once():
+    booked.clear()
+    tool = livekit_tool(registry.get("book"), executor=Executor(registry))
+    session = Session()
+    for _ in range(2):  # the model asks again with a new call id
+        run = context(SpeechHandle.create(allow_interruptions=True), session)
+        assert await tool._func({"seat": "4A"}, run) == "booking #4A"
+    assert booked == ["4A"]

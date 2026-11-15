@@ -9,9 +9,9 @@ Effect contenders, each a model of one behaviour on the same scripts:
 - `agent-adapter`: VoiceAgent with its defaults.
 - `cancel-on-cut`: cancels the turn and its tools on interruption (a bare loop; Pipecat's
   default `cancel_on_interruption=True`).
-- `run-on-drop-result`: tools keep running but their result never reaches the model
-  (LiveKit's default for an interrupted turn).
-The last two are models of documented defaults, not runs of those frameworks.
+- `run-on-drop-result`: tools keep running but their result never reaches the model.
+The last two are models, not runs of any framework; interrupt_bench_frameworks.py runs the
+real Pipecat and LiveKit code (LiveKit 1.8 keeps an interrupted tool's result).
 
 Approval scenarios: what the caller says after "Shall I refund?" (or the model claiming the
 caller agreed). `agent-adapter` uses VoiceApproval; `trusting-loop` runs whatever the model
@@ -23,12 +23,15 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import random
 import statistics
 import time
 from collections import Counter
 from collections.abc import Awaitable, Callable
 from typing import Any
+
+from interrupt_bench_crash import crash_bench
 
 from agent_adapter import (
     CallableModel,
@@ -223,6 +226,7 @@ async def bench(runs: int, seed: int) -> dict[str, Any]:
         for name, approver in APPROVERS.items():
             done = [await approver(talk_over, answer) for _ in range(approval_runs)]
             report["approvals"][f"{scenario}/{name}"] = sum(done) / approval_runs
+    report["crash"] = await crash_bench(runs, seed)
     return report
 
 
@@ -232,6 +236,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--json", action="store_true", help="print JSON instead of a table")
     args = parser.parse_args()
+    logging.disable(logging.WARNING)  # recovery warns once per crash run
     report = asyncio.run(bench(args.runs, args.seed))
     if args.json:
         print(json.dumps(report, indent=2))
@@ -248,6 +253,17 @@ def main() -> None:
     print("|---|---|")
     for key, rate in report["approvals"].items():
         print(f"| {key} | {rate:.0%} |")
+    print(
+        "\n| crash mid-booking, then restart | charged twice | booking run twice | asked a person |"
+    )
+    print("|---|---|---|---|")
+    for key, row in report["crash"].items():
+        cells = [
+            row["double_charge_rate"],
+            row["booking_run_twice_rate"],
+            row["asked_a_person_rate"],
+        ]
+        print(f"| {key} | " + " | ".join(f"{c:.0%}" for c in cells) + " |")
 
 
 if __name__ == "__main__":

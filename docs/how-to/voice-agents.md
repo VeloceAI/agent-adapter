@@ -107,4 +107,20 @@ The two executor features under it work for every framework and backend:
 `agent_adapter.voice.testing` has a `RecordingSpeaker` (with `hold=True`, each line waits
 for `release()`) and `settle()`, so interruption tests need no audio and no keys.
 `python scripts/interrupt_bench.py` runs the scripted scenarios against a plain loop and
-prints double bookings and half-done bookings for each.
+prints double bookings and half-done bookings for each, plus a crash in the middle of a
+booking: `recover_tool_loop` asks a person instead of charging twice (restarting the turn
+charged twice in 49% of 200 runs).
+
+`python scripts/interrupt_bench_frameworks.py` runs the real Pipecat and LiveKit tool-call
+and interruption code, with only the model scripted; the caller cuts in half-way through a
+booking, then asks "did it work?" (100 runs each):
+
+| Framework | Half-done bookings | Double bookings |
+|---|---|---|
+| Pipecat 1.16, defaults | 84% | 0% |
+| Pipecat + agent-adapter | 0% | 0% |
+| LiveKit 1.8, defaults | 0% | 0% |
+| LiveKit + agent-adapter | 0% | 0% |
+
+LiveKit keeps an interrupted tool running and keeps its result, so it passes this test on
+its own; the connector adds approvals, the run ledger and the repeat window.

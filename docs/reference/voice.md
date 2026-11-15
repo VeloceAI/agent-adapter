@@ -18,7 +18,19 @@ Turns, safe interruptions and spoken approval around the executor, on any audio 
 
 ::: agent_adapter.voice.turns
     options:
-      members: [SilenceTurns, TurnDetector, TurnEvent]
+      members: [SilenceTurns, TurnDetector, TurnEvent, TurnTimer, pcm16]
+
+## `agent_adapter.voice.silero`
+
+::: agent_adapter.voice.silero
+    options:
+      members: [SileroTurns]
+
+## `agent_adapter.voice.smart_turn`
+
+::: agent_adapter.voice.smart_turn
+    options:
+      members: [RATE, SmartTurn, log_mel]
 
 ## `agent_adapter.voice.realtime`
 

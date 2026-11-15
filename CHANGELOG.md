@@ -33,6 +33,15 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   runs the model's tool calls through the executor: cancelled read-only calls stop, calls
   that change things finish and are reported, repeats return the first result, and
   `confirm` tools need the caller's own transcribed yes.
+- Local turn detection (`pip install "agent-adapter[vad]"`): `SileroTurns(model_path)` finds
+  speech rather than loudness, and `SmartTurn(model_path, detector)` ends a turn only when
+  the Smart Turn v3 model says the caller has finished (or after `max_wait_ms` of quiet).
+  Both run on ONNX Runtime on the CPU; `TurnTimer` turns any per-frame VAD into turns.
+  `scripts/turn_check.py` compares the detectors on WAV files or a live microphone.
+- `scripts/interrupt_bench_frameworks.py` runs the real Pipecat and LiveKit tool-call and
+  interruption code with a scripted model; `interrupt-bench` gains a crash-mid-booking table
+  (`recover_tool_loop` asks a person; restarting the turn charged twice in 49% of runs).
+- `Executor.dedupe_window_s` reports the executor's repeat window.
 - `interrupt-bench` adds approval-spoofing scenarios and a "keeps running, result
   dropped" contender; the run viewer marks spoken progress lines and calls that finished
   through a cut.
@@ -46,9 +55,17 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The LiveKit and Pipecat connectors run each session (an `AgentSession`, an LLM service)
+  as one run and add a 120 s repeat window when the executor has none, so a model that
+  asks again for a booking it never heard back about gets the first result.
 - A tool declared `effects="additive"` or `"destructive"` now finishes when its caller is
   cancelled; the call is recorded, a new `tool.interrupted` event is emitted, then the
   cancellation goes on. Read-only tools and tools with no `effects` still stop at once.
+
+### Fixed
+
+- LiveKit tools failed inside a real `AgentSession` ("missing a required argument:
+  'context'"): LiveKit finds the `RunContext` parameter by its type hint, which now resolves.
 
 ## [1.1.1] - 2026-11-11
 

@@ -114,3 +114,28 @@ async def test_the_processor_drives_a_voice_agent():
     assert processor.interruptions == cuts + 1
     assert processor.pushed[-1] == (started, "up")  # other frames pass through
     await asyncio.wait_for(agent.close(), 1)
+
+
+async def test_a_reissued_booking_runs_once_per_llm_session():
+    booked.clear()
+    first, second = LLMService(), LLMService()
+    pipecat_tools(first, registry, executor=Executor(registry))
+    pipecat_tools(second, registry, executor=Executor(registry))
+    for llm in (first, first, second):  # a new call id each time
+        await llm.registered["book"][0](Params({"seat": "4A"}, llm))
+    assert booked == ["4A", "4A"]  # once for each session
+
+
+def test_the_repeat_window_is_added_only_when_missing():
+    from agent_adapter.integrations._default_runner import DefaultRunner
+    from agent_adapter.integrations._voice_bridge import VoiceRunner, session_run_id
+
+    own = Executor(registry, dedupe_window_s=5)
+    assert VoiceRunner(own).executor() is own
+    bare = Executor(registry)
+    windowed = VoiceRunner(bare).executor()
+    assert windowed.dedupe_window_s == 120 and VoiceRunner(bare).executor() is windowed
+    assert VoiceRunner(DefaultRunner()).executor().dedupe_window_s == 120
+    other = object()
+    assert VoiceRunner(other).executor() is other  # type: ignore[arg-type]
+    assert session_run_id(None) == "" and session_run_id(5) == ""

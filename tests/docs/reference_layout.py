@@ -199,6 +199,8 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
                 "",
                 ".socket",
                 ".turns",
+                ".silero",
+                ".smart_turn",
                 ".realtime",
                 ".openai_realtime",
                 ".gemini_live",

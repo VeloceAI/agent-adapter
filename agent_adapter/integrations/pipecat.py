@@ -12,11 +12,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from agent_adapter.core.context import ToolContext
 from agent_adapter.core.registry import Registry, check_target
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.exec import changes_things, listen_progress
-from agent_adapter.integrations._default_runner import lazy_runner
-from agent_adapter.integrations._voice_bridge import spawn
+from agent_adapter.integrations._voice_bridge import VoiceRunner, session_run_id, spawn
 from agent_adapter.integrations.base import IntegrationBase, ToolRunner
 from agent_adapter.voice.pump import EventPump
 
@@ -52,7 +52,7 @@ def pipecat_tool(spec: ToolSpec, *, executor: ToolRunner | None = None) -> Pipec
     check_target(spec, TARGET)
     from pipecat.adapters.llm.schemas.function_schema import FunctionSchema
 
-    runner = lazy_runner(executor)
+    runner = VoiceRunner(executor)
 
     async def handler(params: Any) -> None:
         with listen_progress(lambda text: _say(params, text)):
@@ -158,6 +158,14 @@ class PipecatIntegration(IntegrationBase):
     def export_tool(self, spec: ToolSpec, *, executor: ToolRunner | None = None) -> PipecatTool:
         """`pipecat_tool(spec, executor=executor)`."""
         return pipecat_tool(spec, executor=executor)
+
+    def bind_context(self, native: Any) -> ToolContext:
+        ctx = super().bind_context(native)
+        return ToolContext(
+            run_id=session_run_id(getattr(native, "llm", None)),
+            call_id=ctx.call_id,
+            extras=ctx.extras,
+        )
 
 
 INTEGRATION = PipecatIntegration()

@@ -21,6 +21,44 @@ class TurnDetector(Protocol):
     def feed(self, pcm: bytes) -> list[TurnEvent]: ...
 
 
+class TurnTimer:
+    """Turns from per-frame speech decisions: `start_ms` of speech starts one, `end_ms` of
+    quiet ends it. Any VAD (an energy level, Silero, your STT's flags) can drive it."""
+
+    def __init__(self, *, start_ms: float = 60, end_ms: float = 600) -> None:
+        if start_ms < 0 or end_ms <= 0:
+            raise ValueError("start_ms >= 0 and end_ms > 0")
+        self.start_ms = start_ms
+        self.end_ms = end_ms
+        self.speaking = False
+        self.quiet_ms = 0.0
+        self._loud_ms = 0.0
+
+    def step(self, speech: bool, ms: float) -> list[TurnEvent]:
+        """Advance by one frame of `ms` milliseconds."""
+        if speech:
+            self.quiet_ms = 0.0
+            self._loud_ms += ms
+            if not self.speaking and self._loud_ms >= self.start_ms:
+                self.speaking = True
+                return ["started"]
+            return []
+        self._loud_ms = 0.0
+        self.quiet_ms += ms
+        if self.speaking and self.quiet_ms >= self.end_ms:
+            self.speaking = False
+            return ["ended"]
+        return []
+
+
+def pcm16(data: bytes) -> array[int]:
+    """16-bit little-endian PCM as native integers."""
+    samples = array("h", data)
+    if sys.byteorder == "big":
+        samples.byteswap()
+    return samples
+
+
 class SilenceTurns:
     """Energy-based turns over 16-bit little-endian mono PCM.
 
@@ -37,16 +75,16 @@ class SilenceTurns:
         start_ms: float = 60,
         end_ms: float = 600,
     ) -> None:
-        if sample_rate <= 0 or not 0 < threshold < 1 or start_ms < 0 or end_ms <= 0:
-            raise ValueError("sample_rate > 0, 0 < threshold < 1, start_ms >= 0, end_ms > 0")
+        if sample_rate <= 0 or not 0 < threshold < 1:
+            raise ValueError("sample_rate > 0 and 0 < threshold < 1")
         self.sample_rate = sample_rate
         self.level = threshold * 32_768
-        self.start_ms = start_ms
-        self.end_ms = end_ms
-        self.speaking = False
-        self._loud_ms = 0.0
-        self._quiet_ms = 0.0
+        self.timer = TurnTimer(start_ms=start_ms, end_ms=end_ms)
         self._odd = b""  # a byte left over from a frame of odd length
+
+    @property
+    def speaking(self) -> bool:
+        return self.timer.speaking
 
     def feed(self, pcm: bytes) -> list[TurnEvent]:
         data, self._odd = self._odd + pcm, b""
@@ -54,27 +92,10 @@ class SilenceTurns:
             data, self._odd = data[:-1], data[-1:]
         if not data:
             return []
-        samples = array("h", data)
-        if sys.byteorder == "big":
-            samples.byteswap()
+        samples = pcm16(data)
         ms = len(samples) * 1000 / self.sample_rate
         rms = math.sqrt(sum(s * s for s in samples) / len(samples))
-        return self._step(rms >= self.level, ms)
-
-    def _step(self, loud: bool, ms: float) -> list[TurnEvent]:
-        if loud:
-            self._quiet_ms = 0.0
-            self._loud_ms += ms
-            if not self.speaking and self._loud_ms >= self.start_ms:
-                self.speaking = True
-                return ["started"]
-            return []
-        self._loud_ms = 0.0
-        self._quiet_ms += ms
-        if self.speaking and self._quiet_ms >= self.end_ms:
-            self.speaking = False
-            return ["ended"]
-        return []
+        return self.timer.step(rms >= self.level, ms)
 
 
-__all__ = ["SilenceTurns", "TurnDetector", "TurnEvent"]
+__all__ = ["SilenceTurns", "TurnDetector", "TurnEvent", "TurnTimer", "pcm16"]

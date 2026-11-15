@@ -8,8 +8,9 @@ description: "Register your Python tools on a Pipecat LLM service with approvals
 :material-flask-outline:{ .status-planned } Preview · `register_function` per spec ·
 `pip install "agent-adapter[pipecat]"` (`pipecat-ai` 1.13 to below 2)
 
-Contract tests run against the real `pipecat-ai` 1.16.0 classes (`LLMService`,
-`FunctionCallParams`, `FrameProcessor`); not yet run in a live pipeline.
+Contract tests run against the real `pipecat-ai` 1.16.0 classes, and
+`interrupt_bench_frameworks.py` drives a real pipeline's function calls and interruptions
+(0% half-done bookings, against 84% on Pipecat's defaults); not yet run with live audio.
 
 Two ways in:
 
@@ -43,6 +44,7 @@ context = LLMContext(messages, tools=tools)
 |---|---|
 | A tool with `effects="additive"` or `"destructive"` | registered with `cancel_on_interruption=False`: an interruption never stops it half-way |
 | A `read_only` tool or one with no `effects` | cancelled on interruption, Pipecat's default |
+| The model asks for the same booking again (a new call id) | the first result returns; one run per LLM service, 120 s window unless your executor sets `dedupe_window_s` |
 | A tool calls `progress("One moment")` | pushed as a `TTSSpeakFrame` that stays out of the LLM context |
 | A tool error, denial, guardrail or run limit | the result is `{"error": {"kind", "message"}}` |
 

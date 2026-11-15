@@ -83,7 +83,12 @@ class RunContext:
 
 def install_livekit(monkeypatch: pytest.MonkeyPatch) -> None:
     llm = _module("livekit.agents.llm", ToolError=LKToolError)
-    agents = _module("livekit.agents", function_tool=function_tool, llm=llm)
+    agents = _module(
+        "livekit.agents",
+        function_tool=function_tool,
+        llm=llm,
+        RunContext=type("RunContext", (), {}),
+    )
     root = _module("livekit", agents=agents)
     for module in (root, agents, llm):
         monkeypatch.setitem(sys.modules, module.__name__, module)
