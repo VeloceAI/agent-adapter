@@ -41,6 +41,15 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `scripts/interrupt_bench_frameworks.py` runs the real Pipecat and LiveKit tool-call and
   interruption code with a scripted model; `interrupt-bench` gains a crash-mid-booking table
   (`recover_tool_loop` asks a person; restarting the turn charged twice in 49% of runs).
+- `scripts/turn_bench.py` scores the turn detectors on real human speech: English human
+  clips from Pipecat's Smart Turn v3.2 test set (CC-BY-4.0), fetched clip by clip into a
+  folder you choose. It reports false cuts, end-of-turn delay and missed turns. On 300
+  clips, Smart Turn ended 15% of mid-thought pauses against 99% for Silero alone, with the
+  same 632 ms median delay; full table in the voice transports guide.
+- `scripts/voice_live_pipecat.py` runs a `VoiceAgent` through `voice_processor()` in a real
+  Pipecat pipeline with local audio, our Silero + Smart Turn detectors, Moonshine
+  speech-to-text and text-to-speech (all local, no keys) and a scripted model. A caller who
+  cuts in mid-booking gets one charge in every run; `--mic` makes you the caller.
 - `Executor.dedupe_window_s` reports the executor's repeat window.
 - `interrupt-bench` adds approval-spoofing scenarios and a "keeps running, result
   dropped" contender; the run viewer marks spoken progress lines and calls that finished

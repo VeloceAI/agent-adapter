@@ -10,7 +10,11 @@ description: "Register your Python tools on a Pipecat LLM service with approvals
 
 Contract tests run against the real `pipecat-ai` 1.16.0 classes, and
 `interrupt_bench_frameworks.py` drives a real pipeline's function calls and interruptions
-(0% half-done bookings, against 84% on Pipecat's defaults); not yet run with live audio.
+(0% half-done bookings, against 84% on Pipecat's defaults). `voice_live_pipecat.py` runs
+`voice_processor()` with real local audio, local speech-to-text and text-to-speech, and a
+scripted caller who cuts in mid-booking: charged once in every run
+([results](../how-to/voice-agents.md#hear-it-live-in-pipecat)). No person has run it by
+voice yet.
 
 Two ways in:
 

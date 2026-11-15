@@ -82,6 +82,30 @@ hearing the same speech from its speakers):
 | "so maybe we could, um", then quiet | ended at the pause | ended at the pause | held, ended after 3 s |
 | Live microphone, three sentences | all found | all found | all found, "um" held |
 
+On real human speech, `python scripts/turn_bench.py --data DIR --fetch 300` scores them on
+300 English human clips (65 MB) from Pipecat's Smart Turn v3.2 test set (CC-BY-4.0). Half
+stop where the speaker finished, half stop mid-thought, then quiet follows. A false cut
+ends a turn the speaker had not finished: they spoke again later in the clip, or a
+mid-thought clip ended within the pause. Delay runs from the last speech to "ended".
+
+| Detector | Cut, then spoke again | Cut in a 1 s pause | Cut in a 2 s pause | Delay p50 / p90 | Over 1.5 s late |
+|---|---|---|---|---|---|
+| `SilenceTurns()` (600 ms) | 19.3% | 80.0% | 98.0% | 504 / 1496 ms | 9.3% |
+| `SileroTurns()` (600 ms) | 11.3% | 99.3% | 100% | 632 / 692 ms | 0% |
+| `SmartTurn(SileroTurns())` | 8.7% | 14.7% | 15.3% | 632 / 752 ms | 2.7% |
+| `SileroTurns(end_ms=1000)` | 1.3% | 5.3% | 100% | 1048 / 1132 ms | 4.0% |
+| `SilenceTurns(end_ms=1000)` | 3.3% | 60.0% | 94.7% | 908 / 1888 ms | 24.3% |
+
+No detector missed a turn, apart from loudness at 1 s (0.7%). Smart Turn holds a pause
+mid-thought where a timer cannot, without slowing down most finished turns. Silero at 1 s
+only looks good at a 1 s pause because it ends at about 1.05 s.
+
+!!! note "Read these numbers with care"
+    This is Smart Turn's own held-out test set, so it has a home advantage. Three in four
+    clips come from one contributor (Liva AI). Speech end is where Silero last heard speech,
+    the quiet after each clip is digital silence (kind to loudness), and how long the
+    speaker really paused is unknown.
+
 ## OpenAI Realtime and Gemini Live
 
 The model hears and speaks on its own; `RealtimeAgent` runs the tools it calls through your
