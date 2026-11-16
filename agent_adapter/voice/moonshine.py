@@ -44,12 +44,20 @@ def _text(transcript: Any) -> str:
 
 
 class MoonshineSTT:
-    """Speech-to-text on the CPU; `model` is a Moonshine architecture name."""
+    """Speech-to-text on the CPU; `model` is a Moonshine architecture name.
 
-    def __init__(self, model: str = "medium-streaming", *, language: str = "en") -> None:
+    A stream decodes what it has heard every `update_interval` seconds of audio. Only the
+    final text is used, so a longer interval saves CPU; past about 1.5 s the final pass has
+    more left to decode and the reply starts later.
+    """
+
+    def __init__(
+        self, model: str = "medium-streaming", *, language: str = "en", update_interval: float = 1.0
+    ) -> None:
         mv = _moonshine()
         path, arch = mv.get_model_for_language(language, mv.string_to_model_arch(model))
         self._transcriber = mv.Transcriber(model_path=path, model_arch=arch)
+        self.update_interval = update_interval
         self._lock = threading.Lock()  # one engine call at a time
 
     async def transcribe(self, pcm: bytes, sample_rate: int) -> str:
@@ -107,7 +115,7 @@ class _MoonshineStream:
 
     def _create(self) -> Any:
         with self._stt._lock:
-            stream = self._stt._transcriber.create_stream(update_interval=0.3)
+            stream = self._stt._transcriber.create_stream(update_interval=self._stt.update_interval)
             stream.start()
             return stream
 

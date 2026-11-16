@@ -150,6 +150,10 @@ class Measure:
         self.onset: float | None = None
         self._cpu = time.process_time()
 
+    def begin(self) -> None:
+        """Start the CPU clock as the call starts: model loading is not the call's cost."""
+        self._cpu = time.process_time()
+
     def hear(self, pcm: bytes) -> None:
         self.blocks.append((time.monotonic(), rms(pcm) > LOUD))
 
@@ -222,6 +226,7 @@ async def caller_script(
     measure: Measure,
 ) -> None:
     """The scripted caller in real time, 20 ms a frame: ask, wait, cut in mid-booking."""
+    measure.begin()
     quiet, clock = b"\x00" * FRAME * 2, time.monotonic()
 
     async def play(pcm: bytes, on_frame: Callable[[int], None] = lambda i: None) -> None:
