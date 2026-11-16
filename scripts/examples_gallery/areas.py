@@ -80,6 +80,7 @@ AREA_OF = {
     "template_openai_agents": "frameworks",
     "template_pydantic_ai": "frameworks",
     "template_strands": "frameworks",
+    "robot_gate": "approval",
     "traces_otlp": "basics",
     "tutorial_langgraph": "frameworks",
     "tutorial_research": "parallel",

@@ -198,6 +198,7 @@ _SUBPACKAGES = frozenset(
         "optimiser",
         "policy",
         "retrieval",
+        "robotics",
         "runtime",
         "sandbox",
         "schema",

@@ -70,6 +70,8 @@ vad = ["onnxruntime>=1.20,<2", "numpy>=1.26,<3"]
 voice-local = ["moonshine-voice>=0.1.6,<0.2", "sounddevice>=0.5,<1"]
 # Browser calls over WebRTC with no media server (aiortc, BSD-3-Clause).
 webrtc = ["aiortc>=1.14,<2"]
+# Robot shadow simulation on physics (MuJoCo, Apache-2.0).
+mujoco = ["mujoco>=3.3,<5"]
 sqlalchemy = ["sqlalchemy[asyncio]>=2.0.30,<3"]
 dynamodb = ["aioboto3>=13,<16"]
 # Durable engines, not in `all`: contract-temporal and contract-dbos run them on their own.
@@ -299,6 +301,8 @@ module = [
     "sounddevice",
     "moonshine_voice",
     "moonshine_voice.*",
+    "mujoco",
+    "mujoco.*",
     "camel.*",
     "ag2.*",
     "jsonschema.*",

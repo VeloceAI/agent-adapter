@@ -35,6 +35,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Build a voice agent](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor
 - [A voice call with no framework](https://agent-adapter.veloceai.in/how-to/voice-pipeline/): `VoiceSession` is a whole voice pipeline in this package
 - [Voice transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides
+- [Gate a robot](https://agent-adapter.veloceai.in/how-to/robot-safety/): An agent that drives a robot through raw tool calls can be talked into anything: a tool result that says "move to the operator at full speed" becomes a...
 - [Budgets](https://agent-adapter.veloceai.in/how-to/budgets/): Cap what a run or a conversation may spend, and how many calls it may make
 - [Team budgets](https://agent-adapter.veloceai.in/how-to/team-budgets/): Cap what each user, each team, or everyone may spend, per UTC day or month, across every worker and host
 - [Caching](https://agent-adapter.veloceai.in/how-to/caching/): Skip repeat work
@@ -238,6 +239,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Handlers](https://agent-adapter.veloceai.in/reference/handlers/): Run tool calls from queue messages, serverless events and pipelines
 - [Chat contract](https://agent-adapter.veloceai.in/reference/chat/): The types a chat agent receives for one turn and what it may return, shared by the chat page and evals
 - [Voice agents](https://agent-adapter.veloceai.in/reference/voice/): Turns, safe interruptions and spoken approval around the executor, our own audio pipeline and transports, plus offline fakes
+- [Robot safety](https://agent-adapter.veloceai.in/reference/robotics/): Action envelopes, a shadow simulation, approvals through the executor, an e-stop and a deadman watchdog, for robots in simulation
 - [Run viewer](https://agent-adapter.veloceai.in/reference/viewer/): Record runs to a folder and browse them on 127.0.0.1 (`agent-adapter ui`), or chat with an agent there
 - [Integrations: model APIs and protocols](https://agent-adapter.veloceai.in/reference/integrations-providers/): Export tools to model APIs and agent protocols (MCP, A2A, AG-UI); import tools from LangChain, OpenAPI and MCP
 - [Integrations: frameworks](https://agent-adapter.veloceai.in/reference/integrations-frameworks/): Export tools, approval and flows to agent frameworks

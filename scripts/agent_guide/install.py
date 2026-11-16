@@ -48,6 +48,7 @@ NEEDS: dict[str, str] = {
     "vad": "local turn detection: Silero VAD and Smart Turn (`SileroTurns`, `SmartTurn`)",
     "voice-local": "our voice pipeline on a laptop: Moonshine and the sound card",
     "webrtc": "browser voice calls over WebRTC (`WebRTCAudio`)",
+    "mujoco": "MuJoCo robot sim (`MujocoSim`)",
     "sqlalchemy": "Postgres or any SQLAlchemy database as the approval store",
     "dynamodb": "DynamoDB approval store (AWS serverless)",
     "server": "HTTP tool server (ASGI) with MCP mounted",
