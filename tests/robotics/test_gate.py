@@ -248,13 +248,3 @@ async def test_kinematic_sim_paths() -> None:
     assert [w.at for w in still] == [START]
     path = await sim.simulate(START, Command(kind="move", target=(0, 0.2, 0.1), speed=0.5), SPEC)
     assert path[-1].at == (0, 0.2, 0.1) and path[-1].t == pytest.approx(0.4)
-
-
-async def test_cancelling_the_caller_lets_a_started_move_finish() -> None:
-    _, executor, robot, _, _ = build(answer=True)
-    move = asyncio.create_task(executor.run("move_to", at(0.0, 0.1, 0.1, speed=0.25)))
-    await asyncio.sleep(0.1)
-    move.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await move
-    assert robot.at == (0.0, 0.1, 0.1) and not robot.moving

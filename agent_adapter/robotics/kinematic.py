@@ -7,18 +7,30 @@ import math
 import time
 from collections.abc import Callable
 
+from agent_adapter.core.errors import ToolError
 from agent_adapter.robotics.spec import ActionSpec, Command, Point, Waypoint
 
-__all__ = ["KinematicSim", "SimRobot", "straight_line"]
+__all__ = ["MAX_WAYPOINTS", "KinematicSim", "SimRobot", "straight_line"]
+
+MAX_WAYPOINTS = 100_000
+STOPPED = "robot is stopped: reset it before it moves again"
 
 
-def straight_line(start: Point, target: Point, speed: float, dt: float) -> list[Waypoint]:
-    """Constant-speed samples every `dt` seconds from `start` to `target` (the last is exact)."""
+def straight_line(
+    start: Point, target: Point, speed: float, dt: float, *, max_steps: int = MAX_WAYPOINTS
+) -> list[Waypoint]:
+    """Constant-speed samples every `dt` seconds from `start` to `target` (the last is exact).
+
+    Raises:
+        ValueError: the path needs more than `max_steps` waypoints.
+    """
     distance = math.dist(start, target)
     if distance == 0:
         return [Waypoint(t=0.0, at=target)]
     duration = distance / speed
     steps = max(1, math.ceil(duration / dt))
+    if steps > max_steps:
+        raise ValueError(f"path needs {steps} waypoints, over the cap of {max_steps}")
     path = []
     for i in range(1, steps + 1):
         f = i / steps
@@ -42,8 +54,9 @@ class KinematicSim:
 class SimRobot:
     """`RobotPort` stand-in that moves a point in real time, one control tick at a time.
 
-    `stop` wakes the control loop at once. `log` keeps every command that reached the
-    robot; `halted_at` is the clock time the last motion ended.
+    `stop` wakes the control loop at once and latches: `execute` refuses until `reset()`.
+    `log` keeps every command the robot accepted; `halted_at` is the clock time the last
+    motion ended.
     """
 
     def __init__(
@@ -66,12 +79,13 @@ class SimRobot:
         return self.at
 
     async def execute(self, command: Command) -> None:
+        if self._stop.is_set():
+            raise ToolError(STOPPED)
         self.log.append(command)
         if command.kind == "grip":
             self.force = command.force
             return
         assert command.target is not None
-        self._stop.clear()
         self.moving, self.halted_at = True, None
         try:
             await self._move(command.target, command.speed)
@@ -99,3 +113,6 @@ class SimRobot:
     async def stop(self) -> None:
         self._stop.set()
         self.force = 0.0
+
+    def reset(self) -> None:
+        self._stop.clear()
