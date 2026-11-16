@@ -61,6 +61,7 @@ the newest release inside each pinned range is tested. An extra marked
 | our voice pipeline on a laptop: Moonshine and the sound card | `pip install "agent-adapter[voice-local]"` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` |
 | hosted STT and TTS, Twilio calls | `pip install "agent-adapter[voice-cloud]"` | `httpx>=0.27,<1`, `websockets>=13,<18` |
 | browser voice calls over WebRTC (`WebRTCAudio`) | `pip install "agent-adapter[webrtc]"` | `aiortc>=1.14,<2` |
+| MuJoCo robot sim (`MujocoSim`) | `pip install "agent-adapter[mujoco]"` | `mujoco>=3.3,<5` |
 | Postgres or any SQLAlchemy database as the approval store | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
 | DynamoDB approval store (AWS serverless) | `pip install "agent-adapter[dynamodb]"` | `aioboto3>=13,<16` |
 | flows as Temporal workflows (`agent_adapter.integrations.temporal`) | `pip install "agent-adapter[temporal]"` | `temporalio>=1.35,<2` |
@@ -72,7 +73,7 @@ the newest release inside each pinned range is tested. An extra marked
 | Mem0 memory backend (`Mem0Memory`) | `pip install "agent-adapter[mem0]"` | `mem0ai>=2.2,<3` |
 | Zep memory backend (`ZepMemory`) | `pip install "agent-adapter[zep]"` | `zep-cloud>=4.1,<5` |
 | Graphiti knowledge-graph memory (`GraphitiMemory`) | `pip install "agent-adapter[graphiti]"` | `graphiti-core>=0.31,<1` |
-| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `vad`, `voice-local`, `webrtc`, `zep` |
+| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `mujoco`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `vad`, `voice-local`, `webrtc`, `zep` |
 
 ## Import rules
 

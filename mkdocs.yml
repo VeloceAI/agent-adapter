@@ -144,6 +144,7 @@ nav:
       - A voice call with no framework: how-to/voice-pipeline.md
       - Hosted speech, echo and phone calls: how-to/voice-providers-and-phone.md
       - Voice transports and realtime models: how-to/voice-transports.md
+      - Gate a robot: how-to/robot-safety.md
       - Budgets: how-to/budgets.md
       - Team budgets: how-to/team-budgets.md
       - Caching: how-to/caching.md
@@ -348,6 +349,7 @@ nav:
       - Handlers: reference/handlers.md
       - Chat contract: reference/chat.md
       - Voice agents: reference/voice.md
+      - Robot safety: reference/robotics.md
       - Run viewer: reference/viewer.md
       - "Integrations: model APIs and protocols": reference/integrations-providers.md
       - "Integrations: frameworks": reference/integrations-frameworks.md

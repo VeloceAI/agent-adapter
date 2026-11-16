@@ -228,6 +228,16 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
             )
         ),
     ),
+    "robotics": (
+        "Robot safety",
+        "Action envelopes, a shadow simulation, approvals through the executor, an e-stop and "
+        "a deadman watchdog, for robots in simulation. "
+        "Guide: [Gate a robot](../how-to/robot-safety.md).",
+        tuple(
+            "agent_adapter.robotics" + suffix
+            for suffix in ("", ".gate", ".spec", ".ports", ".kinematic", ".watchdog", ".mujoco_sim")
+        ),
+    ),
     "viewer": (
         "Run viewer",
         "Record runs to a folder and browse them on 127.0.0.1 (`agent-adapter ui`), or chat "

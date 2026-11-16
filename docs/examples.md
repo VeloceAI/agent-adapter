@@ -24,7 +24,7 @@ classes that other code imports. Its docs page shows how to start it.
 [<b>No-framework backends</b><span>Web apps, workers, scripts, serverless, deploy.</span><small>20 examples</small>](examples/backends.md){ .aa-gcard }
 [<b>Agent frameworks</b><span>Registry tools inside each agent framework.</span><small>27 examples</small>](examples/frameworks.md){ .aa-gcard }
 [<b>Context compression</b><span>Shrink what each model call sends.</span><small>12 examples</small>](examples/compression.md){ .aa-gcard }
-[<b>Approval</b><span>Human review, durable stores, resume once.</span><small>12 examples</small>](examples/approval.md){ .aa-gcard }
+[<b>Approval</b><span>Human review, durable stores, resume once.</span><small>13 examples</small>](examples/approval.md){ .aa-gcard }
 [<b>Cost and cache</b><span>Ledgers, prices, budgets, caches, embeddings.</span><small>7 examples</small>](examples/cost-cache.md){ .aa-gcard }
 [<b>Parallel fan-out and fan-in</b><span>Several calls at once, then merge.</span><small>3 examples</small>](examples/parallel.md){ .aa-gcard }
 [<b>Memory and retrieval</b><span>Per-user memory, and RAG with citations.</span><small>3 examples</small>](examples/memory.md){ .aa-gcard }

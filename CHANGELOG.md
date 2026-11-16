@@ -30,6 +30,15 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   OpenAI Agents JS MCP routes now run live against our server (`examples/connect/js`).
   Elixir (Anubis MCP) and Dart/Flutter (`mcp_dart`) clients in `examples/clients`, and a
   REST and OpenAPI-generated client page for C++, Scala, Zig and Lua.
+- Robot safety, simulation first (`agent_adapter.robotics`): `RobotGate` turns a
+  `RobotPort` into executor tools (`move_to`, `grip`, `estop`, `reset_estop`) behind an
+  `ActionSpec` envelope (workspace, speed, force, command rate, keep-out zones, hard
+  limits). Inside the envelope a command runs; outside, the tool's `confirm` rule asks the
+  executor's approval port; hard limits, keep-out paths from a `SimPort` shadow run, rate
+  overruns, a latched e-stop and a lost heartbeat block it. `gate.estop()` needs no
+  approval or executor; `gate.deadman(timeout)` stops motion when heartbeats stop.
+  `KinematicSim` and `SimRobot` are built in; `MujocoSim` needs the new `mujoco` extra.
+  `scripts/robot_bench.py` compares it with an ungated port.
 - Our own voice pipeline, no framework needed: `VoiceSession(transport, stt=, tts=, turns=)`
   runs a whole call from raw audio to a `VoiceAgent` and back. Playback pauses within one
   audio block when the caller starts talking; the turn is cut only after `confirm_ms` of

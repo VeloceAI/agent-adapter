@@ -49,10 +49,12 @@ SUBPACKAGES = {
     "cli",
     "viewer",
     "voice",
+    "robotics",
 }
 # `handlers` (queues, serverless), `cli` (the command), `viewer` (run recorder and local
-# page) and `audit` (the audit sink) are leaf entry points: no other package imports them.
-_ALL = {"base", "root"} | (SUBPACKAGES - {"handlers", "cli", "viewer", "audit"})
+# page), `audit` (the audit sink) and `robotics` (the robot gate) are leaf entry points: no
+# other package imports them.
+_ALL = {"base", "root"} | (SUBPACKAGES - {"handlers", "cli", "viewer", "audit", "robotics"})
 # R5: package keys each package may import ("root" = `agent_adapter` itself, outside the DAG).
 # Every package may also import the leaf `_version` (see VERSION).
 ALLOWED = {
@@ -80,6 +82,8 @@ ALLOWED = {
     # tracing: VoiceSession emits a `custom.voice_turn` timing event per turn.
     # models: hosted speech providers raise the model ports' typed errors.
     "voice": {"base", "core", "runtime", "tracing", "hooks", "exec", "models", "voice"},
+    # Robot commands are tools the executor runs (approvals, ledger); tracing: e-stop events.
+    "robotics": {"base", "core", "runtime", "tracing", "exec", "robotics"},
     # hooks only for `is_secret_field` (approval memory never names secret fields).
     "approval": {"base", "runtime", "tracing", "hooks", "approval"},
     "hooks": {"base", "core", "runtime", "tracing", "hooks"},
@@ -211,6 +215,7 @@ ODM_ROOTS: dict[str, set[str]] = {
     "voice/webrtc.py": {"aiortc", "av"},
     "voice/_http.py": {"httpx"},
     "voice/deepgram.py": {"websockets"},
+    "robotics/mujoco_sim.py": {"mujoco"},
     **{
         f"integrations/{name}": {*own, *_INTEGRATION_COMMON}
         for name, own in INTEGRATION_ROOTS.items()
