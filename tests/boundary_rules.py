@@ -77,7 +77,8 @@ ALLOWED = {
     "chat": {"base", "core", "exec", "memory", "chat"},
     # Voice turns run the tool loop through the executor; nothing below imports voice.
     # tracing: VoiceSession emits a `custom.voice_turn` timing event per turn.
-    "voice": {"base", "core", "runtime", "tracing", "hooks", "exec", "voice"},
+    # models: hosted speech providers raise the model ports' typed errors.
+    "voice": {"base", "core", "runtime", "tracing", "hooks", "exec", "models", "voice"},
     # hooks only for `is_secret_field` (approval memory never names secret fields).
     "approval": {"base", "runtime", "tracing", "hooks", "approval"},
     "hooks": {"base", "core", "runtime", "tracing", "hooks"},
@@ -207,6 +208,8 @@ ODM_ROOTS: dict[str, set[str]] = {
     "voice/local.py": {"sounddevice"},
     "voice/moonshine.py": {"moonshine_voice"},
     "voice/webrtc.py": {"aiortc", "av"},
+    "voice/_http.py": {"httpx"},
+    "voice/deepgram.py": {"websockets"},
     **{
         f"integrations/{name}": {*own, *_INTEGRATION_COMMON}
         for name, own in INTEGRATION_ROOTS.items()

@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 import sys
 from array import array
+from dataclasses import dataclass
 from typing import Literal, Protocol
 
 TurnEvent = Literal["started", "ended"]
@@ -49,6 +50,24 @@ class TurnTimer:
             self.speaking = False
             return ["ended"]
         return []
+
+
+@dataclass(frozen=True)
+class EchoGuard:
+    """When speech counts as a barge-in while the agent talks on speakers with no echo
+    cancelling: `loud_ms` of audio at `level` RMS or above (a fraction of full scale; the
+    agent's voice through the mic is quieter than a caller at it), or `speech_ms` of speech.
+
+    Tune `level` on your hardware: above the agent's echo, below your voice.
+    """
+
+    level: float = 0.1
+    loud_ms: float = 200
+    speech_ms: float = 1200
+
+    def __post_init__(self) -> None:
+        if not 0 < self.level < 1 or self.loud_ms <= 0 or self.speech_ms <= 0:
+            raise ValueError("0 < level < 1, loud_ms > 0 and speech_ms > 0")
 
 
 def pcm16(data: bytes) -> array[int]:
@@ -98,4 +117,4 @@ class SilenceTurns:
         return self.timer.step(rms >= self.level, ms)
 
 
-__all__ = ["SilenceTurns", "TurnDetector", "TurnEvent", "TurnTimer", "pcm16"]
+__all__ = ["EchoGuard", "SilenceTurns", "TurnDetector", "TurnEvent", "TurnTimer", "pcm16"]
