@@ -34,6 +34,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Run flows on Temporal or DBOS](https://agent-adapter.veloceai.in/how-to/durable-engines/): A `Flow` can run as a Temporal workflow or a DBOS workflow
 - [Build a voice agent](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor
 - [A voice call with no framework](https://agent-adapter.veloceai.in/how-to/voice-pipeline/): `VoiceSession` is a whole voice pipeline in this package
+- [Hosted speech, echo and phone calls](https://agent-adapter.veloceai.in/how-to/voice-providers-and-phone/): This page adds three things to our own voice pipeline: hosted speech providers, a guard against the agent hearing itself on speakers, and the phone basics...
 - [Voice transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides
 - [Budgets](https://agent-adapter.veloceai.in/how-to/budgets/): Cap what a run or a conversation may spend, and how many calls it may make
 - [Team budgets](https://agent-adapter.veloceai.in/how-to/team-budgets/): Cap what each user, each team, or everyone may spend, per UTC day or month, across every worker and host

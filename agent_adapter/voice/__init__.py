@@ -13,7 +13,9 @@ from agent_adapter.voice.player import Player
 from agent_adapter.voice.ports import CallableSpeaker, Speaker
 from agent_adapter.voice.pump import EventPump
 from agent_adapter.voice.session import TurnTiming, VoiceSession
+from agent_adapter.voice.turns import EchoGuard
 from agent_adapter.voice.twilio import TwilioStream
+from agent_adapter.voice.twilio_calls import TwilioCalls
 
 __all__ = [
     "STT",
@@ -24,11 +26,13 @@ __all__ = [
     "CallableSTT",
     "CallableSpeaker",
     "CallableTTS",
+    "EchoGuard",
     "EventPump",
     "LocalAudio",
     "Player",
     "Speaker",
     "TurnTiming",
+    "TwilioCalls",
     "TwilioStream",
     "VoiceAgent",
     "VoiceApproval",

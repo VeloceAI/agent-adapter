@@ -55,10 +55,11 @@ the newest release inside each pinned range is tested. An extra marked
 | AG2 tools | `pip install "agent-adapter[ag2]"` | `ag2>=1.2.2,<2`; checked at use: 1.2.2 to below 2.0 |
 | A2A server and client | `pip install "agent-adapter[a2a]"` | `a2a-sdk[http-server]>=1.3,<2` |
 | AG-UI event stream (CopilotKit and other UIs) | `pip install "agent-adapter[ag-ui]"` | `ag-ui-protocol>=1.0,<2`; checked at use: 1.0 to below 2.0 |
-| LiveKit voice agents: tools and a `VoiceAgent` on a session (preview) | `pip install "agent-adapter[livekit]"` | `livekit-agents>=1.8,<2`; own environment (WebRTC and media binaries) |
-| Pipecat voice pipelines: tools and a `VoiceAgent` processor (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
+| LiveKit voice agents: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[livekit]"` | `livekit-agents>=1.8,<2`; own environment (WebRTC and media binaries) |
+| Pipecat voice pipelines: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
 | local turn detection: Silero VAD and Smart Turn (`SileroTurns`, `SmartTurn`) | `pip install "agent-adapter[vad]"` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` |
 | our voice pipeline on a laptop: Moonshine and the sound card | `pip install "agent-adapter[voice-local]"` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` |
+| hosted STT and TTS, Twilio calls | `pip install "agent-adapter[voice-cloud]"` | `httpx>=0.27,<1`, `websockets>=13,<18` |
 | browser voice calls over WebRTC (`WebRTCAudio`) | `pip install "agent-adapter[webrtc]"` | `aiortc>=1.14,<2` |
 | Postgres or any SQLAlchemy database as the approval store | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
 | DynamoDB approval store (AWS serverless) | `pip install "agent-adapter[dynamodb]"` | `aioboto3>=13,<16` |
@@ -72,7 +73,7 @@ the newest release inside each pinned range is tested. An extra marked
 | Zep memory backend (`ZepMemory`) | `pip install "agent-adapter[zep]"` | `zep-cloud>=4.1,<5` |
 | Graphiti knowledge-graph memory (`GraphitiMemory`) | `pip install "agent-adapter[graphiti]"` | `graphiti-core>=0.31,<1` |
 | every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `vad`, `voice-local`, `webrtc`, `zep` |
-| running this repository's tests and linters | `pip install -e ".[dev]"` (in a checkout) | `pytest>=8`, `pytest-asyncio>=0.24`, `pytest-cov>=5`, `pytest-xdist>=3.8,<4`, `pytest-testmon>=2.3,<3`, `ruff>=0.6`, `mypy>=1.11`, `nox>=2024.10`, `hatchling>=1.27`, `tzdata>=2024.1`, `fakeredis>=2.26`, `lupa>=2.2`, `sqlalchemy[asyncio]>=2.0.30,<3`, `aiosqlite>=0.20,<1`, `moto[dynamodb]>=5,<6` |
+| running this repository's tests and linters | `pip install -e ".[dev]"` (in a checkout) | `pytest>=8`, `pytest-asyncio>=0.24`, `pytest-cov>=5`, `pytest-xdist>=3.8,<4`, `pytest-testmon>=2.3,<3`, `ruff>=0.6`, `mypy>=1.11`, `nox>=2024.10`, `hatchling>=1.27`, `tzdata>=2024.1`, `fakeredis>=2.26`, `lupa>=2.2`, `sqlalchemy[asyncio]>=2.0.30,<3`, `aiosqlite>=0.20,<1`, `moto[dynamodb]>=5,<6`, `httpx>=0.27,<1`, `websockets>=13,<18` |
 | building this repository's docs site | `pip install -e ".[docs]"` (in a checkout) | `mkdocs-material>=9.5`, `mkdocstrings[python]>=0.26` |
 
 ## Import rules
@@ -1616,6 +1617,7 @@ Voice agents: safe interruptions, spoken approval and one ledger, on any audio s
 - `CallableSTT(fn: Callable[[bytes, int], str | Awaitable[str]]) -> None`: An `STT` from `fn(pcm, sample_rate) -> str`; a sync function runs in a thread.
 - `CallableSpeaker(say: Callable[[str], Awaitable[None] | None], stop: Callable[[], Awaitable[None] | None] | None = None) -> None`: A `Speaker` from plain functions: `say(text)` and an optional `stop()`, sync or async.
 - `CallableTTS(fn: Callable[[str], Any], *, sample_rate: int) -> None`: A `TTS` from `fn(text)` returning PCM16 bytes, or an iterable or async iterable of chunks; a sync function runs in a thread.
+- `EchoGuard(level: float = 0.1, loud_ms: float = 200, speech_ms: float = 1200) -> None`: When speech counts as a barge-in while the agent talks on speakers with no echo cancelling: `loud_ms` of audio at `level` RMS or above (a fraction of full scale; the agent's voice through the mic is quieter than a caller at it), or `speech_ms` of speech.
 - `EventPump(agent: VoiceAgent) -> None`: Hands caller events to a `VoiceAgent` one at a time, in order.
 - `LocalAudio(*, in_rate: int = 16000, out_rate: int = 24000, frame_ms: int = 20, input_device: int | str | None = None, output_device: int | str | None = None, speakers: bool = True) -> None`: Microphone in at `in_rate`, speakers out at `out_rate`, in `frame_ms` blocks.
 - `Player(tts: TTS, buffer: PlayoutBuffer, *, cache_lines: int = 64) -> None`: Speaks lines through a `PlayoutBuffer` and knows how much of each the caller heard.
@@ -1623,10 +1625,11 @@ Voice agents: safe interruptions, spoken approval and one ledger, on any audio s
 - `Speaker` (protocol: say, stop): Speaks text aloud: LiveKit, Pipecat, a phone line, a browser, any TTS.
 - `TTS` (protocol: synthesize): Text-to-speech: 16-bit mono PCM chunks at `sample_rate`, as soon as each is ready.
 - `TurnTiming(started: float, confirmed: float | None = None, ended: float | None = None, speech_end: float | None = None, transcribed: float | None = None, first_audio: float | None = None, text: str = '', resumed: bool = False) -> None`: When each step of one caller turn happened, in seconds on the monotonic clock.
-- `TwilioStream(socket: TextSocket, *, frame_ms: int = 20, lead_ms: int = 80) -> None`: An `AudioTransport` over a Twilio Media Streams WebSocket (any `TextSocket`).
+- `TwilioCalls(account_sid: str | None = None, auth_token: str | None = None, *, api_key: str | None = None, api_secret: str | None = None, base_url: str = 'https://api.twilio.com', client: Any = None, timeout: float = 15) -> None`: A small async client for the Calls resource; `client` takes your `httpx.AsyncClient`.
+- `TwilioStream(socket: TextSocket, *, calls: TwilioCalls | None = None, frame_ms: int = 20, lead_ms: int = 80) -> None`: An `AudioTransport` over a Twilio Media Streams WebSocket (any `TextSocket`).
 - `VoiceAgent(model: LLMPort, executor: Executor, speaker: Speaker, *, instructions: str = '', registry: Registry | None = None, max_steps: int = 8, run_id: str | None = None, dedupe_window_s: float | None = 120.0, minute_item: str | None = None) -> None`: A voice agent from a model, an executor and a speaker; works with any audio stack.
 - `VoiceApproval(*, timeout_s: float = 10.0, prompt: Callable[[ApprovalRequest], str] = default_prompt, yes_words: frozenset[str] = ...) -> None`: Approval port for voice: says a prompt, then waits for the caller's next final words.
-- `VoiceSession(transport: AudioTransport, *, stt: STT, tts: TTS, turns: TurnDetector, confirm_ms: float = 300, pre_roll_ms: float = 300, early_ms: float = 200, backchannels: frozenset[str] = ...) -> None`: Runs a `VoiceAgent` on an `AudioTransport`; give the agent `session.speaker`.
+- `VoiceSession(transport: AudioTransport, *, stt: STT, tts: TTS, turns: TurnDetector, confirm_ms: float = 300, pre_roll_ms: float = 300, early_ms: float = 200, backchannels: frozenset[str] = ..., echo_guard: EchoGuard | None = None, keypad_wait_ms: float = 1500, keypad_text: str = '(keypad) {digits}') -> None`: Runs a `VoiceAgent` on an `AudioTransport`; give the agent `session.speaker`.
 - `YES_WORDS = ...`
 - `binary_socket(send: Callable[[str | bytes], Awaitable[Any]], messages: AsyncIterator[str | bytes]) -> BinarySocket`: A `BinarySocket` from a send function and an async iterator of received messages.
 - `is_yes(text: str, words: frozenset[str] = ...) -> bool`: True only when every word is a yes word: "yeah no", "yes but" and "" are all no.

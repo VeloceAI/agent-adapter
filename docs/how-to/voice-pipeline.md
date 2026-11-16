@@ -40,14 +40,16 @@ Moonshine (MIT, Kokoro voices Apache-2.0) runs on the CPU with no keys:
 `pip install "agent-adapter[voice-local,vad]"`. Any other provider fits `CallableSTT(fn)`
 and `CallableTTS(fn, sample_rate=)`; an STT with `open()` (`StreamingSTT`) hears each
 turn as it is spoken.
+Deepgram, OpenAI, ElevenLabs and Cartesia are ready-made: see
+[Hosted speech, echo and phone calls](voice-providers-and-phone.md).
 
 ## Pick a transport
 
 | Transport | For | Notes |
 |---|---|---|
-| `LocalAudio()` | a laptop | sounddevice; use headphones (no echo cancelling) |
+| `LocalAudio()` | a laptop | sounddevice; headphones, or speakers with an `EchoGuard` |
 | `AudioSocket(socket)` | a browser, app or gateway | binary PCM16 both ways; we send `{"type": "clear"}` on a cut |
-| `TwilioStream(socket)` | phone calls | Twilio Media Streams, 8 kHz μ-law; `clear` on a cut, `mark` per line |
+| `TwilioStream(socket)` | phone calls | Twilio Media Streams, 8 kHz μ-law; `clear` on a cut, `mark` per line; keypad, hang up, transfer |
 | `WebRTCAudio()` | a browser, peer to peer | `pip install "agent-adapter[webrtc]"` (aiortc, BSD) |
 
 Every transport drains the session's playout buffer at the pace audio plays, so a pause

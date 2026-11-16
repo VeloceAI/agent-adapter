@@ -5,6 +5,10 @@ transport -> turn detector -> speech-to-text -> VoiceAgent -> text-to-speech -> 
 When the caller starts talking, playback pauses within one audio frame. The turn is cut
 only once the speech is real: `confirm_ms` of speech, or words in the transcript. A cough,
 or an "uh-huh" while the agent speaks, resumes playback where it paused.
+
+With an `EchoGuard` (speakers with no echo cancelling), speech that starts while the agent
+talks pauses nothing until it is loud enough or long enough; one that never is was the
+agent's own voice in the mic and is dropped.
 """
 
 from __future__ import annotations
@@ -20,11 +24,11 @@ from typing import TYPE_CHECKING, Any
 from agent_adapter.core.errors import log_failure
 from agent_adapter.tracing.events import emit, make_event
 from agent_adapter.voice.media import STT, TTS, AudioTransport, StreamingSTT, STTStream
-from agent_adapter.voice.pcm import Resampler
+from agent_adapter.voice.pcm import Resampler, rms
 from agent_adapter.voice.player import Player
 from agent_adapter.voice.playout import PlayoutBuffer, Segment, fire
 from agent_adapter.voice.pump import EventPump
-from agent_adapter.voice.turns import TurnDetector, TurnTimer
+from agent_adapter.voice.turns import EchoGuard, TurnDetector, TurnTimer
 
 if TYPE_CHECKING:
     from agent_adapter.voice.agent import VoiceAgent
@@ -78,6 +82,9 @@ class VoiceSession:
     Transcription starts early: a `StreamingSTT` hears the turn as it is spoken, and the
     final pass starts after `early_ms` of quiet, while the detector is still deciding
     whether the turn is over. If the caller goes on, that pass is dropped.
+
+    Keypad digits from a transport with `on_digit` (`TwilioStream`) reach the agent as
+    `keypad_text`, once `keypad_wait_ms` passes with no new digit, or at once on `#`.
     """
 
     def __init__(
@@ -91,6 +98,9 @@ class VoiceSession:
         pre_roll_ms: float = 300,
         early_ms: float = 200,
         backchannels: frozenset[str] = BACKCHANNELS,
+        echo_guard: EchoGuard | None = None,
+        keypad_wait_ms: float = 1500,
+        keypad_text: str = "(keypad) {digits}",
     ) -> None:
         self.transport = transport
         self.stt = stt
@@ -98,6 +108,9 @@ class VoiceSession:
         self.confirm_ms = confirm_ms
         self.early_ms = early_ms
         self.backchannels = backchannels
+        self.echo_guard = echo_guard
+        self.keypad_wait_ms = keypad_wait_ms
+        self.keypad_text = keypad_text
         self.buffer = PlayoutBuffer(transport.out_rate)
         self.speaker = Player(tts, self.buffer)
         self.timings: list[TurnTiming] = []
@@ -108,6 +121,10 @@ class VoiceSession:
         self._timing: TurnTiming | None = None
         self._speech_ms = 0.0
         self._hushed = False
+        self._guarded = False  # began over the agent and has not yet passed the echo guard
+        self._loud_ms = 0.0
+        self._digits = ""
+        self._digit_timer: asyncio.TimerHandle | None = None
         self._waiting_audio: TurnTiming | None = None
         self._stream: STTStream | None = None
         self._early: asyncio.Task[str] | None = None
@@ -122,6 +139,9 @@ class VoiceSession:
         self._agent, self._pump = agent, EventPump(agent)
         resampler = Resampler(self.transport.in_rate, RATE)
         worker = asyncio.create_task(self._transcribe_turns())
+        on_digit = getattr(self.transport, "on_digit", None)
+        if isinstance(on_digit, list):
+            on_digit.append(self._digit)
         try:
             await self.transport.start(self.buffer)
             async for frame in self.transport.frames():
@@ -130,6 +150,8 @@ class VoiceSession:
             await self._pump.idle()
         finally:
             worker.cancel()
+            if self._digit_timer is not None:
+                self._digit_timer.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await worker
             self._drop_early()
@@ -159,10 +181,13 @@ class VoiceSession:
         if timing is None or self._turn is None:
             return
         speech = self._timer is None or self._timer.quiet_ms == 0
+        ms = len(pcm) * 500 / RATE
         if timing.confirmed is None:
-            self._speech_ms += len(pcm) * 500 / RATE if speech else 0
-            if self._speech_ms >= self.confirm_ms:
-                self._confirm(timing, now)
+            self._speech_ms += ms if speech else 0
+        if self._guarded and not self._passes_guard(pcm, ms):
+            return
+        if timing.confirmed is None and self._speech_ms >= self.confirm_ms:
+            self._confirm(timing, now)
         if self._timer is None:
             return
         if speech and self._early is not None:
@@ -174,17 +199,37 @@ class VoiceSession:
 
     def _started(self, now: float) -> None:
         self._timing = TurnTiming(started=now)
-        self.timings.append(self._timing)
         self._turn = bytearray(self._recent)
-        self._speech_ms = 0.0
+        self._speech_ms = self._loud_ms = 0.0
+        self._drop_early()
+        self._guarded = self.echo_guard is not None and self.speaker.speaking
+        if not self._guarded:
+            self._barge_in(self._timing)
+
+    def _barge_in(self, timing: TurnTiming) -> None:
+        self.timings.append(timing)
         self._hushed = self.speaker.speaking
         self.speaker.pause()
-        self._drop_early()
         self._open_stream()
+
+    def _passes_guard(self, pcm: bytes, ms: float) -> bool:
+        guard, timing = self.echo_guard, self._timing
+        if guard is None or timing is None:
+            return True
+        if rms(pcm) >= guard.level:
+            self._loud_ms += ms
+        if self._loud_ms < guard.loud_ms and self._speech_ms < guard.speech_ms:
+            return False
+        self._guarded = False
+        self._barge_in(timing)
+        return True
 
     def _ended(self, now: float) -> None:
         timing = self._timing
         if timing is None or self._turn is None:
+            return
+        if self._guarded:  # never loud or long enough: the agent's own voice
+            self._guarded, self._turn, self._timing = False, None, None
             return
         text, self._early, self._early_stream = self._early or self._start_text(), None, None
         self._turn, self._timing = None, None
@@ -262,8 +307,28 @@ class VoiceSession:
 
     def _resume(self, timing: TurnTiming) -> None:
         timing.resumed = True
-        if self._timing is None:  # no newer turn holds the pause
+        if self._timing is None or self._guarded:  # no newer turn holds the pause
             self.speaker.resume()
+
+    def _digit(self, digit: str) -> None:
+        if self._pump is None:
+            return
+        if not self._digits:
+            self._pump.started_speaking()
+        self._digits += digit
+        if self._digit_timer is not None:
+            self._digit_timer.cancel()
+            self._digit_timer = None
+        if digit == "#":
+            self._send_digits()
+        else:
+            loop = asyncio.get_running_loop()
+            self._digit_timer = loop.call_later(self.keypad_wait_ms / 1000, self._send_digits)
+
+    def _send_digits(self) -> None:
+        digits, self._digits, self._digit_timer = self._digits, "", None
+        if digits and self._pump is not None:
+            self._pump.said(self.keypad_text.format(digits=digits))
 
     def _audio_started(self, segment: Segment) -> None:
         timing, self._waiting_audio = self._waiting_audio, None

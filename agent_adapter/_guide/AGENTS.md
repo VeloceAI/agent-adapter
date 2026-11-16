@@ -55,10 +55,11 @@ the newest release inside each pinned range is tested. An extra marked
 | AG2 tools | `pip install "agent-adapter[ag2]"` | `ag2>=1.2.2,<2` |
 | A2A server and client | `pip install "agent-adapter[a2a]"` | `a2a-sdk[http-server]>=1.3,<2` |
 | AG-UI event stream (CopilotKit and other UIs) | `pip install "agent-adapter[ag-ui]"` | `ag-ui-protocol>=1.0,<2` |
-| LiveKit voice agents: tools and a `VoiceAgent` on a session (preview) | `pip install "agent-adapter[livekit]"` | `livekit-agents>=1.8,<2`; own environment (WebRTC and media binaries) |
-| Pipecat voice pipelines: tools and a `VoiceAgent` processor (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
+| LiveKit voice agents: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[livekit]"` | `livekit-agents>=1.8,<2`; own environment (WebRTC and media binaries) |
+| Pipecat voice pipelines: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
 | local turn detection: Silero VAD and Smart Turn (`SileroTurns`, `SmartTurn`) | `pip install "agent-adapter[vad]"` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` |
 | our voice pipeline on a laptop: Moonshine and the sound card | `pip install "agent-adapter[voice-local]"` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` |
+| hosted STT and TTS, Twilio calls | `pip install "agent-adapter[voice-cloud]"` | `httpx>=0.27,<1`, `websockets>=13,<18` |
 | browser voice calls over WebRTC (`WebRTCAudio`) | `pip install "agent-adapter[webrtc]"` | `aiortc>=1.14,<2` |
 | Postgres or any SQLAlchemy database as the approval store | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
 | DynamoDB approval store (AWS serverless) | `pip install "agent-adapter[dynamodb]"` | `aioboto3>=13,<16` |

@@ -6,7 +6,7 @@ Turns, safe interruptions and spoken approval around the executor, our own audio
 
 ::: agent_adapter.voice
     options:
-      members: [AudioSocket, AudioTransport, CallableSTT, CallableSpeaker, CallableTTS, EventPump, LocalAudio, Player, STT, Speaker, TTS, TurnTiming, TwilioStream, VoiceAgent, VoiceApproval, VoiceSession, YES_WORDS, binary_socket, is_yes]
+      members: [AudioSocket, AudioTransport, CallableSTT, CallableSpeaker, CallableTTS, EchoGuard, EventPump, LocalAudio, Player, STT, Speaker, TTS, TurnTiming, TwilioCalls, TwilioStream, VoiceAgent, VoiceApproval, VoiceSession, YES_WORDS, binary_socket, is_yes]
 
 ## `agent_adapter.voice.session`
 
@@ -50,6 +50,14 @@ Also exported here, documented under the canonical path: [`AudioSocket`](#agent_
 
 `agent_adapter.voice.twilio` re-exports, documented under the canonical path: [`TwilioStream`](#agent_adapter.voice.TwilioStream).
 
+## `agent_adapter.voice.twilio_calls`
+
+::: agent_adapter.voice.twilio_calls
+    options:
+      members: [dial_twiml, stream_twiml]
+
+Also exported here, documented under the canonical path: [`TwilioCalls`](#agent_adapter.voice.TwilioCalls).
+
 ## `agent_adapter.voice.webrtc`
 
 ::: agent_adapter.voice.webrtc
@@ -68,6 +76,18 @@ Also exported here, documented under the canonical path: [`AudioSocket`](#agent_
     options:
       members: [MoonshineSTT, MoonshineTTS]
 
+## `agent_adapter.voice.deepgram`
+
+::: agent_adapter.voice.deepgram
+    options:
+      members: [Connect, DeepgramSTT, LiveSocket]
+
+## `agent_adapter.voice.cloud`
+
+::: agent_adapter.voice.cloud
+    options:
+      members: [CartesiaTTS, ElevenLabsTTS, OpenAISTT, OpenAITTS]
+
 ## `agent_adapter.voice.pcm`
 
 ::: agent_adapter.voice.pcm
@@ -85,6 +105,8 @@ Also exported here, documented under the canonical path: [`AudioSocket`](#agent_
 ::: agent_adapter.voice.turns
     options:
       members: [SilenceTurns, TurnDetector, TurnEvent, TurnTimer, pcm16]
+
+Also exported here, documented under the canonical path: [`EchoGuard`](#agent_adapter.voice.EchoGuard).
 
 ## `agent_adapter.voice.silero`
 

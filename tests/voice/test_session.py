@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+
 from agent_adapter import Registry
 from agent_adapter.exec import Executor
 from agent_adapter.voice import VoiceAgent, VoiceApproval
@@ -12,7 +14,7 @@ from agent_adapter.voice.testing import (
     silence,
     tone,
 )
-from agent_adapter.voice.turns import SilenceTurns
+from agent_adapter.voice.turns import EchoGuard, SilenceTurns
 from tests.fakes.models import ScriptedModel, calls, text
 from tests.fakes.sinks import RecordingSink
 
@@ -36,7 +38,7 @@ async def refund(order: str) -> str:
     return "refunded"
 
 
-def call(model, transcripts, *, approval=None, sink=None, confirm_ms=300):
+def call(model, transcripts, *, approval=None, sink=None, confirm_ms=300, **options):
     global gate
     gate = asyncio.Event()
     charged.clear()
@@ -48,6 +50,7 @@ def call(model, transcripts, *, approval=None, sink=None, confirm_ms=300):
         tts=tts,
         turns=SilenceTurns(start_ms=40, end_ms=200),
         confirm_ms=confirm_ms,
+        **options,
     )
     executor = Executor(registry, approval=approval, sink=sink)
     agent = VoiceAgent(model, executor, session.speaker)
@@ -275,4 +278,103 @@ async def test_a_broken_stream_falls_back_to_the_whole_turn():
     transport.speak(tone(300) + silence(500))
     await settle()
     assert stt.batch and session.timings[0].text == "batch text"
+    await finish(transport, run)
+
+
+LONG = "This is a long answer with many words in it for the echo to talk over."
+GUARD = EchoGuard(level=0.1, loud_ms=100, speech_ms=600)
+
+
+async def test_echo_guard_ignores_the_agents_own_voice_in_the_mic():
+    transport, session, agent, _, run = call(
+        ScriptedModel([text(LONG)]), ["tell me", "echo words"], echo_guard=GUARD
+    )
+    await turn(transport)
+    await play(transport, 200)
+    transport.speak(tone(400, level=2_000) + silence(260))  # quiet and short: echo
+    await settle()
+    assert not session.buffer.paused and len(session.timings) == 1
+    assert isinstance(session.stt, ScriptedSTT) and len(session.stt.heard) == 1
+    await play(transport, 2000)
+    assert agent.history[-1].content == LONG
+    await finish(transport, run)
+
+
+async def test_echo_guard_lets_a_loud_caller_cut_in():
+    transport, session, agent, _, run = call(
+        ScriptedModel([text(LONG), text("Ok.")]), ["tell me", "stop please"], echo_guard=GUARD
+    )
+    await turn(transport)
+    await play(transport, 200)
+    transport.speak(tone(140))
+    await settle()
+    assert session.buffer.paused and len(session.timings) == 2
+    await turn(transport, 300)
+    assert session.timings[1].confirmed is not None
+    await play(transport, 400)
+    assert [m.content for m in agent.history if m.role == "user"][-1] == "stop please"
+    await finish(transport, run)
+
+
+async def test_echo_guard_lets_long_quiet_speech_cut_in():
+    transport, session, _agent, _, run = call(
+        ScriptedModel([text(LONG), text("Ok.")]), ["tell me", "wait"], echo_guard=GUARD
+    )
+    await turn(transport)
+    await play(transport, 200)
+    transport.speak(tone(500, level=2_000))
+    await settle()
+    assert not session.buffer.paused
+    transport.speak(tone(200, level=2_000))
+    await settle()
+    assert len(session.timings) == 2 and session.timings[1].confirmed is not None
+    await finish(transport, run)
+
+
+async def test_echo_guard_does_not_apply_while_the_agent_is_quiet():
+    transport, session, _agent, _, run = call(
+        ScriptedModel([text("Hi.")]), ["hello"], echo_guard=GUARD
+    )
+    transport.speak(tone(300, level=2_000) + silence(260))
+    await settle()
+    assert session.timings and session.timings[0].text == "hello"
+    await finish(transport, run)
+
+
+def test_echo_guard_rejects_bad_settings():
+    for bad in ({"level": 0}, {"loud_ms": 0}, {"speech_ms": -1}):
+        with pytest.raises(ValueError):
+            EchoGuard(**bad)
+
+
+class KeypadTransport(MemoryTransport):
+    def __init__(self) -> None:
+        super().__init__()
+        self.on_digit: list = []
+
+    def press(self, digits: str) -> None:
+        for digit in digits:
+            for callback in self.on_digit:
+                callback(digit)
+
+
+async def test_keypad_digits_reach_the_agent_as_words():
+    transport = KeypadTransport()
+    session = VoiceSession(
+        transport, stt=ScriptedSTT([]), tts=WordTTS(), turns=SilenceTurns(), keypad_wait_ms=30
+    )
+    model = ScriptedModel([text("Got it."), text("Thanks.")])
+    agent = VoiceAgent(model, Executor(registry), session.speaker)
+    run = asyncio.create_task(session.run(agent))
+    await settle()
+    transport.press("12#")  # "#" sends at once
+    await settle()
+    await play(transport, 400)
+    transport.press("5")
+    await asyncio.sleep(0.06)  # the pause after the last digit sends it
+    await settle()
+    await play(transport, 400)
+    users = [m.content for m in agent.history if m.role == "user"]
+    assert users == ["(keypad) 12#", "(keypad) 5"]
+    transport.press("9")  # pending when the call ends: dropped with the call
     await finish(transport, run)

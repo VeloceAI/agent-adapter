@@ -8,6 +8,12 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Voice pipeline gaps against Pipecat, LiveKit, Vapi and Retell: hosted speech providers
+  `DeepgramSTT` (streams each turn over the live WebSocket), `OpenAISTT`, `OpenAITTS`,
+  `ElevenLabsTTS` and `CartesiaTTS` (extra `voice-cloud`: httpx, websockets);
+  `VoiceSession(echo_guard=EchoGuard())` for speakers with no echo cancelling; and on
+  `TwilioStream` keypad digits that reach the agent, `hang_up()`, `transfer()`, plus
+  `TwilioCalls` for outbound calls. Guide: Hosted speech, echo and phone calls.
 - Our own voice pipeline, no framework needed: `VoiceSession(transport, stt=, tts=, turns=)`
   runs a whole call from raw audio to a `VoiceAgent` and back. Playback pauses within one
   audio block when the caller starts talking; the turn is cut only after `confirm_ms` of
