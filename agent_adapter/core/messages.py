@@ -7,6 +7,7 @@ from typing import Any, Literal, TypeVar
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from agent_adapter.core.errors import ModelContentFiltered, ModelOutputInvalid
+from agent_adapter.core.media import Media
 from agent_adapter.core.types import ToolCall, Usage
 
 Role = Literal["system", "user", "assistant", "tool"]
@@ -41,6 +42,8 @@ class Message(BaseModel):
     # Context compression never edits or drops a pinned message; never sent to a provider.
     # Dumped only when True, so unpinned messages serialise (and cache-key) as before.
     pinned: bool = Field(default=False, exclude_if=lambda value: not value)
+    # Tool messages: media the tool returned; each port sends what its API takes, else a note.
+    media: tuple[Media, ...] = Field(default=(), exclude_if=lambda value: not value)
 
 
 class ToolDef(BaseModel):

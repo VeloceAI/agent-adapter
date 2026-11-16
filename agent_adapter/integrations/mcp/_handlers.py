@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
+
+from pydantic import TypeAdapter
 
 from agent_adapter.approval.deferred import DeferredApproval
 from agent_adapter.approval.store import ApprovalStore
@@ -37,8 +40,7 @@ from agent_adapter.integrations.mcp.annotations import (
     RUN_ID_META,
     input_schema_for,
     output_schema_for,
-    structured_content,
-    text_content,
+    result_blocks,
     tool_annotations,
 )
 
@@ -270,10 +272,16 @@ class Handlers:
 def _ok_result(spec: ToolSpec, value: Any) -> t.CallToolResult:
     import mcp.types as t
 
-    return t.CallToolResult(
-        content=[t.TextContent(type="text", text=text_content(value))],
-        structured_content=structured_content(spec, value),
-    )
+    blocks, structured = result_blocks(spec, value)
+    content = [_content_block().validate_python(block) for block in blocks]
+    return t.CallToolResult(content=content, structured_content=structured)
+
+
+@functools.cache
+def _content_block() -> TypeAdapter[Any]:
+    import mcp.types as t
+
+    return TypeAdapter(t.ContentBlock)
 
 
 def _pending_result(spec: ToolSpec, exc: ApprovalPending, scope: Scope) -> t.CallToolResult:

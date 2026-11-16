@@ -1,6 +1,6 @@
 # Models
 
-Model ports, provider models and usage helpers. Concepts: [Model ports](../concepts/models.md), [Tool loop](../concepts/tool-loop.md).
+Model ports, provider models and usage helpers. Concepts: [Model ports](../concepts/models.md), [Tool loop](../concepts/tool-loop.md). `agent_adapter.schema.media` rewrites tool-result media per provider ([Media in tool results](../how-to/media-in-tool-results.md)).
 
 ## `agent_adapter.models`
 
@@ -41,3 +41,9 @@ Also exported here, documented under the canonical path: [`AnthropicModel`](#age
       members: [class_for_error_type, class_for_status, error_type, is_context_overflow, model_error, retry_after, with_overflow]
 
 Also exported here, documented under the canonical path: [`ModelAuthError`](errors.md#agent_adapter.errors.ModelAuthError), [`ModelBadRequest`](errors.md#agent_adapter.errors.ModelBadRequest), [`ModelContentFiltered`](errors.md#agent_adapter.errors.ModelContentFiltered), [`ModelContextOverflow`](errors.md#agent_adapter.errors.ModelContextOverflow), [`ModelError`](errors.md#agent_adapter.errors.ModelError), [`ModelOutputInvalid`](errors.md#agent_adapter.errors.ModelOutputInvalid), [`ModelRateLimited`](errors.md#agent_adapter.errors.ModelRateLimited), [`ModelTimeout`](errors.md#agent_adapter.errors.ModelTimeout), [`ModelUnavailable`](errors.md#agent_adapter.errors.ModelUnavailable).
+
+## `agent_adapter.schema.media`
+
+::: agent_adapter.schema.media
+    options:
+      members: [ANTHROPIC, GEMINI, MediaRules, OPENAI_CHAT, OPENAI_RESPONSES, anthropic_content, gemini_parts, gemini_takes_media, mcp_content, openai_chat_content, openai_output]

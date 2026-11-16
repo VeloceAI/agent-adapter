@@ -361,4 +361,16 @@ TOOLS: tuple[Recipe, ...] = (
         ),
         full_only=True,
     ),
+    Recipe(
+        "return an image, PDF or audio clip from a tool",
+        "`aa.Media` (each model port sends what its API takes, else a note)",
+        (
+            "@registry.tool",
+            "def screenshot(url: str) -> list[str | aa.Media]:",
+            '    """Screenshot a page."""',
+            '    png = b"\\x89PNG\\r\\n\\x1a\\n" + bytes(64)  # your screenshot bytes',
+            '    return [f"page {url}", aa.Media(data=png, name="page.png")]  # or from_file(path)',
+        ),
+        full_only=True,
+    ),
 )

@@ -147,6 +147,7 @@ nav:
       - Budgets: how-to/budgets.md
       - Team budgets: how-to/team-budgets.md
       - Caching: how-to/caching.md
+      - Media in tool results: how-to/media-in-tool-results.md
       - Bring your own model: how-to/bring-your-own-model.md
       - Model recipes: how-to/model-recipes.md
       - Send traces: how-to/send-traces.md

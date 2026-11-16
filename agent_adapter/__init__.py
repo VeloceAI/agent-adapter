@@ -31,6 +31,7 @@ if TYPE_CHECKING:
         ToolError,
     )
     from agent_adapter.core.imported import spec_from_schema
+    from agent_adapter.core.media import Media
     from agent_adapter.core.messages import LLMRequest, LLMResponse, Message, ToolDef
     from agent_adapter.core.registry import Registry
     from agent_adapter.core.tool import ToolSpec, build_spec
@@ -113,6 +114,7 @@ _LAZY: dict[str, str] = {
     "LLMRequest": "agent_adapter.core.messages",
     "LLMResponse": "agent_adapter.core.messages",
     "Message": "agent_adapter.core.messages",
+    "Media": "agent_adapter.core.media",
     "ToolDef": "agent_adapter.core.messages",
     "Event": "agent_adapter.core.types",
     # Model ports that need no extra
@@ -342,6 +344,7 @@ __all__ = [
     "Ledger",
     "LedgerEntry",
     "LoggingHook",
+    "Media",
     "MemoryApprovalStore",
     "MemoryCache",
     "Message",

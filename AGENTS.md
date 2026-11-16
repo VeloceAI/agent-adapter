@@ -601,6 +601,7 @@ if __name__ == "__main__":
 - Send spans to Langfuse, Phoenix or any OTLP backend
 - Wrap a vendor SDK (Bedrock, Azure OpenAI, Mistral, Groq, OpenRouter)
 - Use a known model's context window
+- Return an image, PDF or audio clip from a tool
 - Remember facts per user across chats (recall, forget, export, erase)
 - Let the model search your documents and cite sources (RAG)
 - Remember a chat user across chats (recall each turn, save facts or a summary)

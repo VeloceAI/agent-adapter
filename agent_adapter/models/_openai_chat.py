@@ -17,6 +17,7 @@ from agent_adapter.core.types import ToolCall
 from agent_adapter.models._convert import dump, dumps_arguments, get, items, loads_arguments
 from agent_adapter.models._openai_common import add_tools, schema_format
 from agent_adapter.models.usage import usage_openai_chat
+from agent_adapter.schema.media import openai_chat_content
 from agent_adapter.schema.transforms import to_openai_parameters
 
 PROVIDER = "openai"
@@ -62,7 +63,8 @@ def _sampling(request: LLMRequest, kwargs: dict[str, Any]) -> None:
 
 def _message(message: Message) -> dict[str, Any]:
     if message.role == "tool":
-        return {"role": "tool", "tool_call_id": message.tool_call_id, "content": message.content}
+        content = openai_chat_content(message.content, message.media)
+        return {"role": "tool", "tool_call_id": message.tool_call_id, "content": content}
     if message.role != "assistant" or not message.tool_calls:
         return {"role": message.role, "content": message.content}
     return {

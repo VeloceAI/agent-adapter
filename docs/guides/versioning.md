@@ -42,7 +42,7 @@ flowchart LR
 ```
 
 ```text
-55 top-level names
+56 top-level names
 True True
 False
 ToolNotFound moved: from agent_adapter.errors import ToolNotFound

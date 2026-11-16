@@ -6,8 +6,10 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+from agent_adapter.core.media import split_media
 from agent_adapter.core.tool import Effects, ToolSpec, strict_downgraded
 from agent_adapter.core.types import to_jsonable
+from agent_adapter.schema.media import mcp_content
 from agent_adapter.schema.transforms import to_anthropic_input_schema
 
 # `_meta` keys this adapter reads on requests and writes on results.
@@ -71,6 +73,19 @@ def text_content(value: Any) -> str:
     if isinstance(value, str):
         return value
     return json.dumps(to_jsonable(value), ensure_ascii=False)
+
+
+def result_blocks(spec: ToolSpec, value: Any) -> tuple[list[dict[str, Any]], Any]:
+    """`content` blocks and `structuredContent` (None when only media came back).
+
+    Media always go in `content`, with or without `structuredContent`.
+    """
+    rest, media = split_media(value)
+    if not media:
+        return [{"type": "text", "text": text_content(value)}], structured_content(spec, value)
+    if rest is None:
+        return mcp_content("", media), None
+    return mcp_content(text_content(rest), media), structured_content(spec, rest)
 
 
 def is_wrapper_schema(schema: Mapping[str, Any] | None) -> bool:

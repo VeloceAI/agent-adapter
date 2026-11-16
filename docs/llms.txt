@@ -39,6 +39,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Budgets](https://agent-adapter.veloceai.in/how-to/budgets/): Cap what a run or a conversation may spend, and how many calls it may make
 - [Team budgets](https://agent-adapter.veloceai.in/how-to/team-budgets/): Cap what each user, each team, or everyone may spend, per UTC day or month, across every worker and host
 - [Caching](https://agent-adapter.veloceai.in/how-to/caching/): Skip repeat work
+- [Media in tool results](https://agent-adapter.veloceai.in/how-to/media-in-tool-results/): Let a tool return a screenshot, a chart, a PDF or an audio clip, and the model gets it in the shape its API takes
 - [Bring your own model](https://agent-adapter.veloceai.in/how-to/bring-your-own-model/): The adapter does not care which model runs
 - [Model recipes](https://agent-adapter.veloceai.in/how-to/model-recipes/): Each recipe wraps the vendor's own SDK in a `CallableModel`
 - [Send traces](https://agent-adapter.veloceai.in/how-to/send-traces/): `OTelSink` turns the executor's events into OpenTelemetry spans that follow the GenAI semantic conventions

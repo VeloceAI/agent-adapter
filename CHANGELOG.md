@@ -14,6 +14,16 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `VoiceSession(echo_guard=EchoGuard())` for speakers with no echo cancelling; and on
   `TwilioStream` keypad digits that reach the agent, `hang_up()`, `transfer()`, plus
   `TwilioCalls` for outbound calls. Guide: Hosted speech, echo and phone calls.
+- Media in tool results: a tool may return `aa.Media` (bytes, a file or a URL, MIME type
+  sniffed) alone or in a list with text and data. `run_tool_loop` keeps it on
+  `Message.media`, and each port sends what its API takes: OpenAI Responses `input_image` and
+  `input_file`, Anthropic `image` and `document` blocks, Gemini 3 `functionResponse.parts`.
+  Media an API cannot take (Chat Completions, older Gemini, an unsupported type or size)
+  becomes a note naming it, so one file never breaks a chat. Our MCP server sends `image`,
+  `audio`, `resource_link` and embedded `resource` blocks next to `structuredContent`, and
+  `import_mcp` keeps a remote tool's media even when it also sent `structuredContent`. A
+  matrix test covers every media type × every rewrite × with and without structured data.
+  Guide: Media in tool results.
 - Our own voice pipeline, no framework needed: `VoiceSession(transport, stt=, tts=, turns=)`
   runs a whole call from raw audio to a `VoiceAgent` and back. Playback pauses within one
   audio block when the caller starts talking; the turn is cut only after `confirm_ms` of
