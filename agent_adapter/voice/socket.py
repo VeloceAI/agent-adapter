@@ -17,7 +17,8 @@ to text and text to speech; this side decides. Messages are JSON text:
 
 A line counts as played only after its `played` message, so the history after a cut holds
 exactly what the caller heard. A client that never acknowledges is trusted after
-`played_timeout_s`.
+`played_timeout_s`. Send `speech_started` as each utterance begins: an answer to a spoken
+yes/no question counts only if its speech started after the question played.
 """
 
 from __future__ import annotations
@@ -104,7 +105,7 @@ def _parse(raw: Any) -> dict[str, Any]:
         return {}
     try:
         message = json.loads(raw)
-    except ValueError:
+    except (ValueError, RecursionError):  # RecursionError: JSON nested too deep
         return {}
     return message if isinstance(message, dict) else {}
 

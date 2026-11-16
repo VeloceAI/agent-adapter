@@ -4,7 +4,10 @@ The model hears and speaks on its own socket; `RealtimeAgent` runs the tools it 
 Speech is cheap, effects are not: when the provider cancels calls because the caller cut
 in, read-only tools stop at once, but a tool that changes things finishes and the model is
 told it is done. Repeats within the window return the first result. A `confirm` tool asks
-aloud and only the caller's own transcribed words can approve it.
+aloud and only the caller's own transcribed words can approve it, and only words they began
+after the provider reported the prompt finished (`PromptDone`). Limit: the agent arms on the
+first `PromptDone` after it sends the prompt, so a codec that cannot tell its lines apart may
+arm a little early; the answer must still start after that.
 
 A codec turns one provider's JSON messages into the neutral events below and back.
 """
@@ -35,6 +38,8 @@ from agent_adapter.voice.socket import TextSocket
 
 logger = logging.getLogger(__name__)
 DEDUPE_WINDOW_S = 120.0
+PROMPT_PLAY_S = 30.0  # the longest wait for a codec's PromptDone before the answer opens
+_MAX_STARTS = 64
 
 
 @dataclass(frozen=True)
@@ -46,12 +51,20 @@ class ToolCalled:
 
 @dataclass(frozen=True)
 class SpeechStarted:
-    """The caller started talking over the model."""
+    """The caller started talking (over the model, or a new utterance)."""
+
+    item: str = ""  # the provider's id for this utterance, when it has one
 
 
 @dataclass(frozen=True)
 class CallerSaid:
     text: str  # a final transcript of the caller's own audio
+    item: str = ""  # the utterance's id, matching its `SpeechStarted`
+
+
+@dataclass(frozen=True)
+class PromptDone:
+    """The model finished speaking a line the app asked it to say."""
 
 
 @dataclass(frozen=True)
@@ -59,11 +72,14 @@ class CallsCancelled:
     ids: tuple[str, ...] = field(default_factory=tuple)
 
 
-RealtimeEvent = ToolCalled | SpeechStarted | CallerSaid | CallsCancelled
+RealtimeEvent = ToolCalled | SpeechStarted | CallerSaid | CallsCancelled | PromptDone
 
 
 class RealtimeCodec(Protocol):
-    """One provider's wire format: JSON objects in and out."""
+    """One provider's wire format: JSON objects in and out.
+
+    A codec that emits `PromptDone` sets `prompt_done_events = True`.
+    """
 
     def setup(self, instructions: str, tools: list[ToolSpec]) -> list[dict[str, Any]]: ...
 
@@ -110,9 +126,12 @@ class RealtimeAgent:
         self._calls: dict[str, tuple[asyncio.Task[None], str]] = {}  # id -> (task, tool)
         self._cancelled: set[str] = set()
         self._caller_spoke_at = 0.0
+        self._starts: dict[str, int | None] = {}  # utterance id -> question open as it began
+        self._first_start: list[int | None] = []  # for codecs with no utterance ids
+        self._prompt_done: asyncio.Future[None] | None = None
         self.approval = executor.approval if isinstance(executor.approval, VoiceApproval) else None
         if self.approval is not None:
-            self.approval.bind(self._say)
+            self.approval.bind(self._ask_aloud, run_id=self.ctx.run_id)
 
     async def run(self) -> None:
         """Send the setup, then handle the provider's messages until the socket closes."""
@@ -124,6 +143,8 @@ class RealtimeAgent:
                     self._handle(event)
             await self._settle()
         finally:
+            if self.approval is not None:
+                self.approval.unbind(self.ctx.run_id, self._ask_aloud)
             await self._stop_calls()
             if self._minute_item is not None:
                 minutes = (time.monotonic() - started) / 60
@@ -140,11 +161,49 @@ class RealtimeAgent:
             task.add_done_callback(lambda _: self._calls.pop(event.call_id, None))
         elif isinstance(event, SpeechStarted):
             self._caller_spoke_at = time.monotonic()
+            self._heard_start(event.item)
         elif isinstance(event, CallerSaid):
-            if self.approval is not None:
-                self.approval.answer(event.text)
+            self._answer(event)
+        elif isinstance(event, PromptDone):
+            if self._prompt_done is not None and not self._prompt_done.done():
+                self._prompt_done.set_result(None)
         else:
             self._cancel(event.ids)
+
+    def _heard_start(self, item: str) -> None:
+        if self.approval is None:
+            return
+        question = self.approval.armed_question(self.ctx.run_id)
+        if item:
+            if len(self._starts) >= _MAX_STARTS:
+                del self._starts[next(iter(self._starts))]
+            self._starts[item] = question
+        if not self._first_start:
+            self._first_start.append(question)
+
+    def _answer(self, event: CallerSaid) -> None:
+        first, self._first_start = self._first_start, []
+        if self.approval is None:
+            return
+        earliest = first[0] if first else None  # with no utterance ids: fail closed
+        question = self._starts.pop(event.item, None) if event.item else earliest
+        self.approval.answer(event.text, run_id=self.ctx.run_id, question=question)
+
+    async def _ask_aloud(self, text: str) -> None:
+        """Send an approval prompt; return once the provider says it has played."""
+        self._first_start = []
+        waits = getattr(self.codec, "prompt_done_events", False) is True
+        done = asyncio.get_running_loop().create_future() if waits else None
+        self._prompt_done = done
+        try:
+            await self._say(text)
+            if done is not None:
+                await asyncio.wait_for(done, PROMPT_PLAY_S)
+        except TimeoutError:
+            logger.info("realtime: no PromptDone within %ss; the answer opens now", PROMPT_PLAY_S)
+        finally:
+            if self._prompt_done is done:
+                self._prompt_done = None
 
     def _cancel(self, ids: tuple[str, ...]) -> None:
         for call_id in ids:
@@ -197,7 +256,7 @@ def _parse(raw: Any) -> dict[str, Any]:
         raw = raw.decode("utf-8", "replace")
     try:
         message = json.loads(raw)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, RecursionError):
         return {}
     return message if isinstance(message, dict) else {}
 
@@ -221,6 +280,7 @@ def _done(task: asyncio.Task[Any]) -> None:
 __all__ = [
     "CallerSaid",
     "CallsCancelled",
+    "PromptDone",
     "RealtimeAgent",
     "RealtimeCodec",
     "RealtimeEvent",

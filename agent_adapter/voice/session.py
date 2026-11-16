@@ -9,6 +9,9 @@ or an "uh-huh" while the agent speaks, resumes playback where it paused.
 With an `EchoGuard` (speakers with no echo cancelling), speech that starts while the agent
 talks pauses nothing until it is loud enough or long enough; one that never is was the
 agent's own voice in the mic and is dropped.
+
+While the agent asks a spoken yes/no question, only a turn that began after the question
+finished playing can answer it; earlier speech, an echo of the prompt included, is dropped.
 """
 
 from __future__ import annotations
@@ -71,6 +74,7 @@ class _Turn:
     timing: TurnTiming
     hushed: bool  # the agent was speaking when the caller started
     text: asyncio.Task[str]  # started when the caller went quiet, or when the turn ended
+    question: int | None = None  # the approval question already asked when the turn began
 
 
 class VoiceSession:
@@ -84,7 +88,8 @@ class VoiceSession:
     whether the turn is over. If the caller goes on, that pass is dropped.
 
     Keypad digits from a transport with `on_digit` (`TwilioStream`) reach the agent as
-    `keypad_text`, once `keypad_wait_ms` passes with no new digit, or at once on `#`.
+    `keypad_text`, once `keypad_wait_ms` passes with no new digit, at once on `#`, or
+    after `max_digits`. A turn that never pauses ends after `max_turn_s`.
     """
 
     def __init__(
@@ -101,6 +106,8 @@ class VoiceSession:
         echo_guard: EchoGuard | None = None,
         keypad_wait_ms: float = 1500,
         keypad_text: str = "(keypad) {digits}",
+        max_turn_s: float = 30.0,
+        max_digits: int = 32,
     ) -> None:
         self.transport = transport
         self.stt = stt
@@ -111,6 +118,8 @@ class VoiceSession:
         self.echo_guard = echo_guard
         self.keypad_wait_ms = keypad_wait_ms
         self.keypad_text = keypad_text
+        self.max_digits = max_digits
+        self._max_turn = int(RATE * max_turn_s) * 2
         self.buffer = PlayoutBuffer(transport.out_rate)
         self.speaker = Player(tts, self.buffer)
         self.timings: list[TurnTiming] = []
@@ -119,6 +128,7 @@ class VoiceSession:
         self._recent = bytearray()
         self._turn: bytearray | None = None
         self._timing: TurnTiming | None = None
+        self._turn_question: int | None = None
         self._speech_ms = 0.0
         self._hushed = False
         self._guarded = False  # began over the agent and has not yet passed the echo guard
@@ -177,6 +187,9 @@ class VoiceSession:
                 self._started(now)
             else:
                 self._ended(now)
+        if self._turn is not None and len(self._turn) >= self._max_turn:
+            self._ended(now)  # bounds memory and the speech-to-text request
+            return
         timing = self._timing
         if timing is None or self._turn is None:
             return
@@ -200,6 +213,7 @@ class VoiceSession:
     def _started(self, now: float) -> None:
         self._timing = TurnTiming(started=now)
         self._turn = bytearray(self._recent)
+        self._turn_question = self._question()[1]
         self._speech_ms = self._loud_ms = 0.0
         self._drop_early()
         self._guarded = self.echo_guard is not None and self.speaker.speaking
@@ -236,7 +250,7 @@ class VoiceSession:
         timing.ended = now
         quiet = self._timer.quiet_ms if self._timer is not None else 0.0
         timing.speech_end = now - quiet / 1000
-        self._texts.put_nowait(_Turn(timing, self._hushed, text))
+        self._texts.put_nowait(_Turn(timing, self._hushed, text, self._turn_question))
 
     def _open_stream(self) -> None:
         if self._stream is not None:
@@ -262,8 +276,8 @@ class VoiceSession:
 
     def _confirm(self, timing: TurnTiming, now: float) -> None:
         timing.confirmed = now
-        if self._pump is not None:
-            self._pump.started_speaking()
+        if self._pump is not None and not self._question()[0]:
+            self._pump.started_speaking()  # during a question it goes with the words instead
 
     async def _transcribe_turns(self) -> None:
         while True:
@@ -272,7 +286,7 @@ class VoiceSession:
             try:
                 text = await turn.text
                 timing.transcribed, timing.text = time.monotonic(), text
-                self._deliver(timing, text, turn.hushed)
+                self._deliver(turn, text)
             except Exception as exc:
                 log_failure(logger, logging.WARNING, exc, "speech-to-text failed")
                 if timing.confirmed is None:
@@ -288,20 +302,36 @@ class VoiceSession:
                 log_failure(logger, logging.WARNING, exc, "streaming speech-to-text failed")
         return await self.stt.transcribe(audio, RATE)
 
-    def _deliver(self, timing: TurnTiming, text: str, hushed: bool) -> None:
-        words = _words(text)
+    def _deliver(self, turn: _Turn, text: str) -> None:
+        timing, words = turn.timing, _words(text)
         if timing.confirmed is None:
-            if not words or (hushed and self._backchannel(words)):
+            if not words or (turn.hushed and self._backchannel(words)):
                 self._resume(timing)
                 return
             self._confirm(timing, time.monotonic())
-        if words and self._pump is not None:
-            self._waiting_audio = timing
-            self._pump.said(text)
+        if not words or self._pump is None:
+            return
+        asking, question = self._question()
+        if asking:
+            if turn.question is None or turn.question != question:
+                self._resume(timing)  # began before the question had played: not an answer
+                return
+            self._pump.started_speaking()
+        self._waiting_audio = timing
+        self._pump.said(text)
+
+    def _question(self) -> tuple[bool, int | None]:
+        """Whether the agent's question is open, and its id once its prompt has played."""
+        agent = self._agent
+        if agent is None or agent.approval is None:
+            return False, None
+        run_id = agent.ctx.run_id
+        if not agent.approval.waiting_for(run_id):
+            return False, None
+        return True, agent.approval.armed_question(run_id)
 
     def _backchannel(self, words: list[str]) -> bool:
-        agent = self._agent
-        if agent is not None and agent.approval is not None and agent.approval.waiting:
+        if self._question()[0]:
             return False  # "yeah" may be the answer to the question
         return " ".join(words) in self.backchannels or set(words) <= self.backchannels
 
@@ -319,7 +349,7 @@ class VoiceSession:
         if self._digit_timer is not None:
             self._digit_timer.cancel()
             self._digit_timer = None
-        if digit == "#":
+        if digit == "#" or len(self._digits) >= self.max_digits:
             self._send_digits()
         else:
             loop = asyncio.get_running_loop()

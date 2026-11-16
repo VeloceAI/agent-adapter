@@ -45,6 +45,7 @@ async def test_audio_socket_reads_binary_and_hangs_up_on_text():
         "not json",
         json.dumps({"type": "other"}),
         "x" * 5000,
+        "[" * 4000,  # nested past the recursion limit
         json.dumps([1]),
         json.dumps({"type": "hangup"}),
         b"never",
@@ -103,6 +104,7 @@ async def test_twilio_decodes_inbound_audio_and_reads_the_start():
     transport = TwilioStream(text_socket(far._receive, far._messages()))
     payload = base64.b64encode(ulaw_encode(tone(20, rate=8_000))).decode()
     start = {"callSid": "CA1", "customParameters": {"lang": "en"}}
+    second_start = {"callSid": "CA2", "customParameters": {"lang": "xx"}}
     for item in (
         twilio("connected"),
         twilio("start", start=start),
@@ -111,13 +113,15 @@ async def test_twilio_decodes_inbound_audio_and_reads_the_start():
         twilio("media", media={"payload": "!!not base64"}),
         twilio("dtmf"),
         "garbage",
+        "[" * 100_000,  # nested past the recursion limit
+        json.dumps({"event": "start", "streamSid": "MZ2", "start": second_start}),
         twilio("stop"),
         twilio("media"),
     ):
         far.inbox.put_nowait(item)
     frames = await collect(transport.frames())
     assert len(frames) == 1 and len(frames[0]) == 320
-    assert (transport.stream_sid, transport.call_sid) == ("MZ1", "CA1")
+    assert (transport.stream_sid, transport.call_sid) == ("MZ1", "CA1")  # only the first start
     assert transport.parameters == {"lang": "en"}
 
 

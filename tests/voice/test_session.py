@@ -157,15 +157,43 @@ async def test_a_short_answer_with_words_still_cuts_and_is_delivered():
     await finish(transport, run)
 
 
-async def test_yes_answers_a_spoken_approval_even_while_the_prompt_plays():
-    approval = VoiceApproval(timeout_s=5)
-    model = ScriptedModel([calls(("refund", {"order": "o-1"})), text("Refunded.")])
-    transport, _session, _agent, _, run = call(model, ["refund o-1", "yes"], approval=approval)
+async def test_a_yes_spoken_while_the_prompt_plays_does_not_answer_it():
+    approval = VoiceApproval(timeout_s=0.3)
+    model = ScriptedModel([calls(("refund", {"order": "o-1"})), text("Not refunded.")])
+    transport, _session, _agent, tts, run = call(model, ["refund o-1", "yes"], approval=approval)
     await turn(transport)
     await play(transport, 100)
+    await turn(transport, 150)  # "yes" over the prompt: dropped, and the prompt plays on
+    await play(transport, 1500)
+    await asyncio.sleep(0.4)
+    await play(transport, 1500)
+    assert charged == []
+    assert tts.spoken[-1] == "Not refunded."
+    await finish(transport, run)
+
+
+async def test_yes_after_the_prompt_has_played_approves():
+    approval = VoiceApproval(timeout_s=5)
+    model = ScriptedModel([calls(("refund", {"order": "o-1"})), text("Refunded.")])
+    transport, _session, _agent, tts, run = call(model, ["refund o-1", "yes"], approval=approval)
+    await turn(transport)
+    await play(transport, 1500)
+    assert tts.spoken == ["Shall I run refund with order o-1? Say yes to confirm."]
     await turn(transport, 150)
-    await play(transport, 3000)
+    await play(transport, 1000)
     assert charged == ["refund o-1"]
+    await finish(transport, run)
+
+
+async def test_a_turn_that_never_pauses_is_cut_at_max_turn_s():
+    transport, session, agent, _, run = call(
+        ScriptedModel([text("Okay.")]), ["a very long turn"], max_turn_s=1
+    )
+    transport.speak(tone(2000))
+    await settle()
+    await play(transport, 600)
+    assert len(session.stt.heard) == 1 and session.stt.heard[0] <= 16_000 * 2
+    assert agent.history[0].content == "a very long turn"
     await finish(transport, run)
 
 
@@ -377,4 +405,20 @@ async def test_keypad_digits_reach_the_agent_as_words():
     users = [m.content for m in agent.history if m.role == "user"]
     assert users == ["(keypad) 12#", "(keypad) 5"]
     transport.press("9")  # pending when the call ends: dropped with the call
+    await finish(transport, run)
+
+
+async def test_a_long_run_of_digits_is_sent_at_max_digits():
+    transport = KeypadTransport()
+    session = VoiceSession(
+        transport, stt=ScriptedSTT([]), tts=WordTTS(), turns=SilenceTurns(), max_digits=4
+    )
+    agent = VoiceAgent(ScriptedModel([text("One."), text("Two.")]), Executor(registry),
+                       session.speaker)  # fmt: skip
+    run = asyncio.create_task(session.run(agent))
+    await settle()
+    transport.press("1234")  # the fourth digit sends at once, with no "#" and no pause
+    await settle()
+    await play(transport, 400)
+    assert [m.content for m in agent.history if m.role == "user"] == ["(keypad) 1234"]
     await finish(transport, run)

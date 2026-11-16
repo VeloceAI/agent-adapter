@@ -75,13 +75,18 @@ async def test_a_spoken_yes_over_the_socket_approves_and_junk_is_ignored():
     refunds.clear()
     model = ScriptedModel([calls(("refund", {"order": "A1"})), text("Refunded.")])
     client, _, run = start(model, approval=VoiceApproval(timeout_s=5))
-    for junk in ("not json", "[1, 2]", json.dumps({"type": "dance"}), "x" * 70_000):
+    deep = "[" * 30_000  # nested past the recursion limit
+    for junk in ("not json", "[1, 2]", json.dumps({"type": "dance"}), "x" * 70_000, deep):
         client.inbox.put_nowait(junk)
     client.send(type="transcript", text="refund A1", final=True)
     await settle()
-    assert client.says() == [(1, "Shall I run refund? Say yes to confirm.")]
+    assert client.says() == [(1, "Shall I run refund with order A1? Say yes to confirm.")]
+    client.send(type="transcript", text="yes", final=True)  # before it played, no speech start
     client.send(type="played", id=1)
     client.send(type="played", id="1")  # ignored: not an int
+    await settle()
+    assert refunds == []
+    client.send(type="speech_started")
     client.send(type="transcript", text="yes", final=True)
     await settle()
     assert refunds == ["A1"]
