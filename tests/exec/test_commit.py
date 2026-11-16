@@ -5,6 +5,7 @@ import pytest
 from agent_adapter import Registry, ToolCall
 from agent_adapter.errors import ToolUsageError
 from agent_adapter.exec import listen_progress, progress
+from agent_adapter.exec._commit import REPEAT_NOTE
 from agent_adapter.hooks import Hook
 from tests.exec.helpers import check_events, make
 
@@ -99,7 +100,8 @@ async def test_a_repeat_with_a_new_call_id_returns_the_first_result():
     again = await ex.run_call(ToolCall(name="book", arguments={"seat": "4A"}, id="c2"), ctx)
     other = await ex.run_call(ToolCall(name="book", arguments={"seat": "5B"}, id="c3"), ctx)
     assert booked == ["4A", "5B"]
-    assert again.value == first.value == "booked 4A" and again.cached and again.call_id == "c2"
+    assert first.value == "booked 4A" and again.cached and again.call_id == "c2"
+    assert again.value == f"booked 4A ({REPEAT_NOTE})"
     assert other.value == "booked 5B"
     assert sink.types().count("tool.cached") == 1
 
@@ -117,7 +119,7 @@ async def test_repeats_running_at_the_same_time_run_once():
     release.set()
     results = await asyncio.gather(*tasks)
     assert booked == ["4A"]
-    assert [r.value for r in results] == ["booked 4A"] * 3
+    assert [r.value for r in results] == ["booked 4A"] + [f"booked 4A ({REPEAT_NOTE})"] * 2
 
 
 async def test_the_window_expires_and_is_per_run():
