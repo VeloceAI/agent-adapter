@@ -8,7 +8,7 @@ import threading
 from typing import Any
 
 from agent_adapter.core.errors import MissingDependency
-from agent_adapter.robotics.kinematic import straight_line
+from agent_adapter.robotics.kinematic import MAX_WAYPOINTS, straight_line
 from agent_adapter.robotics.spec import ActionSpec, Command, Point, Waypoint
 
 __all__ = ["GANTRY_XML", "MujocoSim"]
@@ -77,6 +77,8 @@ class MujocoSim:
         setpoints = straight_line(start, target, speed, self.model.opt.timestep)
         duration = setpoints[-1].t + self.settle
         steps = math.ceil(duration / self.model.opt.timestep)
+        if steps > MAX_WAYPOINTS:
+            raise ValueError(f"simulation needs {steps} steps, over the cap of {MAX_WAYPOINTS}")
         every = max(1, round(self.dt / self.model.opt.timestep))
         path: list[Waypoint] = []
         with self._lock:  # MjModel is shared; each run has its own MjData

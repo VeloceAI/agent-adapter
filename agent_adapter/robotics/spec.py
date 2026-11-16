@@ -69,6 +69,8 @@ class ActionSpec(BaseModel):
     approval, unless it breaks a hard limit (`hard_*`, `keep_out`) or the command rate: then
     it is blocked and no approval can run it. Unset hard limits leave approval as the only
     ceiling; keep-out zones always block, also when a simulated path only passes through one.
+    A speed below `min_speed` (default: a thousandth of `max_speed`) and a move that would
+    take longer than `max_duration` seconds are blocked too.
     """
 
     model_config = _STRICT
@@ -76,7 +78,9 @@ class ActionSpec(BaseModel):
     workspace: Box
     max_speed: float = Field(gt=0, description="m/s")
     max_force: float = Field(ge=0, description="N")
+    min_speed: float | None = Field(default=None, gt=0, description="m/s")
     max_rate: float = Field(default=5.0, gt=0, description="motion commands per second")
+    max_duration: float = Field(default=60.0, gt=0, description="s, one move")
     keep_out: tuple[Box, ...] = ()
     hard_workspace: Box | None = None
     hard_max_speed: float | None = Field(default=None, gt=0)
@@ -88,7 +92,14 @@ class ActionSpec(BaseModel):
             raise ValueError("hard_max_speed must be >= max_speed")
         if self.hard_max_force is not None and self.hard_max_force < self.max_force:
             raise ValueError("hard_max_force must be >= max_force")
+        if self.min_speed is not None and self.min_speed > self.max_speed:
+            raise ValueError("min_speed must be <= max_speed")
         return self
+
+    @property
+    def slowest_speed(self) -> float:
+        """The lowest speed a move may use: `min_speed`, or a thousandth of `max_speed`."""
+        return self.min_speed if self.min_speed is not None else self.max_speed / 1000
 
 
 class Command(BaseModel):
@@ -136,6 +147,8 @@ def judge(spec: ActionSpec, command: Command) -> Verdict:
     if command.kind == "move":
         assert command.target is not None  # checked by Command
         _limit(soft, hard, "speed", command.speed, spec.max_speed, spec.hard_max_speed, "m/s")
+        if command.speed < spec.slowest_speed:
+            hard.append(f"speed {command.speed:g} m/s is below the minimum {spec.slowest_speed:g}")
         if not spec.workspace.contains(command.target):
             soft.append(f"target {_fmt(command.target)} is outside the workspace")
         if spec.hard_workspace is not None and not spec.hard_workspace.contains(command.target):

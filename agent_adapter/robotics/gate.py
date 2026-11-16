@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import time
 from collections import deque
 from collections.abc import AsyncIterator, Callable, Mapping
@@ -43,8 +44,9 @@ class RobotGate:
     Inside the envelope a command runs. Outside it, the tool's `confirm` rule asks the
     executor's approval port; there is no other approval path. A command that breaks a hard
     limit, enters a keep-out zone in simulation, exceeds the rate, or arrives while the
-    e-stop is latched or the heartbeat is lost is blocked. `estop()` never needs the
-    executor, an approval or a free slot.
+    e-stop is latched or the heartbeat is lost is blocked, also when that happens while the
+    command is being simulated. `estop()` never needs the executor, an approval or a free
+    slot. Cancelling a running motion call stops the robot and latches the e-stop.
     """
 
     def __init__(
@@ -62,6 +64,7 @@ class RobotGate:
         self._executor = executor
         self._clock = clock
         self._latched: str | None = None
+        self._epoch = 0  # bumped by every estop(): a command checked before it must not run
         self._recent: deque[float] = deque()
         self._lock = asyncio.Lock()
         self._deadman: Deadman | None = None
@@ -107,21 +110,22 @@ class RobotGate:
             gate.reset()
             return "e-stop released"
 
-        motion = {"effects": "destructive", "idempotent": True, "tags": {"robot"}}
+        # No `effects` on motion: the executor finishes a cancelled call that declares one,
+        # and a cancelled move must stop instead. parallel_safe on every robot tool keeps the
+        # estop tool from queueing behind a move for the run's slot; the gate's own lock runs
+        # motion one command at a time.
+        motion: dict[str, Any] = {"idempotent": True, "parallel_safe": True, "tags": {"robot"}}
         return [
             registry.wrap(move_to, name=f"{prefix}move_to", confirm=self._rule("move"), **motion),
             registry.wrap(grip, name=f"{prefix}grip", confirm=self._rule("grip"), **motion),
-            # parallel_safe: never waits behind read-only calls. A move in the same run still
-            # holds the run's slot, so a stop button calls gate.estop() instead.
+            registry.wrap(estop, name=f"{prefix}estop", effects="additive", **motion),
             registry.wrap(
-                estop,
-                name=f"{prefix}estop",
-                effects="additive",
-                idempotent=True,
-                parallel_safe=True,
-                tags={"robot"},
+                reset_estop,
+                name=f"{prefix}reset_estop",
+                confirm=True,
+                effects="destructive",
+                **motion,
             ),
-            registry.wrap(reset_estop, name=f"{prefix}reset_estop", confirm=True, **motion),
         ]
 
     def _rule(self, kind: str) -> Callable[[ToolCall, ToolContext], bool]:
@@ -138,13 +142,23 @@ class RobotGate:
             raise ToolUsageError(DIRECT_CALL)
         command = _command(kind, args)
         async with self._lock:
+            epoch = self._epoch
             verdict = await self.check(command)
             ctx.emit("robot_check", kind=kind, action=verdict.action, reasons=list(verdict.reasons))
             if verdict.action == "block":
                 raise GuardrailBlocked(verdict.summary, tool=f"robot.{kind}")
             assert isinstance(command, Command)  # a bad command is blocked by check()
+            # check() awaited the simulation: re-check the stop state with no await before execute.
+            stopped = self._stopped_since(epoch)
+            if stopped is not None:
+                ctx.emit("robot_check", kind=kind, action="block", reasons=[stopped])
+                raise GuardrailBlocked(stopped, tool=f"robot.{kind}")
             self._recent.append(self._clock())
-            await self.robot.execute(command)
+            try:
+                await self.robot.execute(command)
+            except asyncio.CancelledError:
+                await asyncio.shield(self.estop(f"{kind} cancelled"))
+                raise
             if self._latched is not None:
                 raise ToolError(f"e-stop ({self._latched}): stopped at {_at(self.robot)}")
             ctx.emit("robot_done", kind=kind, position=list(self.robot.position()))
@@ -168,6 +182,13 @@ class RobotGate:
         if verdict.action == "block":
             return verdict
         start = self.robot.position()
+        if command.target is not None:
+            seconds = math.dist(start, command.target) / command.speed
+            if seconds > self.spec.max_duration:
+                limit = self.spec.max_duration
+                return Verdict(
+                    "block", (f"move takes {seconds:.1f} s, over max_duration {limit:g}",)
+                )
         try:
             path = await self.sim.simulate(start, command, self.spec)
         except Exception as exc:
@@ -175,6 +196,14 @@ class RobotGate:
             return Verdict("block", (f"shadow simulation failed: {type(exc).__name__}",))
         shadow = judge_path(self.spec, start, path)
         return shadow if shadow.action == "block" else verdict
+
+    def _stopped_since(self, epoch: int) -> str | None:
+        """Why a command checked at `epoch` may no longer run, or None."""
+        if self._latched is not None or self._epoch != epoch:
+            return f"e-stop during the check ({self._latched or 'released since'})"
+        if self._deadman is not None and not self._deadman.alive():
+            return "no operator heartbeat"
+        return None
 
     def _over_rate(self) -> bool:
         now = self._clock()
@@ -192,6 +221,7 @@ class RobotGate:
     async def estop(self, reason: str = "estop") -> None:
         """Latch the e-stop and stop the robot. No executor, approval or lock involved."""
         self._latched = self._latched or reason
+        self._epoch += 1
         started = self._clock()
         try:
             await self.robot.stop()
@@ -207,6 +237,9 @@ class RobotGate:
     def reset(self) -> None:
         """Release the e-stop (the `reset_estop` tool asks a person first)."""
         reason, self._latched = self._latched, None
+        rearm = getattr(self.robot, "reset", None)
+        if callable(rearm):
+            rearm()
         if self._deadman is not None:
             self._deadman.start()
         self._audit("custom.robot_reset", reason=reason or "")
