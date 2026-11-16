@@ -4,6 +4,9 @@ Mix.install([{:anubis_mcp, "~> 2.2"}])
 url = System.get_env("AA_URL", "http://localhost:8000")
 auth = "Bearer " <> System.get_env("AA_TOKEN", "dev-token")
 
+# Anubis 2.2 does not start its HTTP pool itself when used from a script
+{:ok, _} = Finch.start_link(name: Anubis.Finch)
+
 {:ok, _} =
   Anubis.Client.start_link(
     name: :weather,

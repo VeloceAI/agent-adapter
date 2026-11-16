@@ -1,4 +1,7 @@
 FROM elixir:1.18-slim
+# the slim image has no CA certificates, so Hex downloads fail without them
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 RUN mix local.hex --force && mix local.rebar --force
 WORKDIR /app
 # fetch and compile the dependency once, at build time (Mix.install caches by its list)
