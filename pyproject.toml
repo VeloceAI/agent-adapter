@@ -303,6 +303,8 @@ module = [
     "av",
     "av.*",
     "sounddevice",
+    "websockets",
+    "websockets.*",
     "moonshine_voice",
     "moonshine_voice.*",
     "mujoco",

@@ -54,26 +54,26 @@ the newest release inside each pinned range is tested. An extra marked
 | CAMEL-AI tools | `pip install "agent-adapter[camel]"` | `camel-ai>=0.2.90,<0.3`, `mcp<2`; own environment (needs mcp<2; pins pydantic<=2.12.0, while google-genai in `all` needs >=2.12.5) |
 | AG2 tools | `pip install "agent-adapter[ag2]"` | `ag2>=1.2.2,<2` |
 | A2A server and client | `pip install "agent-adapter[a2a]"` | `a2a-sdk[http-server]>=1.3,<2` |
-| AG-UI event stream (CopilotKit and other UIs) | `pip install "agent-adapter[ag-ui]"` | `ag-ui-protocol>=1.0,<2` |
+| AG-UI event stream (CopilotKit and more) | `pip install "agent-adapter[ag-ui]"` | `ag-ui-protocol>=1.0,<2` |
 | LiveKit voice agents: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[livekit]"` | `livekit-agents>=1.8,<2`; own environment (WebRTC and media binaries) |
-| Pipecat voice pipelines: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
-| local turn detection: Silero VAD and Smart Turn (`SileroTurns`, `SmartTurn`) | `pip install "agent-adapter[vad]"` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` |
-| our voice pipeline on a laptop: Moonshine and the sound card | `pip install "agent-adapter[voice-local]"` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` |
+| Pipecat pipelines: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
+| turn detection: `SileroTurns`, `SmartTurn` | `pip install "agent-adapter[vad]"` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` |
+| local voice: Moonshine and the sound card | `pip install "agent-adapter[voice-local]"` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` |
 | hosted STT and TTS, Twilio calls | `pip install "agent-adapter[voice-cloud]"` | `httpx>=0.27,<1`, `websockets>=13,<18` |
-| browser voice calls over WebRTC (`WebRTCAudio`) | `pip install "agent-adapter[webrtc]"` | `aiortc>=1.14,<2` |
+| browser calls over WebRTC (`WebRTCAudio`) | `pip install "agent-adapter[webrtc]"` | `aiortc>=1.14,<2` |
 | MuJoCo robot sim (`MujocoSim`) | `pip install "agent-adapter[mujoco]"` | `mujoco>=3.3,<5` |
-| Postgres or any SQLAlchemy database as the approval store | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
+| SQLAlchemy approval store (Postgres, SQLite) | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
 | DynamoDB approval store (AWS serverless) | `pip install "agent-adapter[dynamodb]"` | `aioboto3>=13,<16` |
-| flows as Temporal workflows (`agent_adapter.integrations.temporal`) | `pip install "agent-adapter[temporal]"` | `temporalio>=1.35,<2` |
+| flows as Temporal workflows | `pip install "agent-adapter[temporal]"` | `temporalio>=1.35,<2` |
 | flows as DBOS workflows (`DbosFlows`) | `pip install "agent-adapter[dbos]"` | `dbos>=3.4,<4` |
 | HTTP tool server (ASGI) with MCP mounted | `pip install "agent-adapter[server]"` | `starlette>=1.0,<2`, `uvicorn>=0.30,<1`, `h11>=0.16,<1`, extra `mcp` |
 | HTTP tool server under WSGI (Flask, Django) | `pip install "agent-adapter[server-wsgi]"` | `a2wsgi>=1.10,<2`, extra `server` |
-| Presidio PII guard (`PresidioGuard`; also needs a spaCy model) | `pip install "agent-adapter[presidio]"` | `presidio-analyzer>=2.2,<3`, `presidio-anonymizer>=2.2,<3` |
+| Presidio PII guard (`PresidioGuard`, needs a spaCy model) | `pip install "agent-adapter[presidio]"` | `presidio-analyzer>=2.2,<3`, `presidio-anonymizer>=2.2,<3` |
 | NeMo Guardrails guard (`NemoGuard`) | `pip install "agent-adapter[nemo]"` | `nemoguardrails>=0.24,<1` |
 | Mem0 memory backend (`Mem0Memory`) | `pip install "agent-adapter[mem0]"` | `mem0ai>=2.2,<3` |
 | Zep memory backend (`ZepMemory`) | `pip install "agent-adapter[zep]"` | `zep-cloud>=4.1,<5` |
 | Graphiti knowledge-graph memory (`GraphitiMemory`) | `pip install "agent-adapter[graphiti]"` | `graphiti-core>=0.31,<1` |
-| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `mujoco`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `vad`, `voice-local`, `webrtc`, `zep` |
+| every extra that installs together | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `mujoco`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `vad`, `voice-local`, `webrtc`, `zep` |
 
 ## Import rules
 

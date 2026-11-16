@@ -54,25 +54,26 @@ the newest release inside each pinned range is tested. An extra marked
 | CAMEL-AI tools | `pip install "agent-adapter[camel]"` | `camel-ai>=0.2.90,<0.3`, `mcp<2`; checked at use: 0.2.90 to below 0.3.0; own environment (needs mcp<2; pins pydantic<=2.12.0, while google-genai in `all` needs >=2.12.5) |
 | AG2 tools | `pip install "agent-adapter[ag2]"` | `ag2>=1.2.2,<2`; checked at use: 1.2.2 to below 2.0 |
 | A2A server and client | `pip install "agent-adapter[a2a]"` | `a2a-sdk[http-server]>=1.3,<2` |
-| AG-UI event stream (CopilotKit and other UIs) | `pip install "agent-adapter[ag-ui]"` | `ag-ui-protocol>=1.0,<2`; checked at use: 1.0 to below 2.0 |
+| AG-UI event stream (CopilotKit and more) | `pip install "agent-adapter[ag-ui]"` | `ag-ui-protocol>=1.0,<2`; checked at use: 1.0 to below 2.0 |
 | LiveKit voice agents: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[livekit]"` | `livekit-agents>=1.8,<2`; own environment (WebRTC and media binaries) |
-| Pipecat voice pipelines: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
-| local turn detection: Silero VAD and Smart Turn (`SileroTurns`, `SmartTurn`) | `pip install "agent-adapter[vad]"` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` |
-| our voice pipeline on a laptop: Moonshine and the sound card | `pip install "agent-adapter[voice-local]"` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` |
+| Pipecat pipelines: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
+| turn detection: `SileroTurns`, `SmartTurn` | `pip install "agent-adapter[vad]"` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` |
+| local voice: Moonshine and the sound card | `pip install "agent-adapter[voice-local]"` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` |
 | hosted STT and TTS, Twilio calls | `pip install "agent-adapter[voice-cloud]"` | `httpx>=0.27,<1`, `websockets>=13,<18` |
-| browser voice calls over WebRTC (`WebRTCAudio`) | `pip install "agent-adapter[webrtc]"` | `aiortc>=1.14,<2` |
-| Postgres or any SQLAlchemy database as the approval store | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
+| browser calls over WebRTC (`WebRTCAudio`) | `pip install "agent-adapter[webrtc]"` | `aiortc>=1.14,<2` |
+| MuJoCo robot sim (`MujocoSim`) | `pip install "agent-adapter[mujoco]"` | `mujoco>=3.3,<5` |
+| SQLAlchemy approval store (Postgres, SQLite) | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
 | DynamoDB approval store (AWS serverless) | `pip install "agent-adapter[dynamodb]"` | `aioboto3>=13,<16` |
-| flows as Temporal workflows (`agent_adapter.integrations.temporal`) | `pip install "agent-adapter[temporal]"` | `temporalio>=1.35,<2` |
+| flows as Temporal workflows | `pip install "agent-adapter[temporal]"` | `temporalio>=1.35,<2` |
 | flows as DBOS workflows (`DbosFlows`) | `pip install "agent-adapter[dbos]"` | `dbos>=3.4,<4` |
 | HTTP tool server (ASGI) with MCP mounted | `pip install "agent-adapter[server]"` | `starlette>=1.0,<2`, `uvicorn>=0.30,<1`, `h11>=0.16,<1`, extra `mcp` |
 | HTTP tool server under WSGI (Flask, Django) | `pip install "agent-adapter[server-wsgi]"` | `a2wsgi>=1.10,<2`, extra `server` |
-| Presidio PII guard (`PresidioGuard`; also needs a spaCy model) | `pip install "agent-adapter[presidio]"` | `presidio-analyzer>=2.2,<3`, `presidio-anonymizer>=2.2,<3` |
+| Presidio PII guard (`PresidioGuard`, needs a spaCy model) | `pip install "agent-adapter[presidio]"` | `presidio-analyzer>=2.2,<3`, `presidio-anonymizer>=2.2,<3` |
 | NeMo Guardrails guard (`NemoGuard`) | `pip install "agent-adapter[nemo]"` | `nemoguardrails>=0.24,<1` |
 | Mem0 memory backend (`Mem0Memory`) | `pip install "agent-adapter[mem0]"` | `mem0ai>=2.2,<3` |
 | Zep memory backend (`ZepMemory`) | `pip install "agent-adapter[zep]"` | `zep-cloud>=4.1,<5` |
 | Graphiti knowledge-graph memory (`GraphitiMemory`) | `pip install "agent-adapter[graphiti]"` | `graphiti-core>=0.31,<1` |
-| every extra that installs together in one environment | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `vad`, `voice-local`, `webrtc`, `zep` |
+| every extra that installs together | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `mujoco`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `vad`, `voice-local`, `webrtc`, `zep` |
 | running this repository's tests and linters | `pip install -e ".[dev]"` (in a checkout) | `pytest>=8`, `pytest-asyncio>=0.24`, `pytest-cov>=5`, `pytest-xdist>=3.8,<4`, `pytest-testmon>=2.3,<3`, `ruff>=0.6`, `mypy>=1.11`, `nox>=2024.10`, `hatchling>=1.27`, `tzdata>=2024.1`, `fakeredis>=2.26`, `lupa>=2.2`, `sqlalchemy[asyncio]>=2.0.30,<3`, `aiosqlite>=0.20,<1`, `moto[dynamodb]>=5,<6`, `httpx>=0.27,<1`, `websockets>=13,<18` |
 | building this repository's docs site | `pip install -e ".[docs]"` (in a checkout) | `mkdocs-material>=9.5`, `mkdocstrings[python]>=0.26` |
 
@@ -1514,6 +1515,25 @@ Retrieval (RAG): the `RetrieverPort`, `Document`, backends and a cited `retrieve
 - `Source(*, uri: str = '', title: str = '') -> None`: Where a document came from, for citations: a link or path and a title.
 - `ToolFilters = Mapping[str, str | int | float | bool] | Callable[[ToolContext], Mapping[str, str | int | float | bool]]`
 - `retriever_tool(retriever: RetrieverPort, *, name: str = 'search_docs', description: str = ..., k: int = 5, filters: ToolFilters | None = None, include_metadata: bool = False, max_chars: int | None = None, cache_ttl: float | None = None, cache_scope: CacheScope = 'run', timeout: float | None = None, tags: Iterable[str] = ()) -> ToolSpec`: A tool (kind "retrieval") that searches `retriever` for the model's `query`.
+
+### `agent_adapter.robotics`
+
+Safe robot actions: envelopes, a shadow simulation, approvals and an e-stop (simulation first).
+
+- `ActionSpec(*, workspace: Box, max_speed: float, max_force: float, max_rate: float = 5.0, keep_out: tuple[Box, ...] = (), hard_workspace: Box | None = None, hard_max_speed: float | None = None, hard_max_force: float | None = None) -> None`: The envelope a robot works in without a person, and the hard limits beyond it.
+- `Box(*, lo: tuple[float, float, float], hi: tuple[float, float, float], name: str = '') -> None`: An axis-aligned box in metres, from corner `lo` to corner `hi`.
+- `CallbackRobot(*, execute: Callable[[Command], Any], stop: Callable[[], Any], position: Callable[[], Point]) -> None`: A `RobotPort` from your own functions: an rclpy publisher, a LeRobot robot, a driver.
+- `Command(*, kind: Literal['move', 'grip'], target: tuple[float, float, float] | None = None, speed: float = 0.0, force: float = 0.0) -> None`: One robot command: a move of the end effector, or a grip.
+- `Deadman(timeout: float, on_lost: Callable[[], Awaitable[None]], *, clock: Callable[[], float] = perf_counter) -> None`: Calls `on_lost` once when `beat()` has not been called for `timeout` seconds.
+- `KinematicSim(*, dt: float = 0.02) -> None`: `SimPort`: the end effector moves in a straight line at the commanded speed.
+- `RobotGate(spec: ActionSpec, *, robot: RobotPort, sim: SimPort | None = None, executor: Executor | None = None, clock: Callable[[], float] = perf_counter) -> None`: Puts a robot behind an `ActionSpec`, a `SimPort` shadow and the executor's approvals.
+- `RobotPort` (protocol: execute, position, stop): A robot (or a stand-in) the gate sends commands to.
+- `SimPort` (protocol: simulate): Runs a command in simulation first; returns the end effector's path.
+- `SimRobot(start: Point = (0.0, 0.0, 0.0), *, tick: float = 0.01, clock: Callable[[], float] = perf_counter) -> None`: `RobotPort` stand-in that moves a point in real time, one control tick at a time.
+- `Verdict(action: Action, reasons: tuple[str, ...] = ()) -> None`: What the gate does with a command, and why.
+- `Waypoint(*, t: float, at: tuple[float, float, float]) -> None`: One sample of a simulated path: where the end effector is at time `t` (s).
+- `judge(spec: ActionSpec, command: Command) -> Verdict`: Judge a command on its own arguments: the part an approval can cover.
+- `judge_path(spec: ActionSpec, start: Point, path: Sequence[Waypoint]) -> Verdict`: Judge a simulated path against keep-out zones and hard limits (never approvable).
 
 ### `agent_adapter.runtime`
 
