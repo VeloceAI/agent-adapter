@@ -39,6 +39,7 @@ from agent_adapter.flow._result import FlowCheckpoint, FlowResult, frozen
 from agent_adapter.flow._seal import Sealer, dump_json, load_json, not_sealable, seal
 from agent_adapter.flow.actions import Call, Map
 from agent_adapter.flow.graph import FlowGraph
+from agent_adapter.flow.state import validated_state
 from agent_adapter.tracing.events import EventType, emit, make_event
 
 logger = logging.getLogger(__name__)
@@ -57,6 +58,7 @@ class DurableRun:
     step: int  # the last stored step; -1 before the first save
     log: CallLog
     identity: Mapping[str, str]  # user, thread and principal, sealed into every checkpoint
+    last_body: str = ""  # the flow checkpoint text of the last save
 
     @property
     def run_id(self) -> str:
@@ -70,18 +72,23 @@ class DurableRun:
         *,
         carried: tuple[CallRecord, ...] = (),
         spend: Mapping[str, Any] | None = None,
+        body: str | None = None,
     ) -> None:
         """Store the run's next checkpoint (signed) and start a new call-log segment.
 
         `carried` are the calls of a step that a recovery runs again (they replay from the
-        new segment); `spend` is an approval decision stored before it is spent.
+        new segment); `spend` is an approval decision stored before it is spent; `body` is
+        an already dumped flow checkpoint to store instead of `checkpoint`.
 
         Raises:
             CheckpointConflict: another worker saved this run's next step first.
-            FlowError: `state-not-sealable`: the position has no canonical form.
+            FlowError: `state-not-sealable`, or a state that no longer validates.
         """
-        if checkpoint is None:
-            checkpoint = self.sealed(cursor)
+        if body is None:
+            if checkpoint is None:
+                checkpoint = self.sealed(cursor)
+            validated_state(type(checkpoint.state), dict(checkpoint.state), what="checkpoint state")
+            body = dump_json(self.sealer, checkpoint)
         record = Checkpoint(
             kind="flow", name=self.flow, status=status, segment=new_segment(), data=""
         )
@@ -90,7 +97,7 @@ class DurableRun:
             self.run_id,
             self.step + 1,
             record,
-            dump_json(self.sealer, checkpoint),
+            body,
             self.identity,
             carried=carried,
             spend=spend,
@@ -101,6 +108,7 @@ class DurableRun:
             self.log.broken = True
             raise
         self.step += 1
+        self.last_body = body
         missed = self.log.move_to(record.segment, carried)
         extra: dict[str, Any] = {"unreplayed": missed} if missed else {}
         event = make_event(
@@ -133,8 +141,13 @@ class DurableRun:
         """
         if self.log.broken:
             return
+        body = None
         try:
-            await self.save(cursor, "failed")
+            validated_state(type(cursor.state), dict(cursor.state))
+        except FlowError:  # changed in place into an invalid state: keep the last good one
+            body = self.last_body or None
+        try:
+            await self.save(cursor, "failed", body=body)
         except Exception as exc:  # the store may be what failed; the run's error wins
             log_failure(
                 logger,

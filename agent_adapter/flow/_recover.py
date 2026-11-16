@@ -30,7 +30,7 @@ from agent_adapter.flow._durable import (
 )
 from agent_adapter.flow._pause import Cursor, cursor_from
 from agent_adapter.flow._result import FlowCheckpoint, FlowResult
-from agent_adapter.flow._resume import spend_once
+from agent_adapter.flow._resume import SPENT, settle_deferred
 from agent_adapter.flow.spec import Flow
 from agent_adapter.tracing.events import EventType, emit, make_event
 
@@ -69,20 +69,25 @@ def spend_record(pending: ApprovalRequest, decision: ApprovalDecision) -> dict[s
 async def settle_spend(spend: Mapping[str, Any], port: ApprovalPort | None) -> None:
     """Spend a stored decision; one already spent with this same decision counts as done.
 
+    The signed spend won its checkpoint step, so it is the authority: the process-wide
+    `SPENT` memory is updated but never consulted, or recovery would depend on which
+    process runs it.
+
     Raises:
         ApprovalAlreadyDecided: the store holds another decision for the request.
     """
     request = ApprovalRequest.model_validate(spend["request"])
     decision = ApprovalDecision.model_validate(spend["decision"])
-    try:
-        await spend_once(request, decision, port)
-    except ApprovalAlreadyDecided:
-        store = approval_store(port)
-        if store is not None:
+    store = approval_store(port)
+    if store is not None:
+        try:
+            await settle_deferred(store, request, decision)
+        except ApprovalAlreadyDecided:
             record = await store.get(request.approval_id)
             if not (record.consumed and same_decision(record.decision, decision)):
                 raise
-        logger.info("approval %s was spent before the crash", request.approval_id)
+            logger.info("approval %s was spent before the crash", request.approval_id)
+    SPENT.remember((request.run_id, request.approval_id))
 
 
 def spend_port(runner: FlowRunner, request: Mapping[str, Any]) -> ApprovalPort | None:

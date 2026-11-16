@@ -181,6 +181,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Flow pause and resume](https://agent-adapter.veloceai.in/concepts/flow-resume/): A flow pauses at a `pause` gate or when a tool inside a node needs an approval that is not decided yet
 - [Sub-flows and node cache](https://agent-adapter.veloceai.in/concepts/flow-subflows/): A `SubFlow` node runs another `Flow` as one node of its parent
 - [Durable runs](https://agent-adapter.veloceai.in/concepts/durable-runs/): A durable run survives its worker
+- [Resume contract](https://agent-adapter.veloceai.in/concepts/resume-contract/): A durable run must survive a crash at any moment without running an effect twice or continuing from the wrong place
 - [Hooks](https://agent-adapter.veloceai.in/concepts/hooks/): A hook is middleware around every tool call, model call and flow node
 - [Guardrails](https://agent-adapter.veloceai.in/concepts/guardrails/): A guard is a hook that looks at what goes into and out of your agent: tool arguments, tool results, model requests and model replies
 - [Policy file](https://agent-adapter.veloceai.in/concepts/policy/): A policy is one file that says, per tool, per team or user and per environment, which tools may run, which need a person's approval, which guards check...

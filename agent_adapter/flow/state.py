@@ -149,8 +149,7 @@ def apply_updates(
                 unknown.add(key)
     if unknown:
         raise FlowError(f"unknown state fields {sorted(unknown)}")
-    if not written:
-        return state
+    # validated even with no updates: a node may have changed the state in place
     data = dict(state)
     for key, values in written.items():
         rule = rules.get(key, Merge.replace)
