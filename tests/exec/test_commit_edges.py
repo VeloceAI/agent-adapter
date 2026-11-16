@@ -29,6 +29,14 @@ async def peek(amount: float) -> str:
     return "seen"
 
 
+@registry.tool(confirm=True, effects="physical")
+async def lift(amount: float) -> str:
+    """Approved motion: a cancel stops it."""
+    await gate["open"].wait()
+    refunds.append(-amount)
+    return "lifted"
+
+
 @registry.tool(effects="additive")
 async def charge(amount: float) -> str:
     """Charge an amount."""
@@ -52,6 +60,7 @@ def test_confirm_or_once_per_run_without_effects_changes_things():
     assert changes_things(registry.get("refund"))
     assert changes_things(registry.get("welcome"))
     assert not changes_things(registry.get("peek"))  # an explicit effects value wins
+    assert not changes_things(registry.get("lift"))  # motion stops on cancel
 
 
 async def test_an_approved_call_without_effects_finishes_when_cancelled():
@@ -75,11 +84,12 @@ async def test_an_approved_call_without_effects_finishes_when_cancelled():
     assert entry.ok
 
 
-async def test_an_explicit_read_only_effect_is_still_cancelled():
+@pytest.mark.parametrize("name", ["peek", "lift"])
+async def test_an_explicit_read_only_or_physical_effect_is_still_cancelled(name):
     release = reset()
     ex, sink, _, _ = make(registry, approval=CallbackApproval(lambda r: True))
     task = asyncio.create_task(
-        ex.run_call(ToolCall(name="peek", arguments={"amount": 5}), ex.context(run_id="r1"))
+        ex.run_call(ToolCall(name=name, arguments={"amount": 5}), ex.context(run_id="r1"))
     )
     for _ in range(5):
         await asyncio.sleep(0)

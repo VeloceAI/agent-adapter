@@ -16,6 +16,8 @@ _FROZEN = ConfigDict(frozen=True)
 _ANY: TypeAdapter[Any] = TypeAdapter(Any, config=ConfigDict(ser_json_bytes="base64"))
 
 CacheScope = Literal["run", "thread", "global"]  # who shares a cached tool result
+# "physical": moves something in the world; a cancelled call stops, it never finishes.
+Effects = Literal["read_only", "additive", "destructive", "physical"]
 
 
 def _errors() -> Any:

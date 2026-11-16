@@ -29,7 +29,7 @@ def tool_annotations(spec: ToolSpec) -> dict[str, bool]:
     hints: dict[str, bool] = {}
     if spec.effects is not None:
         hints["read_only_hint"] = spec.effects == "read_only"
-        hints["destructive_hint"] = spec.effects == "destructive"
+        hints["destructive_hint"] = spec.effects in ("destructive", "physical")
     elif spec.confirm is not False:
         hints["destructive_hint"] = True
     if spec.idempotent is not None:

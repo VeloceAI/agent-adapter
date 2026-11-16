@@ -71,8 +71,9 @@ directly (`spec.invoke`) raises `ToolUsageError`.
   been called for 0.25 s. Beat from the operator or the controlling process, never from a
   model tool: a model that can beat can be told to keep beating.
 - `reset_estop` is a `confirm=True` tool: a person releases the e-stop.
-- Cancelling the agent does not stop a move: motion tools are `effects="destructive"`, so
-  a started move finishes once. Stopping is the e-stop's job.
+- Cancelling a move stops the robot: motion tools are `effects="physical"`, so a cancelled
+  move is not finished; the gate latches the e-stop and the move reports where it stopped.
+  A caller saying "stop" over a voice agent does the same.
 
 ## Audit
 

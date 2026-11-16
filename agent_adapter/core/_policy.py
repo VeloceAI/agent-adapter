@@ -8,7 +8,7 @@ from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 
 from agent_adapter.core.errors import ToolDefinitionError
-from agent_adapter.core.types import CacheScope
+from agent_adapter.core.types import CacheScope, Effects
 
 Check = Callable[[Any], tuple[bool, Any]]
 
@@ -68,7 +68,7 @@ def _one_of(*choices: str | None) -> Check:
 
 
 CACHE_SCOPES: tuple[str, ...] = typing.get_args(CacheScope)
-EFFECTS = ("read_only", "additive", "destructive")
+EFFECTS = typing.get_args(Effects)
 
 
 _CHECKS: dict[str, tuple[Check, str]] = {
@@ -84,7 +84,7 @@ _CHECKS: dict[str, tuple[Check, str]] = {
     "prompt_hint": (_str_or_none, "a str or None"),
     "cache_scope": (_one_of(*CACHE_SCOPES), "one of 'run', 'thread', 'global'"),
     "targets": (_targets, "None, a non-empty str or a non-empty iterable of non-empty str"),
-    "effects": (_one_of(*EFFECTS, None), "one of 'read_only', 'additive', 'destructive' or None"),
+    "effects": (_one_of(*EFFECTS, None), f"one of {', '.join(map(repr, EFFECTS))} or None"),
     "idempotent": (_bool_or_none, "a bool or None"),
 }
 POLICY_OPTIONS = frozenset(_CHECKS)

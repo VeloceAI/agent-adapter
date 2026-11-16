@@ -106,7 +106,7 @@ the range in brackets:
 | First reply heard, after the caller stops | **2.4 s** (2.1 to 2.7) | 4.3 s (4.0 to 4.4) | 4.3 s (4.2 to 8.7) |
 | Agent goes quiet, after the caller cuts in | **54 ms** (0 to 78), 10 runs | **54 ms** (31 to 79), 10 runs | 484 ms (453 to 485), 5 runs |
 | The VoiceAgent is told of the cut | 352 ms | 63 ms | 391 ms |
-| CPU time for the call | 47 s | 25 s | 47 s |
+| CPU time for the call | 25 s (16 to 27) | **20 s** (20 to 28) | 32 s (27 to 33) |
 
 How to read it:
 
@@ -121,8 +121,10 @@ How to read it:
   this script missed that and showed Pipecat taking 5.5 s.
 - **Told of the cut** is later for us by design: playback stops at once, but the turn is cut
   only after 300 ms of speech, so a cough does not throw away the agent's work.
-- **CPU**: we use more than Pipecat, because the streaming passes and the early pass
-  transcribe some audio twice.
+- **CPU** is counted from the moment the call starts, after models load, in a later run of
+  8 calls per stack. We use about a quarter more than Pipecat: speech-to-text and the voice
+  both stream, which is what makes the first reply twice as fast. A first version of this
+  script started our clock before the models loaded and showed 47 s.
 - The caller is a second Kokoro voice sent as audio frames, not a person or a microphone.
   The cut line was heard as "Wait till that go through" in some runs on every stack. The
   same audio gives "did" or "till" depending only on the silence before it.

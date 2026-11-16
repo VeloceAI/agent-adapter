@@ -63,8 +63,9 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `scripts/voice_race.py` runs one scripted call on our pipeline, Pipecat and LiveKit with the
   same detectors and models (20 runs each, all charged once). Medians: the first reply is
   heard 2.4 s after the caller stops (Pipecat and LiveKit 4.3 s). The agent goes quiet
-  54 ms after a cut, the same as Pipecat (LiveKit 484 ms). It uses more CPU (47 s, Pipecat
-  25 s). `scripts/voice_live.py` runs
+  54 ms after a cut, the same as Pipecat (LiveKit 484 ms). CPU from the start of the call:
+  25 s, Pipecat 20 s, LiveKit 32 s. `MoonshineSTT(update_interval=1.0)` decodes a stream
+  once a second, since only the final text is used. `scripts/voice_live.py` runs
   our stack alone with a scripted caller, `--mic` or `--webrtc`.
 
 - Voice agents: `agent_adapter.voice.VoiceAgent` runs a conversation around your executor on

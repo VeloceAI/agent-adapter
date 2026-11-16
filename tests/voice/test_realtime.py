@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 from agent_adapter import Registry
 from agent_adapter.cost import Ledger, Prices
 from agent_adapter.exec import Executor, progress
+from agent_adapter.exec._commit import REPEAT_NOTE
 from agent_adapter.voice import VoiceApproval
 from agent_adapter.voice.gemini_live import GeminiLive
 from agent_adapter.voice.openai_realtime import OpenAIRealtime
@@ -167,7 +168,8 @@ async def test_gemini_cancellation_stops_a_lookup_but_a_booking_finishes_and_is_
                                                    "args": {"seat": "4A"}}]}})  # fmt: skip
     await settle()
     reply = provider.received[-1]["toolResponse"]["functionResponses"][0]
-    assert reply == {"id": "b2", "name": "book", "response": {"result": "booking #4A"}}
+    expected = f"booking #4A ({REPEAT_NOTE})"
+    assert reply == {"id": "b2", "name": "book", "response": {"result": expected}}
     assert done == ["4A"]  # the re-issued call returned the first result
     provider.close()
     await asyncio.wait_for(run, 1)

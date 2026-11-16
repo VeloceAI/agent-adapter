@@ -31,15 +31,16 @@ sequenceDiagram
 ## Declare what each tool does
 
 The executor decides from `effects=`. A `read_only` tool stops at once when the caller
-interrupts. An `additive` or `destructive` tool finishes. Add `confirm=True` for tools that
+interrupts. An `additive` or `destructive` tool finishes. A `physical` tool (a robot move)
+stops, since stopping is the safe end for motion. Add `confirm=True` for tools that
 need a spoken yes, and call `progress()` to say something while a slow tool works.
 
 ```python
 --8<-- "examples/voice_agent.py:tools"
 ```
 
-A tool with no `effects` stops at once, as before. Declare `effects` on every tool that
-changes something.
+A tool with no `effects` stops at once, unless it has `confirm` or `once_per_run`: those
+change something, so they finish. Declare `effects` on every tool that changes something.
 
 ## Connect your audio
 
@@ -100,8 +101,9 @@ The two executor features under it work for every framework and backend:
 - A tool with `effects="additive"` or `"destructive"` finishes when its caller is
   cancelled, then the cancellation goes on.
 - `Executor(dedupe_window_s=60)` returns the first result for a repeat of a finished or
-  running call with the same run, tool and arguments. `idempotent=True` tools are never
-  deduped.
+  running call with the same run, tool and validated arguments, marked "already done
+  earlier in this window; not run again" so the model knows. `idempotent=True` tools are
+  never deduped.
 
 ## Check it offline
 

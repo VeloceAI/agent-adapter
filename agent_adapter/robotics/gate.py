@@ -110,21 +110,20 @@ class RobotGate:
             gate.reset()
             return "e-stop released"
 
-        # No `effects` on motion: the executor finishes a cancelled call that declares one,
-        # and a cancelled move must stop instead. parallel_safe on every robot tool keeps the
-        # estop tool from queueing behind a move for the run's slot; the gate's own lock runs
-        # motion one command at a time.
-        motion: dict[str, Any] = {"idempotent": True, "parallel_safe": True, "tags": {"robot"}}
+        # parallel_safe on every robot tool keeps the estop tool from queueing behind a move
+        # for the run's slot; the gate's own lock runs motion one command at a time.
+        tools: dict[str, Any] = {"idempotent": True, "parallel_safe": True, "tags": {"robot"}}
+        motion = {**tools, "effects": "physical"}  # a cancelled move stops, never finishes
         return [
             registry.wrap(move_to, name=f"{prefix}move_to", confirm=self._rule("move"), **motion),
             registry.wrap(grip, name=f"{prefix}grip", confirm=self._rule("grip"), **motion),
-            registry.wrap(estop, name=f"{prefix}estop", effects="additive", **motion),
+            registry.wrap(estop, name=f"{prefix}estop", effects="additive", **tools),
             registry.wrap(
                 reset_estop,
                 name=f"{prefix}reset_estop",
                 confirm=True,
                 effects="destructive",
-                **motion,
+                **tools,
             ),
         ]
 

@@ -77,7 +77,7 @@ options on every call; `spec.invoke` ignores them.
 | `retries` | `int >= 0` (extra attempts) | [executor](executor-policies.md#retry-timeout-and-control-flow) |
 | `cache_scope` | `"run"` (default), `"thread"` or `"global"` | who shares a cached result ([executor](executor-policies.md#cache-ledger-and-events)) |
 | `targets` | one non-empty `str`, or an iterable of them; default `None` = every target | renderers and exporters ([Registry](registry.md#targets)) |
-| `effects` | `"read_only"`, `"additive"`, `"destructive"` or `None` | MCP tool annotations |
+| `effects` | `"read_only"`, `"additive"`, `"destructive"`, `"physical"` or `None` | MCP tool annotations; what a cancel does (finish or stop) |
 | `idempotent` | `bool` or `None` | MCP tool annotations |
 
 ## Bring your own argument model

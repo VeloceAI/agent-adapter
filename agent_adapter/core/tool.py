@@ -9,7 +9,7 @@ import inspect
 import logging
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -45,12 +45,11 @@ from agent_adapter.core.errors import (
 )
 from agent_adapter.core.media import mentions_media
 from agent_adapter.core.messages import ToolDef
-from agent_adapter.core.types import CacheScope
+from agent_adapter.core.types import CacheScope, Effects
 
 logger = logging.getLogger(__name__)
 
 ConfirmRule = bool | Callable[..., Any]
-Effects = Literal["read_only", "additive", "destructive"]
 
 
 @dataclass(frozen=True, eq=False)

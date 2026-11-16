@@ -53,7 +53,7 @@ sequenceDiagram
 | `json_schema()` | `inputSchema`, Anthropic-plain (refs inlined, titles dropped); a non-portable imported schema as given |
 | `result_schema()` | `outputSchema`; a non-object schema is wrapped as `{"result": …}` (definitions moved to the root) |
 | return value | `structuredContent` (wrapped the same way) and one JSON text block |
-| `effects` `read_only` / `additive` / `destructive` | `read_only_hint`, `destructive_hint` |
+| `effects` `read_only` / `additive` / `destructive` / `physical` | `read_only_hint`, `destructive_hint` (also true for `physical`) |
 | `effects is None`, `confirm` not `False` | `destructive_hint=True` |
 | `idempotent` set | `idempotent_hint` |
 

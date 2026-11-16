@@ -67,6 +67,7 @@ async def untyped(x: int):  # type: ignore[no-untyped-def]
         ({"effects": "read_only"}, {"read_only_hint": True, "destructive_hint": False}),
         ({"effects": "additive"}, {"read_only_hint": False, "destructive_hint": False}),
         ({"effects": "destructive"}, {"read_only_hint": False, "destructive_hint": True}),
+        ({"effects": "physical"}, {"read_only_hint": False, "destructive_hint": True}),
         (
             {"effects": "read_only", "confirm": True},
             {"read_only_hint": True, "destructive_hint": False},
