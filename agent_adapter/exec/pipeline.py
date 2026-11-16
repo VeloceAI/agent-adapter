@@ -30,7 +30,12 @@ from agent_adapter.core.types import ErrorInfo, LedgerEntry, ToolCall, ToolResul
 from agent_adapter.exec._approve import approve
 from agent_adapter.exec._call_content import NOT_PASSED, emit_finished
 from agent_adapter.exec._call_steps import NOT_STORED, CallSteps
-from agent_adapter.exec._commit import changes_things, finish_once_started, repeat_key
+from agent_adapter.exec._commit import (
+    changes_things,
+    finish_once_started,
+    mark_repeat,
+    repeat_key,
+)
 from agent_adapter.exec._journal import Journal, JournalSlot
 from agent_adapter.exec._resume import current_journal, restore_visit, visit_snapshot
 from agent_adapter.exec._settings import _Settings
@@ -94,7 +99,7 @@ async def _execute(
             await journal.settle(slot, done)
         return done
 
-    if not _changes_things(call, spec, registry):
+    if not _changes_things(settings, call, spec, registry):
         return await body()
     result, interrupted = await finish_once_started(body(), lambda: run.committed)
     if interrupted:
@@ -103,13 +108,18 @@ async def _execute(
     return result
 
 
-def _changes_things(call: ToolCall, spec: ToolSpec | None, registry: Registry | None) -> bool:
+def _changes_things(
+    settings: _Settings, call: ToolCall, spec: ToolSpec | None, registry: Registry | None
+) -> bool:
     if spec is None and registry is not None:
         try:
             spec = registry.get(call.name)
         except ToolNotFound:
             return False
-    return spec is not None and changes_things(spec)
+    if spec is None:
+        return False
+    policy = settings.policy  # a policy can add `confirm`, as `_resolve` applies it
+    return changes_things(spec if policy is None else policy.effective(spec))
 
 
 def _claim(
@@ -212,6 +222,7 @@ class _Call(CallSteps):
         return found if policy is None else policy.effective(found)
 
     async def _admitted(self, spec: ToolSpec) -> tuple[ToolResult, Any]:
+        """A dropped repeat is `cached` and its value carries `REPEAT_NOTE` (`mark_repeat`)."""
         window = self.settings.repeats
         key = repeat_key(self.ctx.run_id, spec, self.arguments) if window is not None else None
         if window is None or key is None:
@@ -222,7 +233,7 @@ class _Call(CallSteps):
         logger.info("tool %s: repeat of a finished call dropped (call %s)", spec.name, self.call_id)
         self.passed = self.arguments
         self.emit(EventType.TOOL_CACHED, tool=spec.name)
-        return self._ok(earlier.value, cached=True), NOT_STORED
+        return self._ok(mark_repeat(earlier.value), cached=True), NOT_STORED
 
     async def _admitted_once(self, spec: ToolSpec) -> tuple[ToolResult, Any]:
         runs = self.settings.runs

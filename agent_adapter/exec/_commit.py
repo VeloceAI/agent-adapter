@@ -20,9 +20,15 @@ RepeatKey = tuple[str, str, str]
 _MAX_KEYS = 10_000
 
 
+REPEAT_NOTE = "already done earlier in this window; not run again"
+
+
 def changes_things(spec: ToolSpec) -> bool:
-    """True when the tool declares an effect (`additive` or `destructive`)."""
-    return spec.effects in ("additive", "destructive")
+    """True for an `additive` or `destructive` effect; with no `effects`, for `confirm` or
+    `once_per_run` tools."""
+    if spec.effects is not None:
+        return spec.effects in ("additive", "destructive")
+    return bool(spec.confirm) or spec.once_per_run
 
 
 async def finish_once_started(work: Awaitable[T], started: Callable[[], bool]) -> tuple[T, bool]:
@@ -38,7 +44,9 @@ async def finish_once_started(work: Awaitable[T], started: Callable[[], bool]) -
             return await asyncio.shield(task), interrupted
         except asyncio.CancelledError:
             if task.done():
-                raise  # the work itself was cancelled, not its caller
+                if task.cancelled() or task.exception() is not None:
+                    raise  # the work itself was cancelled or failed as its caller was cancelled
+                return task.result(), True  # it finished as its caller was cancelled
             if not started():
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
@@ -48,14 +56,27 @@ async def finish_once_started(work: Awaitable[T], started: Callable[[], bool]) -
 
 
 def repeat_key(run_id: str, spec: ToolSpec, arguments: Any) -> RepeatKey | None:
-    """The key a repeated call shares (run, tool, argument digest), or None if not deduped."""
+    """The key a repeated call shares (run, tool, validated-argument digest), or None."""
     if not changes_things(spec) or spec.idempotent:
         return None
     try:
-        return (run_id, spec.name, digest(arguments))
-    except Exception:  # arguments no digest can encode run as fresh calls
-        logger.debug("tool %s: arguments cannot be digested; repeats are not dropped", spec.name)
+        validated = spec.validate_args(arguments)
+        dumped = validated.model_dump(mode="json", by_alias=True, exclude_unset=True)
+        return (run_id, spec.name, digest(dumped))
+    except Exception:  # invalid or undigestable arguments run as fresh calls
+        logger.debug("tool %s: no repeat key for these arguments; not deduped", spec.name)
         return None
+
+
+def mark_repeat(value: Any) -> Any:
+    """`value` with `REPEAT_NOTE`, so the model can tell a dropped repeat from a new run."""
+    if value is None:
+        return REPEAT_NOTE
+    if isinstance(value, str):
+        return f"{value} ({REPEAT_NOTE})"
+    if isinstance(value, list | tuple):
+        return [REPEAT_NOTE, *value]
+    return [REPEAT_NOTE, value]
 
 
 class RepeatWindow:
@@ -78,19 +99,20 @@ class RepeatWindow:
         self, key: RepeatKey, work: Callable[[], Awaitable[tuple[ToolResult, Any]]]
     ) -> tuple[ToolResult, Any, ToolResult | None]:
         """Run `work` once per key; returns (result, stored, earlier result for a repeat)."""
-        self._prune(self._clock())
-        done = self._done.get(key)
-        if done is not None:
-            return done[1], None, done[1]
-        running = self._running.get(key)
-        if running is not None:
+        while True:
+            self._prune(self._clock())
+            done = self._done.get(key)
+            if done is not None:
+                return done[1], None, done[1]
+            running = self._running.get(key)
+            if running is None:
+                return await self._first(key, work)
             try:
                 earlier = await asyncio.shield(running)
             except Exception:
-                earlier = None
-            if earlier is not None and earlier.ok:
+                continue  # the first failed: one waiter becomes the new first
+            if earlier.ok:
                 return earlier, None, earlier
-        return await self._first(key, work)
 
     async def _first(
         self, key: RepeatKey, work: Callable[[], Awaitable[tuple[ToolResult, Any]]]
@@ -109,4 +131,5 @@ class RepeatWindow:
                 self._done[key] = (self._clock(), result)
             return result, stored, None
         finally:
-            self._running.pop(key, None)
+            if self._running.get(key) is future:
+                del self._running[key]
