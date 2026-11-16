@@ -24,6 +24,7 @@ class SpeechQueue:
         self._queue: asyncio.Queue[tuple[str, bool]] = asyncio.Queue()
         self._task: asyncio.Task[None] | None = None
         self.played: list[str] = []  # model sentences fully spoken (not progress lines)
+        self._current: tuple[str, bool] | None = None
 
     def feed(self, chunk: str) -> None:
         """Add streamed model text; each finished sentence is queued to speak."""
@@ -43,6 +44,9 @@ class SpeechQueue:
         if not text.strip():
             return
         self._queue.put_nowait((text.strip(), record))
+        prepare = getattr(self._speaker, "prepare", None)
+        if callable(prepare):  # a speaker that can synthesise ahead (our Player)
+            prepare(text.strip())
         if self._task is None or self._task.done():
             self._task = asyncio.create_task(self._speak())
 
@@ -53,6 +57,7 @@ class SpeechQueue:
     async def stop(self) -> None:
         """Cut speech now: stop the speaker and drop the queue and the unfinished text."""
         self._buffer = ""
+        current, self._current = self._current, None
         while not self._queue.empty():
             self._queue.get_nowait()
             self._queue.task_done()
@@ -65,6 +70,10 @@ class SpeechQueue:
             await self._speaker.stop()
         except Exception as exc:
             log_failure(logger, logging.WARNING, exc, "speaker.stop failed")
+            return
+        heard = getattr(self._speaker, "heard_of_cut", "")  # the words of a cut line that played
+        if current is not None and current[1] and isinstance(heard, str) and heard:
+            self.played.append(heard)
 
     def take_played(self) -> str:
         """The model text that really played since the last call, then forget it."""
@@ -74,6 +83,7 @@ class SpeechQueue:
     async def _speak(self) -> None:
         while True:
             text, record = await self._queue.get()
+            self._current = (text, record)
             try:
                 await self._speaker.say(text)
                 if record:
@@ -86,3 +96,4 @@ class SpeechQueue:
                 self._queue.task_done()
             else:
                 self._queue.task_done()
+            self._current = None

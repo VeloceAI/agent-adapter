@@ -1,12 +1,78 @@
 # Voice agents
 
-Turns, safe interruptions and spoken approval around the executor, on any audio stack, plus offline fakes. Guide: [Build a voice agent](../how-to/voice-agents.md).
+Turns, safe interruptions and spoken approval around the executor, our own audio pipeline and transports, plus offline fakes. Guide: [Build a voice agent](../how-to/voice-agents.md).
 
 ## `agent_adapter.voice`
 
 ::: agent_adapter.voice
     options:
-      members: [CallableSpeaker, EventPump, Speaker, VoiceAgent, VoiceApproval, YES_WORDS, is_yes]
+      members: [AudioSocket, AudioTransport, CallableSTT, CallableSpeaker, CallableTTS, EventPump, LocalAudio, Player, STT, Speaker, TTS, TurnTiming, TwilioStream, VoiceAgent, VoiceApproval, VoiceSession, YES_WORDS, binary_socket, is_yes]
+
+## `agent_adapter.voice.session`
+
+::: agent_adapter.voice.session
+    options:
+      members: [BACKCHANNELS, RATE]
+
+Also exported here, documented under the canonical path: [`TurnTiming`](#agent_adapter.voice.TurnTiming), [`VoiceSession`](#agent_adapter.voice.VoiceSession).
+
+## `agent_adapter.voice.media`
+
+::: agent_adapter.voice.media
+    options:
+      members: [STTStream, StreamingSTT]
+
+Also exported here, documented under the canonical path: [`AudioTransport`](#agent_adapter.voice.AudioTransport), [`CallableSTT`](#agent_adapter.voice.CallableSTT), [`CallableTTS`](#agent_adapter.voice.CallableTTS), [`STT`](#agent_adapter.voice.STT), [`TTS`](#agent_adapter.voice.TTS).
+
+## `agent_adapter.voice.player`
+
+`agent_adapter.voice.player` re-exports, documented under the canonical path: [`Player`](#agent_adapter.voice.Player).
+
+## `agent_adapter.voice.playout`
+
+::: agent_adapter.voice.playout
+    options:
+      members: [Pacer, PlayoutBuffer, Segment, fire]
+
+## `agent_adapter.voice.local`
+
+`agent_adapter.voice.local` re-exports, documented under the canonical path: [`LocalAudio`](#agent_adapter.voice.LocalAudio).
+
+## `agent_adapter.voice.audio_socket`
+
+::: agent_adapter.voice.audio_socket
+    options:
+      members: [BinarySocket, starlette_messages]
+
+Also exported here, documented under the canonical path: [`AudioSocket`](#agent_adapter.voice.AudioSocket), [`binary_socket`](#agent_adapter.voice.binary_socket).
+
+## `agent_adapter.voice.twilio`
+
+`agent_adapter.voice.twilio` re-exports, documented under the canonical path: [`TwilioStream`](#agent_adapter.voice.TwilioStream).
+
+## `agent_adapter.voice.webrtc`
+
+::: agent_adapter.voice.webrtc
+    options:
+      members: [OUT_RATE, WebRTCAudio, without_dtx]
+
+## `agent_adapter.voice.webrtc_page`
+
+::: agent_adapter.voice.webrtc_page
+    options:
+      members: [webrtc_page]
+
+## `agent_adapter.voice.moonshine`
+
+::: agent_adapter.voice.moonshine
+    options:
+      members: [MoonshineSTT, MoonshineTTS]
+
+## `agent_adapter.voice.pcm`
+
+::: agent_adapter.voice.pcm
+    options:
+      members: [Resampler, bytes_of, rms, samples_of, ulaw_decode, ulaw_encode]
 
 ## `agent_adapter.voice.socket`
 
@@ -54,4 +120,4 @@ Turns, safe interruptions and spoken approval around the executor, on any audio 
 
 ::: agent_adapter.voice.testing
     options:
-      members: [RecordingSpeaker, settle]
+      members: [MemoryTransport, RecordingSpeaker, ScriptedSTT, WordTTS, settle, silence, tone]

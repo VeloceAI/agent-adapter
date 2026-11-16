@@ -59,6 +59,7 @@ Then send it the caller's events from your speech-to-text:
 
 | Your audio stack | Call `user_started_speaking()` on | Call `user_said(text)` on | Speaker |
 |---|---|---|---|
+| Raw audio, no framework | [`VoiceSession`](voice-pipeline.md) does both | | `session.speaker` |
 | [LiveKit](../integrations/livekit.md) | `attach_voice_agent(session, agent)` does both | | `LiveKitSpeaker(session)` |
 | [Pipecat](../integrations/pipecat.md) | `voice_processor()` does both | | `processor.speaker` |
 | Browser, app or phone gateway | [`VoiceSocket`](voice-transports.md) does both | | `channel.speaker` |
@@ -127,14 +128,13 @@ its own; the connector adds approvals, the run ledger and the repeat window.
 
 ## Hear it live: Pipecat and LiveKit
 
-Two scripts run a `VoiceAgent` with real audio and no keys; only the model is scripted.
-Both use our `SmartTurn(SileroTurns(...))`, Moonshine speech-to-text and Moonshine's Kokoro
-voice (MIT; the voice is Apache-2.0; about 360 MB of models, downloaded once):
+Two scripts run a `VoiceAgent` with real audio and no keys; only the model is scripted. Both
+use `SmartTurn(SileroTurns(...))` and Moonshine speech-to-text and voice (MIT; the voice is
+Apache-2.0):
 
-- `scripts/voice_live_pipecat.py`: a Pipecat pipeline with `voice_processor()` and
-  `LocalAudioTransport` to the speakers;
+- `scripts/voice_live_pipecat.py`: a Pipecat pipeline with `voice_processor()`;
 - `scripts/voice_live_livekit.py`: an `AgentSession` with `attach_voice_agent` in a room on
-  a local `livekit-server --dev`; the caller joins over WebRTC and plays the agent aloud.
+  a local `livekit-server --dev`, with the caller joining over WebRTC.
 
 The caller asks to "book two seats for the jazz show", then talks over the agent while the
 seats are reserved but not charged: "Wait, did that go through?" On a Windows laptop:
@@ -144,6 +144,6 @@ seats are reserved but not charged: "Wait, did that go through?" On a Windows la
 | 0.3, 0.8 and 1.5 s into the booking | charged once; "Yes, it went through" | the same |
 | 2.5 s: heard after the booking ended, the scripted model booked again | once (repeat window) | the same |
 
-!!! note "What these runs do not show"
-    The caller is a second Kokoro voice sent as real-time audio frames, not a microphone.
-    `--mic` (Pipecat) was only started in a quiet room; no person has booked by voice yet.
+Our own pipeline runs the same call with no framework (`scripts/voice_live.py`), and
+`scripts/voice_race.py` times all three: [the results](voice-pipeline.md#the-same-call-on-three-stacks).
+The caller is a second Kokoro voice, not a microphone; no person has booked by voice yet.

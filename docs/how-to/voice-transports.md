@@ -11,6 +11,7 @@ speech-to-speech model that hears and speaks by itself.
 
 | You have | Use |
 |---|---|
+| Raw audio from a mic, a socket, a Twilio call or a browser, and no framework | [`VoiceSession`](voice-pipeline.md) |
 | A browser, app or phone gateway that does speech to text and text to speech | `VoiceSocket` |
 | Raw audio and your own speech to text | `SilenceTurns`, `SileroTurns` or `SmartTurn` feeding `EventPump` |
 | OpenAI Realtime or Gemini Live | `RealtimeAgent` with `OpenAIRealtime()` or `GeminiLive(model)` |

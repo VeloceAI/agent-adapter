@@ -92,6 +92,8 @@ languages need no agent framework. Each one, how it attaches and what tests it:
 | `livekit` | `livekit-agents>=1.8,<2` | no | `contract-livekit` |
 | `pipecat` | `pipecat-ai>=1.13,<2` | no | `contract-pipecat` |
 | `vad` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` | no | `vad` |
+| `voice-local` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` | no | none |
+| `webrtc` | `aiortc>=1.14,<2` | no | none |
 | `sqlalchemy` | `sqlalchemy[asyncio]>=2.0.30,<3` | yes | `contract-all-compatible` |
 | `dynamodb` | `aioboto3>=13,<16` | yes | `contract-all-compatible` |
 | `temporal` | `temporalio>=1.35,<2` | no | `contract-temporal` |

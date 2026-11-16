@@ -8,6 +8,30 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Our own voice pipeline, no framework needed: `VoiceSession(transport, stt=, tts=, turns=)`
+  runs a whole call from raw audio to a `VoiceAgent` and back. Playback pauses within one
+  audio block when the caller starts talking; the turn is cut only after `confirm_ms` of
+  speech or real words, so a cough or an "uh-huh" resumes playback where it paused. A
+  `StreamingSTT` hears each turn as it is spoken, and the final pass starts after
+  `early_ms` of quiet, while the turn detector still decides. `Player` synthesises the next
+  sentence while this one plays, keeps repeated short lines as audio, and after a cut keeps
+  only the words that played in the history. Each turn emits a `custom.voice_turn` event
+  with its latencies (never the caller's words). Transports: `LocalAudio` (sounddevice),
+  `AudioSocket` (PCM over a WebSocket), `TwilioStream` (Twilio Media Streams with `clear`
+  and per-line `mark`s) and `WebRTCAudio` (aiortc, peer to peer, no STUN server unless you
+  pass one; `webrtc_page()` is a test client). Local models: `MoonshineSTT` and
+  `MoonshineTTS`, both streaming. Ports `AudioTransport`, `STT`, `StreamingSTT`, `TTS`,
+  `CallableSTT`, `CallableTTS`; pure-Python resampling and μ-law in
+  `agent_adapter.voice.pcm`; offline fakes `MemoryTransport`, `ScriptedSTT`, `WordTTS`.
+  Extras `voice-local` (moonshine-voice, sounddevice) and `webrtc` (aiortc). Guide: A voice
+  call with no framework.
+  `scripts/voice_race.py` runs one scripted call on our pipeline, Pipecat and LiveKit with the
+  same detectors and models (20 runs each, all charged once). Medians: the first reply is
+  heard 2.4 s after the caller stops (Pipecat 4.2 s, LiveKit 4.4 s). The agent goes quiet
+  54 ms after a cut (LiveKit 422 ms; in our Pipecat setup, audio still being made at the cut
+  played on for 5.5 s). It uses more CPU (47 s, Pipecat 29 s). `scripts/voice_live.py` runs
+  our stack alone with a scripted caller, `--mic` or `--webrtc`.
+
 - Voice agents: `agent_adapter.voice.VoiceAgent` runs a conversation around your executor on
   any audio stack (feed it `user_started_speaking()` and `user_said(text)`, give it a
   `Speaker`). Talking over the agent stops its speech and its turn at once; a started tool

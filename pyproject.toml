@@ -66,6 +66,10 @@ livekit = ["livekit-agents>=1.8,<2"]
 pipecat = ["pipecat-ai>=1.13,<2"]
 # Local turn detection (SileroTurns, SmartTurn), not in `all`: ONNX Runtime is a large wheel.
 vad = ["onnxruntime>=1.20,<2", "numpy>=1.26,<3"]
+# Our own voice pipeline on a laptop: Moonshine speech models (MIT) and the sound card.
+voice-local = ["moonshine-voice>=0.1.6,<0.2", "sounddevice>=0.5,<1"]
+# Browser calls over WebRTC with no media server (aiortc, BSD-3-Clause).
+webrtc = ["aiortc>=1.14,<2"]
 sqlalchemy = ["sqlalchemy[asyncio]>=2.0.30,<3"]
 dynamodb = ["aioboto3>=13,<16"]
 # Durable engines, not in `all`: contract-temporal and contract-dbos run them on their own.
@@ -184,6 +188,8 @@ omit = [
     "agent_adapter/cli/__main__.py",
     "agent_adapter/voice/silero.py",
     "agent_adapter/voice/smart_turn.py",
+    "agent_adapter/voice/moonshine.py",
+    "agent_adapter/voice/webrtc.py",
     "agent_adapter/integrations/langchain.py",
     "agent_adapter/integrations/langgraph.py",
     "agent_adapter/integrations/langgraph/*",
@@ -286,6 +292,13 @@ module = [
     "pipecat.*",
     "numpy.*",
     "onnxruntime.*",
+    "aiortc",
+    "aiortc.*",
+    "av",
+    "av.*",
+    "sounddevice",
+    "moonshine_voice",
+    "moonshine_voice.*",
     "camel.*",
     "ag2.*",
     "jsonschema.*",

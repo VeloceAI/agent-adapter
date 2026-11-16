@@ -1,18 +1,22 @@
 """Shared parts of the live voice runs: the booking service, the scripted model, the caller.
 
-Used by voice_live_pipecat.py and voice_live_livekit.py; run those, not this.
+Used by voice_live.py, voice_live_pipecat.py and voice_live_livekit.py; run those, not this.
+`Measure` times every stack the same way, from what the caller hears.
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 import time
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
 from agent_adapter import CallableModel, LLMRequest, LLMResponse, Message, Registry, ToolCall
 from agent_adapter.exec import progress
 from agent_adapter.voice import VoiceAgent
+from agent_adapter.voice.pcm import rms
 from agent_adapter.voice.smart_turn import RATE
 
 FRAME = 320  # 20 ms at 16 kHz
@@ -48,6 +52,7 @@ def registry(bookings: Bookings) -> Registry:
     @tools.tool(effects="destructive")
     async def book(show: str, seats: int) -> str:
         """Book seats for a show and charge the card on file."""
+        log("[tool] book called")
         progress("Booking that now, one moment.")
         return await bookings.book(show, seats)
 
@@ -123,3 +128,131 @@ def model_paths(silero: Path | None, smart: Path | None) -> tuple[Path, Path]:
     base = Path(pipecat.__file__).parent
     found = sorted((base / "audio/turn/smart_turn/data").glob("smart-turn-v3*cpu*.onnx"))
     return silero or base / "audio/vad/data/silero_vad.onnx", smart or found[-1]
+
+
+LOUD = 0.005  # RMS above this is speech, not silence
+QUIET_S = 0.3  # the agent counts as stopped after this much unbroken quiet
+
+
+class Measure:
+    """What the caller heard and when, so every stack is timed the same way.
+
+    `hear(pcm)` is called for each block of agent audio as it starts to play. Results:
+    first_audio_ms (the caller's first line ended -> the agent's first audio), agent_cut_ms
+    (the cut starts -> the VoiceAgent is told) and audio_stop_ms (the cut starts -> the
+    agent's audio stops for good).
+    """
+
+    def __init__(self) -> None:
+        self.blocks: list[tuple[float, bool]] = []
+        self.cuts: list[float] = []
+        self.line_end: float | None = None
+        self.onset: float | None = None
+        self._cpu = time.process_time()
+
+    def hear(self, pcm: bytes) -> None:
+        self.blocks.append((time.monotonic(), rms(pcm) > LOUD))
+
+    def watch(self, agent: VoiceAgent) -> None:
+        told = agent.user_started_speaking
+
+        async def user_started_speaking() -> None:
+            self.cuts.append(time.monotonic())
+            await told()
+
+        agent.user_started_speaking = user_started_speaking  # type: ignore[method-assign]
+
+    def summary(self, stack: str, cut_s: float, bookings: Bookings) -> dict[str, Any]:
+        return {
+            "stack": stack,
+            "cut_s": cut_s,
+            "reserved": bookings.reserved,
+            "charged": bookings.charged,
+            "first_audio_ms": self._first_loud_after(self.line_end),
+            "agent_cut_ms": self._first_cut_after(self.onset),
+            "audio_stop_ms": self._stop_after(self.onset),
+            "cpu_s": round(time.process_time() - self._cpu, 2),
+        }
+
+    def _first_loud_after(self, t: float | None) -> float | None:
+        if t is None:
+            return None
+        loud = next((at for at, is_loud in self.blocks if at >= t and is_loud), None)
+        return None if loud is None else round((loud - t) * 1000)
+
+    def _first_cut_after(self, t: float | None) -> float | None:
+        cut = next((at for at in self.cuts if t is not None and at >= t), None)
+        return None if cut is None or t is None else round((cut - t) * 1000)
+
+    def _stop_after(self, t: float | None) -> float | None:
+        """None when the agent was silent as the cut began (nothing to stop)."""
+        if t is None or not any(t - 0.1 <= at < t and loud for at, loud in self.blocks):
+            return None
+        quiet_from: float | None = None
+        for at, loud in self.blocks:
+            if at < t:
+                continue
+            if loud:
+                quiet_from = None
+            elif quiet_from is None:
+                quiet_from = at
+            elif at - quiet_from >= QUIET_S:
+                return round((quiet_from - t) * 1000)
+        return None
+
+
+def loud_span(pcm: bytes) -> tuple[int, int]:
+    """The first and last 20 ms frame of `pcm` with speech in it."""
+    frames = [pcm[i : i + FRAME * 2] for i in range(0, len(pcm), FRAME * 2)]
+    loud = [i for i, frame in enumerate(frames) if rms(frame) > LOUD] or [0]
+    return loud[0], loud[-1]
+
+
+async def caller_script(
+    send: Callable[[bytes], Awaitable[None]],
+    lines: list[bytes],
+    bookings: Bookings,
+    agent: VoiceAgent,
+    cut_s: float,
+    measure: Measure,
+) -> None:
+    """The scripted caller in real time, 20 ms a frame: ask, wait, cut in mid-booking."""
+    quiet, clock = b"\x00" * FRAME * 2, time.monotonic()
+
+    async def play(pcm: bytes, on_frame: Callable[[int], None] = lambda i: None) -> None:
+        nonlocal clock
+        for n, i in enumerate(range(0, len(pcm), FRAME * 2)):
+            on_frame(n)
+            await send(pcm[i : i + FRAME * 2].ljust(FRAME * 2, b"\x00"))
+            clock += FRAME / RATE
+            await asyncio.sleep(max(0.0, clock - time.monotonic()))
+
+    async def quiet_until(done: Callable[[], bool], limit: float) -> None:
+        end = time.monotonic() + limit
+        while not done() and time.monotonic() < end:
+            await play(quiet)
+
+    def mark(attr: str, frame: int, after: float = 0.0) -> Callable[[int], None]:
+        def at(n: int) -> None:
+            if n == frame:
+                setattr(measure, attr, time.monotonic() + after)
+
+        return at
+
+    await quiet_until(lambda: False, 1.0)
+    log(f"[caller] says: {LINES[0]!r}")
+    await play(lines[0], mark("line_end", loud_span(lines[0])[1], after=FRAME / RATE))
+    await quiet_until(bookings.started.is_set, 20)
+    await quiet_until(lambda: False, cut_s)
+    log(f"[caller] cuts in: {LINES[1]!r}")
+    await play(lines[1], mark("onset", loud_span(lines[1])[0]))
+    await quiet_until(lambda: bool(bookings.charged) and answered(agent), 25)
+    await quiet_until(lambda: False, 5)  # let the answer play
+
+
+def report(result: dict[str, Any], path: Path | None) -> None:
+    """Print the run's numbers; with `path`, append them as one JSON line."""
+    print(json.dumps(result))
+    if path is not None:
+        with path.open("a", encoding="utf-8") as out:
+            print(json.dumps(result), file=out)

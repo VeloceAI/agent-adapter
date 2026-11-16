@@ -191,12 +191,24 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
     ),
     "voice": (
         "Voice agents",
-        "Turns, safe interruptions and spoken approval around the executor, on any audio "
-        "stack, plus offline fakes. Guide: [Build a voice agent](../how-to/voice-agents.md).",
+        "Turns, safe interruptions and spoken approval around the executor, our own audio "
+        "pipeline and transports, plus offline fakes. "
+        "Guide: [Build a voice agent](../how-to/voice-agents.md).",
         tuple(
             "agent_adapter.voice" + suffix
             for suffix in (
                 "",
+                ".session",
+                ".media",
+                ".player",
+                ".playout",
+                ".local",
+                ".audio_socket",
+                ".twilio",
+                ".webrtc",
+                ".webrtc_page",
+                ".moonshine",
+                ".pcm",
                 ".socket",
                 ".turns",
                 ".silero",

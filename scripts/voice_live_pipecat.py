@@ -21,19 +21,19 @@ import argparse
 import asyncio
 import os
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
 from voice_live_common import (
-    FRAME,
     LINES,
     Bookings,
-    answered,
+    Measure,
     caller_lines,
+    caller_script,
     log,
     model_paths,
     registry,
+    report,
     scripted_model,
     to_pcm16,
 )
@@ -101,37 +101,44 @@ def _pipecat_parts(silero: Path, smart: Path) -> tuple[Any, Any]:
 
 
 async def scripted_caller(task: Any, lines: list[bytes], bookings: Bookings, agent: VoiceAgent,
-                          cut_s: float) -> None:  # fmt: skip
-    """Streams caller audio in real time, 20 ms a frame, quiet between lines."""
+                          cut_s: float, measure: Measure) -> None:  # fmt: skip
+    """The shared scripted caller, as Pipecat input audio frames."""
     from pipecat.frames.frames import EndFrame, InputAudioRawFrame
 
-    quiet, clock = b"\x00" * FRAME * 2, time.monotonic()
+    async def send(chunk: bytes) -> None:
+        await task.queue_frame(InputAudioRawFrame(audio=chunk, sample_rate=RATE, num_channels=1))
 
-    async def play(pcm: bytes) -> None:
-        nonlocal clock
-        for i in range(0, len(pcm), FRAME * 2):
-            chunk = pcm[i : i + FRAME * 2].ljust(FRAME * 2, b"\x00")
-            await task.queue_frame(
-                InputAudioRawFrame(audio=chunk, sample_rate=RATE, num_channels=1)
-            )
-            clock += FRAME / RATE
-            await asyncio.sleep(max(0.0, clock - time.monotonic()))
-
-    async def quiet_until(done: Any, limit: float) -> None:
-        end = time.monotonic() + limit
-        while not done() and time.monotonic() < end:
-            await play(quiet)
-
-    await play(quiet * 25)
-    log(f"[caller] says: {LINES[0]!r}")
-    await play(lines[0])
-    await quiet_until(bookings.started.is_set, 20)
-    await quiet_until(lambda: False, cut_s)
-    log(f"[caller] cuts in: {LINES[1]!r}")
-    await play(lines[1])
-    await quiet_until(lambda: bool(bookings.charged) and answered(agent), 25)
-    await quiet_until(lambda: False, 5)  # let the answer play
+    await caller_script(send, lines, bookings, agent, cut_s, measure)
     await task.queue_frame(EndFrame())
+
+
+def _speaker(transport: Any, silent: bool, measure: Measure) -> Any:
+    """Pipecat's audio output, timed; when silent, one that plays at a sound card's pace."""
+    from pipecat.transports.base_output import BaseOutputTransport
+    from pipecat.transports.base_transport import TransportParams
+
+    if not silent:
+        out = transport.output()
+        write = out.write_audio_frame
+
+        async def timed(frame: Any) -> bool:
+            measure.hear(frame.audio)
+            return bool(await write(frame))
+
+        out.write_audio_frame = timed
+        return out
+
+    class NullSpeaker(BaseOutputTransport):  # type: ignore[misc]
+        async def start(self, frame: Any) -> None:
+            await super().start(frame)
+            await self.set_transport_ready(frame)
+
+        async def write_audio_frame(self, frame: Any) -> bool:
+            measure.hear(frame.audio)
+            await asyncio.sleep(len(frame.audio) / (2 * frame.sample_rate))
+            return True
+
+    return NullSpeaker(TransportParams(audio_out_enabled=True))
 
 
 async def run(args: argparse.Namespace, silero: Path, smart: Path) -> int:
@@ -145,6 +152,7 @@ async def run(args: argparse.Namespace, silero: Path, smart: Path) -> int:
     Turns, MoonshineTTS = _pipecat_parts(silero, smart)
     lines = [] if args.mic else caller_lines()
     bookings = Bookings()
+    measure = Measure()
     transport = LocalAudioTransport(LocalAudioTransportParams(
         audio_in_enabled=bool(args.mic), audio_out_enabled=not args.silent,
         audio_in_sample_rate=RATE))  # fmt: skip
@@ -153,14 +161,14 @@ async def run(args: argparse.Namespace, silero: Path, smart: Path) -> int:
     steps = [Turns(), stt, processor, MoonshineTTS()]
     if args.mic:
         steps.insert(0, transport.input())
-    if not args.silent:
-        steps.append(transport.output())
+    steps.append(_speaker(transport, args.silent, measure))
     task = PipelineWorker(Pipeline(steps), params=PipelineParams(audio_in_sample_rate=RATE),
                           idle_timeout_secs=None)  # fmt: skip
     tools = registry(bookings)
     agent = VoiceAgent(scripted_model(), Executor(tools), processor.speaker,
                        instructions="You book show tickets.")  # fmt: skip
     processor.use(agent)
+    measure.watch(agent)
     heard = _Heard(processor)
     runner = WorkerRunner(handle_sigint=False)
     await runner.add_workers(task)
@@ -169,13 +177,16 @@ async def run(args: argparse.Namespace, silero: Path, smart: Path) -> int:
         print(f"Say: {LINES[0]!r}; while it books, say: {LINES[1]!r}")
         jobs.append(asyncio.create_task(_end_after(task, args.mic)))
     else:
-        jobs.append(asyncio.create_task(scripted_caller(task, lines, bookings, agent, args.cut)))
+        caller = scripted_caller(task, lines, bookings, agent, args.cut, measure)
+        jobs.append(asyncio.create_task(caller))
     await asyncio.gather(*jobs)
     await agent.close()
     heard.restore()
     print(f"\nreserved {bookings.reserved}, charged {bookings.charged}; history:")
     for message in agent.history:
         print(f"  {message.role}: {message.content or [c.name for c in message.tool_calls]}")
+    if not args.mic:
+        report(measure.summary("pipecat", args.cut, bookings), args.json)
     return 0 if bookings.reserved == bookings.charged == 1 else 1
 
 
@@ -213,6 +224,7 @@ def main() -> None:
     parser.add_argument("--stt-model", default="medium-streaming")
     parser.add_argument("--silero", type=Path)
     parser.add_argument("--smart-turn", type=Path)
+    parser.add_argument("--json", type=Path, help="append the run's numbers to this file")
     args = parser.parse_args()
     from loguru import logger
 

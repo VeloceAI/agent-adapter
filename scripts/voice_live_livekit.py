@@ -27,13 +27,14 @@ from typing import Any
 
 from voice_live_common import (
     FRAME,
-    LINES,
     Bookings,
-    answered,
+    Measure,
     caller_lines,
+    caller_script,
     log,
     model_paths,
     registry,
+    report,
     scripted_model,
     to_pcm16,
 )
@@ -148,7 +149,7 @@ def _speaker(frames: queue.Queue[bytes | None]) -> None:
             out.write(chunk)
 
 
-def play_agent(room: Any, silent: bool) -> Callable[[], None]:
+def play_agent(room: Any, silent: bool, measure: Measure) -> Callable[[], None]:
     """Play the agent's audio tracks on the default output device; returns `stop`."""
     from livekit import rtc
 
@@ -158,6 +159,7 @@ def play_agent(room: Any, silent: bool) -> Callable[[], None]:
 
     async def play(track: Any) -> None:
         async for event in rtc.AudioStream(track, sample_rate=24_000, num_channels=1):
+            measure.hear(bytes(event.frame.data))
             if not silent:
                 frames.put(bytes(event.frame.data))
 
@@ -180,8 +182,9 @@ def play_agent(room: Any, silent: bool) -> Callable[[], None]:
     return stop
 
 
-async def scripted_caller(room: Any, bookings: Bookings, agent: VoiceAgent, cut_s: float) -> None:
-    """Publishes the caller's microphone track and speaks in real time, quiet between lines."""
+async def scripted_caller(room: Any, bookings: Bookings, agent: VoiceAgent, cut_s: float,
+                          measure: Measure) -> None:  # fmt: skip
+    """Publishes the caller's microphone track and runs the shared scripted caller on it."""
     from livekit import rtc
 
     lines = caller_lines()
@@ -190,31 +193,11 @@ async def scripted_caller(room: Any, bookings: Bookings, agent: VoiceAgent, cut_
     # DTX sends nothing in quiet, and the first syllable after quiet ("Wait") came out clipped
     options = rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_MICROPHONE, dtx=False)
     await room.local_participant.publish_track(track, options)
-    quiet, clock = b"\x00" * FRAME * 2, time.monotonic()
 
-    async def play(pcm: bytes) -> None:
-        nonlocal clock
-        for i in range(0, len(pcm), FRAME * 2):
-            chunk = pcm[i : i + FRAME * 2].ljust(FRAME * 2, b"\x00")
-            frame = rtc.AudioFrame(chunk, RATE, 1, FRAME)
-            await source.capture_frame(frame)
-            clock += FRAME / RATE
-            await asyncio.sleep(max(0.0, clock - time.monotonic()))
+    async def send(chunk: bytes) -> None:
+        await source.capture_frame(rtc.AudioFrame(chunk, RATE, 1, FRAME))
 
-    async def quiet_until(done: Any, limit: float) -> None:
-        end = time.monotonic() + limit
-        while not done() and time.monotonic() < end:
-            await play(quiet)
-
-    await quiet_until(lambda: False, 1.0)
-    log(f"[caller] says: {LINES[0]!r}")
-    await play(lines[0])
-    await quiet_until(bookings.started.is_set, 20)
-    await quiet_until(lambda: False, cut_s)
-    log(f"[caller] cuts in: {LINES[1]!r}")
-    await play(lines[1])
-    await quiet_until(lambda: bool(bookings.charged) and answered(agent), 25)
-    await quiet_until(lambda: False, 5)  # let the answer play
+    await caller_script(send, lines, bookings, agent, cut_s, measure)
 
 
 async def run(args: argparse.Namespace) -> int:
@@ -227,7 +210,8 @@ async def run(args: argparse.Namespace) -> int:
     agent_room, caller_room = rtc.Room(), rtc.Room()
     await agent_room.connect(args.url, token(args.key, args.secret, "agent"))
     await caller_room.connect(args.url, token(args.key, args.secret, "caller"))
-    stop_playing = play_agent(caller_room, args.silent)
+    measure = Measure()
+    stop_playing = play_agent(caller_room, args.silent, measure)
     turns = TurnHandlingOptions(turn_detection="stt")
     session = AgentSession(stt=speech_to_text, tts=text_to_speech, turn_handling=turns)
     await session.start(Agent(instructions="You book show tickets."), room=agent_room, record=False)
@@ -235,8 +219,9 @@ async def run(args: argparse.Namespace) -> int:
     agent = VoiceAgent(scripted_model(), Executor(tools), LiveKitSpeaker(session),
                        instructions="You book show tickets.")  # fmt: skip
     attach_voice_agent(session, agent)
+    measure.watch(agent)
     try:
-        await scripted_caller(caller_room, bookings, agent, args.cut)
+        await scripted_caller(caller_room, bookings, agent, args.cut, measure)
     finally:
         await agent.close()
         stop_playing()
@@ -246,6 +231,7 @@ async def run(args: argparse.Namespace) -> int:
     print(f"\nreserved {bookings.reserved}, charged {bookings.charged}; history:")
     for message in agent.history:
         print(f"  {message.role}: {message.content or [c.name for c in message.tool_calls]}")
+    report(measure.summary("livekit", args.cut, bookings), args.json)
     return 0 if bookings.reserved == bookings.charged == 1 else 1
 
 
@@ -259,6 +245,7 @@ def main() -> None:
     parser.add_argument("--stt-model", default="medium-streaming")
     parser.add_argument("--silero", type=Path)
     parser.add_argument("--smart-turn", type=Path)
+    parser.add_argument("--json", type=Path, help="append the run's numbers to this file")
     args = parser.parse_args()
     logging.basicConfig(level=logging.WARNING)
     sys.exit(asyncio.run(run(args)))
