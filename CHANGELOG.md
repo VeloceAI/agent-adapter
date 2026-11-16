@@ -8,6 +8,10 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Resume-contract suite (`tests/resume_contract`, `scripts/resume_contract.py`): the six
+  resume properties of arXiv 2608.03836 under a crash at every step boundary, and every
+  pair of them. All hold for `FlowRunner` and `run_tool_loop`; a contract test runs them on
+  LangGraph, which fails four of them. Page: Resume contract.
 - Our own voice pipeline, no framework needed: `VoiceSession(transport, stt=, tts=, turns=)`
   runs a whole call from raw audio to a `VoiceAgent` and back. Playback pauses within one
   audio block when the caller starts talking; the turn is cut only after `confirm_ms` of
@@ -101,6 +105,10 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Durable flows: a node that changed the state in place into an invalid one and returned
+  nothing was not validated, so the invalid state could be stored; a recovery that spent a
+  stored approval decision also consulted the process's memory of spent approvals, so it
+  could fail in one process and pass in another.
 - LiveKit tools failed inside a real `AgentSession` ("missing a required argument:
   'context'"): LiveKit finds the `RunContext` parameter by its type hint, which now resolves.
 

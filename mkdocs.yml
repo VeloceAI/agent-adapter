@@ -277,6 +277,7 @@ nav:
       - Flow pause and resume: concepts/flow-resume.md
       - Sub-flows and node cache: concepts/flow-subflows.md
       - Durable runs: concepts/durable-runs.md
+      - Resume contract: concepts/resume-contract.md
       - Hooks: concepts/hooks.md
       - Guardrails: concepts/guardrails.md
       - Policy file: concepts/policy.md

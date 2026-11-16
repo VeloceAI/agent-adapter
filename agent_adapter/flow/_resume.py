@@ -170,6 +170,15 @@ class SpentCheckpoints(Bounded):
             while len(self._spent) > self.max_entries:
                 self._spent.popitem(last=False)
 
+    def remember(self, key: tuple[str, str]) -> None:
+        """Mark `key` spent, whether or not it already was."""
+        with self._lock:
+            self._expire()
+            self._spent[key] = self._clock()
+            self._spent.move_to_end(key)
+            while len(self._spent) > self.max_entries:
+                self._spent.popitem(last=False)
+
     def clear(self) -> None:
         """Forget everything (tests)."""
         with self._lock:
