@@ -24,6 +24,7 @@ from agent_adapter.models._convert import (
     warn_unsupported,
 )
 from agent_adapter.models.usage import usage_anthropic
+from agent_adapter.schema.media import anthropic_content
 from agent_adapter.schema.transforms import to_anthropic_input_schema
 
 PROVIDER = "anthropic"
@@ -130,7 +131,7 @@ def _tool_result(message: Message) -> dict[str, Any]:
     block: dict[str, Any] = {
         "type": "tool_result",
         "tool_use_id": message.tool_call_id,
-        "content": message.content,
+        "content": anthropic_content(message.content, message.media),
     }
     if is_error:
         block["is_error"] = True

@@ -17,6 +17,7 @@ from agent_adapter.core.imported import spec_from_schema
 from agent_adapter.core.registry import Registry
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.integrations.mcp._handlers import require_mcp
+from agent_adapter.integrations.mcp._media import block_media, remote_media
 from agent_adapter.integrations.mcp.annotations import (
     APPROVAL_ID_META,
     CALL_ID_META,
@@ -175,7 +176,9 @@ class _RemoteTool:
                 details=_error_details(result.meta),
             )
         if result.structured_content is not None:
-            return unwrap_structured(result.structured_content, self.output_schema)
+            value = unwrap_structured(result.structured_content, self.output_schema)
+            media = remote_media(result.content)  # kept: hosts that drop them lose screenshots
+            return [value, *media] if media else value
         return _content_value(result)
 
     def _meta(
@@ -236,16 +239,22 @@ def _error_details(meta: Mapping[str, Any] | None) -> dict[str, Any]:
 
 
 def _content_value(result: t.CallToolResult) -> Any:
-    """Text blocks joined; any other content as JSON dicts; nothing -> None."""
+    """Text blocks joined, then media; unknown blocks as JSON dicts; nothing -> None."""
     if not result.content:
         return None
     from mcp.types import TextContent
 
-    if all(isinstance(block, TextContent) for block in result.content):
-        return _text(result)
-    return [
-        block.model_dump(mode="json", by_alias=True, exclude_none=True) for block in result.content
+    media = remote_media(result.content)
+    others = [
+        block.model_dump(mode="json", by_alias=True, exclude_none=True)
+        for block in result.content
+        if not isinstance(block, TextContent) and block_media(block) is None
     ]
+    text = _text(result)
+    if not media and not others:
+        return text
+    items = [*([text] if text else []), *others, *media]
+    return items[0] if len(items) == 1 else items
 
 
 def mcp_client(

@@ -27,6 +27,7 @@ from agent_adapter.models._convert import (
 from agent_adapter.models._openai_common import add_tools, schema_format
 from agent_adapter.models.errors import class_for_error_type
 from agent_adapter.models.usage import usage_openai_responses
+from agent_adapter.schema.media import openai_output
 from agent_adapter.schema.transforms import to_openai_parameters
 
 PROVIDER = "openai"
@@ -74,7 +75,7 @@ def _input(messages: tuple[Message, ...]) -> list[dict[str, Any]]:
                 {
                     "type": "function_call_output",
                     "call_id": message.tool_call_id,
-                    "output": message.content,
+                    "output": openai_output(message.content, message.media),
                 }
             )
         elif message.role != "assistant":

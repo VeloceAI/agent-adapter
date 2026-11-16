@@ -18,6 +18,7 @@ BASE_NAMES = {
     "context",
     "control",
     "callables",
+    "media",  # the Media result type: messages, exec, schema and models all need it
     "_partial_json",  # stdlib-only JSON prefix parser: models (streams) and viewer (chat drafts)
 }
 SUBPACKAGES = {

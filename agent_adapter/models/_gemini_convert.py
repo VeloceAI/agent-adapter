@@ -17,6 +17,7 @@ from agent_adapter.core.messages import (
 from agent_adapter.core.types import ToolCall
 from agent_adapter.models._convert import dump, dumps_arguments, get, items, tool_payload
 from agent_adapter.models.usage import usage_gemini
+from agent_adapter.schema.media import gemini_parts
 from agent_adapter.schema.transforms import to_gemini_parameters
 
 PROVIDER = "gemini"
@@ -66,7 +67,7 @@ def build_gemini_request(request: LLMRequest, *, model: str) -> dict[str, Any]:
         config["response_mime_type"] = "application/json"
         config["response_json_schema"] = to_gemini_parameters(request.output_schema.json_schema)
     _generation(request, config)
-    return {"model": model, "contents": _contents(request.messages), "config": config}
+    return {"model": model, "contents": _contents(request.messages, model), "config": config}
 
 
 def _calling(choice: str) -> dict[str, Any]:
@@ -91,7 +92,7 @@ def _generation(request: LLMRequest, config: dict[str, Any]) -> None:
         config["thinking_config"] = {"thinking_level": request.reasoning.upper()}
 
 
-def _contents(messages: tuple[Message, ...]) -> list[dict[str, Any]]:
+def _contents(messages: tuple[Message, ...], model: str) -> list[dict[str, Any]]:
     names: dict[str, str] = {}
     contents: list[dict[str, Any]] = []
     for message in messages:
@@ -105,7 +106,7 @@ def _contents(messages: tuple[Message, ...]) -> list[dict[str, Any]]:
             if parts:
                 contents.append({"role": "model", "parts": parts})
         else:
-            part = _function_response(message, names)
+            part = _function_response(message, names, model)
             last = contents[-1] if contents else None
             if last is not None and last["role"] == "user" and _all_responses(last["parts"]):
                 last["parts"].append(part)  # parallel results answer in one turn
@@ -135,17 +136,21 @@ def _model_parts(message: Message, names: dict[str, str]) -> list[dict[str, Any]
     return parts
 
 
-def _function_response(message: Message, names: dict[str, str]) -> dict[str, Any]:
+def _function_response(message: Message, names: dict[str, str], model: str) -> dict[str, Any]:
     name = message.name or names.get(message.tool_call_id, "")
     if not name:
         raise ConfigError(
             f"Gemini needs the tool name of tool message {message.tool_call_id!r}; set Message.name"
         )
     value, is_error = tool_payload(message.content)
-    body: dict[str, Any] = {
-        "name": name,
-        "response": {"error": value["error"]} if is_error else {"output": value},
-    }
+    response: dict[str, Any] = {"error": value["error"]} if is_error else {"output": value}
+    body: dict[str, Any] = {"name": name, "response": response}
+    if message.media:
+        parts, refs, notes = gemini_parts(message.media, model=model)
+        if refs:
+            response["media"], body["parts"] = refs, parts
+        if notes:
+            response["media_notes"] = notes
     if message.tool_call_id in names:
         body["id"] = message.tool_call_id
     return {"function_response": body}

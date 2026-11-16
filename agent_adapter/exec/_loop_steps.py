@@ -15,6 +15,7 @@ from agent_adapter.context.policy import CompressionPolicy
 from agent_adapter.context.run import after_overflow, compress_for_model
 from agent_adapter.core.context import ToolContext
 from agent_adapter.core.errors import ModelContextOverflow, ModelOutputInvalid
+from agent_adapter.core.media import Media, notes, split_media
 from agent_adapter.core.messages import (
     LLMRequest,
     LLMResponse,
@@ -193,12 +194,10 @@ class _Loop:
             if result.status == "pending":
                 pending = True
                 continue
+            text, media = _tool_parts(result)
             self.history.append(
                 Message(
-                    role="tool",
-                    tool_call_id=call.id,
-                    name=call.name,
-                    content=_tool_content(result),
+                    role="tool", tool_call_id=call.id, name=call.name, content=text, media=media
                 )
             )
         if pending:
@@ -244,15 +243,26 @@ class _Loop:
 
 
 def _tool_content(result: ToolResult) -> str:
-    """A tool message body: the value as text, or `{"error": {"kind", "message"}}` JSON."""
+    """A text-only tool message body: media the tool returned become notes."""
+    text, media = _tool_parts(result)
+    if not media:
+        return text
+    return "\n".join(filter(None, [text, notes(media, "this channel takes text only")]))
+
+
+def _tool_parts(result: ToolResult) -> tuple[str, tuple[Media, ...]]:
+    """A tool message body and media: the value as text, or `{"error": {...}}` JSON."""
     if result.ok:
-        value = result.value
-        return (
+        value, media = split_media(result.value)
+        if value is None and media:
+            return "", media
+        text = (
             value if isinstance(value, str) else json.dumps(value, default=str, ensure_ascii=False)
         )
+        return text, media
     error = result.error
     kind, message = (error.kind, error.message) if error is not None else ("internal-error", "")
-    return json.dumps({"error": {"kind": kind, "message": message}}, ensure_ascii=False)
+    return json.dumps({"error": {"kind": kind, "message": message}}, ensure_ascii=False), ()
 
 
 async def _call_back(callback: Callable[[Any], Awaitable[None] | None], value: Any) -> None:

@@ -166,10 +166,15 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
     "models": (
         "Models",
         "Model ports, provider models and usage helpers. Concepts: "
-        "[Model ports](../concepts/models.md), [Tool loop](../concepts/tool-loop.md).",
-        tuple(
-            f"agent_adapter.models{suffix}"
-            for suffix in ("", ".openai", ".gemini", ".anthropic", ".errors")
+        "[Model ports](../concepts/models.md), [Tool loop](../concepts/tool-loop.md). "
+        "`agent_adapter.schema.media` rewrites tool-result media per provider "
+        "([Media in tool results](../how-to/media-in-tool-results.md)).",
+        (
+            *(
+                f"agent_adapter.models{suffix}"
+                for suffix in ("", ".openai", ".gemini", ".anthropic", ".errors")
+            ),
+            "agent_adapter.schema.media",
         ),
     ),
     "server": (

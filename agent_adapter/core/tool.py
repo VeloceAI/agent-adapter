@@ -43,6 +43,7 @@ from agent_adapter.core.errors import (
     ToolUsageError,
     log_failure,
 )
+from agent_adapter.core.media import mentions_media
 from agent_adapter.core.messages import ToolDef
 from agent_adapter.core.types import CacheScope
 
@@ -96,8 +97,8 @@ class ToolSpec:
     def _result_schema(self) -> dict[str, Any] | None:
         if self.output_schema is not None:
             return dict(self.output_schema)
-        if self.returns is None or self.result is not None:
-            return None
+        if self.returns is None or self.result is not None or mentions_media(self.returns):
+            return None  # media go back as content blocks, never as base64 in a schema
         try:
             return TypeAdapter(self.returns).json_schema()
         except (PydanticUserError, PydanticUndefinedAnnotation) as exc:

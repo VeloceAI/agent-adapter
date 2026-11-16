@@ -25,6 +25,7 @@ from agent_adapter.core.errors import (
     ToolError,
     ToolUsageError,
 )
+from agent_adapter.core.media import Media
 from agent_adapter.core.registry import Registry
 from agent_adapter.core.types import ApprovalDecision
 from agent_adapter.exec import Executor
@@ -249,8 +250,8 @@ async def test_foreign_names_content_and_context_clash():
         assert read.context_param is None  # the schema owns `aa_ctx`
         assert await read.invoke({"aa_ctx": "mine"}) == "ctx=mine"
         assert await local.get("blob").invoke({}) == [
-            {"type": "text", "text": "see image"},
-            {"type": "image", "data": "aGk=", "mimeType": "image/png"},
+            "see image",
+            Media(data=b"hi", mime_type="image/png"),
         ]
         assert await local.get("nothing").invoke({}) is None
 
