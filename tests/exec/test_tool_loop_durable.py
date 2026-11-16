@@ -214,15 +214,28 @@ async def test_a_durable_loop_inside_a_flow_node_is_refused() -> None:
         await runner.run(flow, {})
 
 
-async def test_recover_tool_loop_sends_a_paused_loop_to_run_tool_loop() -> None:
+async def test_recover_tool_loop_continues_a_paused_loop_from_the_store() -> None:
     store = MemoryCheckpointStore()
-    executor = Executor(registry, approval=DeferredApproval(MemoryApprovalStore()))
+    approvals = MemoryApprovalStore()
+    executor = Executor(registry, approval=DeferredApproval(approvals))
     first = await loop(
         store, ScriptedModel([calls(("refund", {"order": "o-1"}))]), executor=executor
     )
     assert first.finish == "pending"
-    with pytest.raises(CheckpointConflict, match="run_tool_loop"):
-        await recover(store, ScriptedModel([]), executor=executor)
+    waiting = await recover(store, ScriptedModel([]), executor=executor)
+    assert (waiting.finish, waiting.messages) == ("pending", first.messages)
+    [pending] = await approvals.list(status="pending")
+    await approvals.decide(pending.approval_id, ApprovalDecision(approved=True))
+    done = await recover(store, ScriptedModel([text("refunded")]), executor=executor)
+    assert (done.final.text, RAN["refund"]) == ("refunded", 1)
+
+
+async def test_a_paused_loop_resumes_only_from_its_stored_history() -> None:
+    store = MemoryCheckpointStore()
+    executor = Executor(registry, approval=DeferredApproval(MemoryApprovalStore()))
+    await loop(store, ScriptedModel([calls(("refund", {"order": "o-1"}))]), executor=executor)
+    with pytest.raises(CheckpointConflict, match="stored history"):
+        await loop(store, ScriptedModel([text("x")]), executor=executor)  # USER alone
 
 
 async def test_a_recovered_loop_keeps_its_user_and_refuses_another() -> None:
@@ -283,3 +296,22 @@ async def test_a_cut_off_loop_worker_cannot_log_after_a_claim() -> None:
 
     with pytest.raises(CheckpointConflict, match="stale"):
         await store.record_call("run-1", stale, CallRecord(key="k", tool="t", state="started"))
+
+
+async def test_a_paused_loop_is_not_resumed_under_another_stage() -> None:
+    store = MemoryCheckpointStore()
+    executor = Executor(registry, approval=DeferredApproval(MemoryApprovalStore()))
+    first = await loop(
+        store, ScriptedModel([calls(("refund", {"order": "o-1"}))]), executor=executor
+    )
+    with pytest.raises(CheckpointConflict, match="tool loop 'tool_loop'"):
+        await run_tool_loop(
+            ScriptedModel([]),
+            registry,
+            first.messages,
+            executor=executor,
+            run_id="run-1",
+            checkpoints=store,
+            checkpoint_key=KEY,
+            stage="chat",
+        )

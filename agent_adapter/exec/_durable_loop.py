@@ -118,16 +118,27 @@ class Saved:
     calls: tuple[CallRecord, ...]
     identity: Mapping[str, str]
 
+    @property
+    def paused(self) -> bool:
+        return self.stored.checkpoint.status == "paused"
+
 
 async def begin(
-    store: CheckpointStore, key: bytes, stage: str, ctx: ToolContext
+    store: CheckpointStore,
+    key: bytes,
+    stage: str,
+    ctx: ToolContext,
+    messages: Sequence[Message],
 ) -> LoopCheckpoints:
     """The checkpoints of a new loop run, or of a paused one being resumed.
+
+    A paused run resumes only from its stored history: `messages` must be that history.
 
     Raises:
         ToolUsageError: inside a flow node (the flow's own checkpoints cover the loop), or a
             paused run of another user, thread or principal.
-        CheckpointConflict: the run is running elsewhere (use `recover_tool_loop`) or ended.
+        CheckpointConflict: the run is running elsewhere (use `recover_tool_loop`) or ended,
+            or `messages` are not the paused run's stored history.
         CheckpointStoreCorrupt: the paused checkpoint does not check out.
     """
     if current_journal() is not None:
@@ -136,26 +147,64 @@ async def begin(
             "already cover its tool calls"
         )
     found = await store.latest(ctx.run_id)
-    step = -1
-    if found is not None:
-        status = found.checkpoint.status
-        if found.checkpoint.kind != "loop" or status != "paused":
-            raise CheckpointConflict(
-                ctx.run_id, f"the store holds this run as {status}; use recover_tool_loop"
-            )
-        check_identity(ctx.run_id, open_checkpoint(key, found).identity, ctx)
-        step = found.step
+    if found is None:
+        return _resuming(store, key, stage, ctx, -1)
+    status = found.checkpoint.status
+    if found.checkpoint.kind != "loop" or status != "paused":
+        raise CheckpointConflict(
+            ctx.run_id, f"the store holds this run as {status}; use recover_tool_loop"
+        )
+    if found.checkpoint.name != stage:
+        raise CheckpointConflict(
+            ctx.run_id, f"the paused run is tool loop {found.checkpoint.name!r}"
+        )
+    envelope = open_checkpoint(key, found)
+    check_identity(ctx.run_id, envelope.identity, ctx)
+    stored = _history(ctx.run_id, envelope.body, stage)[0]
+    if _dumped(stored) != _dumped(messages):
+        raise CheckpointConflict(
+            ctx.run_id,
+            "the messages are not the paused run's stored history; "
+            "recover_tool_loop continues it from the store",
+        )
+    return _resuming(store, key, stage, ctx, found.step)
+
+
+def _resuming(
+    store: CheckpointStore, key: bytes, stage: str, ctx: ToolContext, step: int
+) -> LoopCheckpoints:
     log = CallLog(store, ctx.run_id, new_segment(), key)
     return LoopCheckpoints(store, key, stage, ctx, step, log)
 
 
+def _dumped(messages: Sequence[Message]) -> list[dict[str, Any]]:
+    return [m.model_dump(mode="json") for m in messages]
+
+
+def _history(run_id: str, payload: Any, stage: str) -> tuple[list[Message], int]:
+    """The messages and step count of a loop checkpoint document.
+
+    Raises:
+        CheckpointStoreCorrupt: the document is unreadable or for another stage.
+    """
+    try:
+        if not isinstance(payload, dict) or payload.get("stage") != stage:
+            raise ValueError("the document is for another stage")
+        messages = [Message.model_validate(m) for m in payload["messages"]]
+        steps = payload["steps"]
+        if isinstance(steps, bool) or not isinstance(steps, int) or steps < 0:
+            raise ValueError("steps is not an int >= 0")
+    except (KeyError, TypeError, ValueError, ValidationError) as exc:
+        raise corrupt(run_id, "the tool loop checkpoint is unreadable") from exc
+    return messages, steps
+
+
 async def load(store: CheckpointStore, key: bytes, run_id: str, stage: str) -> Saved:
-    """A crashed loop's latest checkpoint and the calls of its cut-short turn, all signed.
+    """A crashed or paused loop's latest checkpoint and the calls of its cut-short turn.
 
     Raises:
         CheckpointNotFound: nothing is stored for `run_id`.
-        CheckpointConflict: the checkpoint belongs to a flow or another stage, the run ended,
-            or it is paused (resume it through `run_tool_loop`).
+        CheckpointConflict: the checkpoint belongs to a flow or another stage, or the run ended.
         CheckpointStoreCorrupt: the row, its envelope or a logged call does not check out.
     """
     stored = await store.latest(run_id)
@@ -166,24 +215,20 @@ async def load(store: CheckpointStore, key: bytes, run_id: str, stage: str) -> S
         raise CheckpointConflict(
             run_id, f"the checkpoint is for {saved.kind} {saved.name!r}, not tool loop {stage!r}"
         )
-    if saved.status == "paused":
-        raise CheckpointConflict(run_id, "the loop is paused: resume it with run_tool_loop")
-    if saved.status != "running":
+    if saved.status not in ("running", "paused"):
         raise CheckpointConflict(run_id, f"the run already ended ({saved.status})")
     envelope = open_checkpoint(key, stored)
-    payload = envelope.body
-    try:
-        if not isinstance(payload, dict) or payload.get("stage") != stage:
-            raise ValueError("the document is for another stage")
-        messages = [Message.model_validate(m) for m in payload["messages"]]
-        steps = payload["steps"]
-        if isinstance(steps, bool) or not isinstance(steps, int) or steps < 0:
-            raise ValueError("steps is not an int >= 0")
-    except (KeyError, TypeError, ValueError, ValidationError) as exc:
-        raise corrupt(run_id, "the tool loop checkpoint is unreadable") from exc
-    logged = await store.calls(run_id, saved.segment)
-    calls = merge_calls(envelope.carried, verified_calls(key, run_id, saved.segment, logged))
+    messages, steps = _history(run_id, envelope.body, stage)
+    calls: list[CallRecord] = []
+    if saved.status == "running":
+        logged = await store.calls(run_id, saved.segment)
+        calls = merge_calls(envelope.carried, verified_calls(key, run_id, saved.segment, logged))
     return Saved(stored, messages, steps, tuple(calls), envelope.identity)
+
+
+def resumed(saved: Saved, store: CheckpointStore, key: bytes, ctx: ToolContext) -> LoopCheckpoints:
+    """The checkpoints of a paused loop going on from its stored history."""
+    return _resuming(store, key, saved.stored.checkpoint.name, ctx, saved.stored.step)
 
 
 async def claim(

@@ -8,6 +8,7 @@ have run, so it re-runs only for an `idempotent=True` tool or when the caller al
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -16,6 +17,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any
 
 from agent_adapter.core.errors import (
+    CheckpointConflict,
     CheckpointStoreCorrupt,
     ConfigError,
     RecoveryNeedsDecision,
@@ -78,6 +80,9 @@ class CallLog:
         self._seq: dict[str, int] = {}  # call key -> its sequence number in this segment
         self._expected: set[str] = set()  # keys of recovered `done` calls not replayed yet
         self.broken = False  # a write failed: the run stays recoverable, never marked failed
+        # Writes go one at a time and stop at the first failure: a record stored after a lost
+        # one would leave a hole in `seq`, which recovery must treat as tampering.
+        self._writing = asyncio.Lock()
 
     def move_to(self, segment: str, seeds: Iterable[CallRecord] = ()) -> int:
         """Log to `segment` from now on; `seeds` (recovered calls) replay in the next step.
@@ -153,18 +158,23 @@ class CallLog:
         why: str = "",
     ) -> None:
         key = _key_of(identity)
-        seq = self._seq.setdefault(key, len(self._seq))
-        record = CallRecord(
-            key=key, tool=tool, state=state, result=result, why=why, identity=identity, seq=seq
-        )
-        record = record.model_copy(
-            update={"mac": call_mac(self.key, self.run_id, self.segment, record)}
-        )
-        try:
-            await self.store.record_call(self.run_id, self.segment, record)
-        except BaseException:
-            self.broken = True
-            raise
+        async with self._writing:
+            if self.broken:
+                raise CheckpointConflict(
+                    self.run_id, "an earlier write of this run failed; recover the run instead"
+                )
+            seq = self._seq.setdefault(key, len(self._seq))
+            record = CallRecord(
+                key=key, tool=tool, state=state, result=result, why=why, identity=identity, seq=seq
+            )
+            record = record.model_copy(
+                update={"mac": call_mac(self.key, self.run_id, self.segment, record)}
+            )
+            try:
+                await self.store.record_call(self.run_id, self.segment, record)
+            except BaseException:
+                self.broken = True
+                raise
 
 
 def _key_of(identity: list[Any]) -> str:

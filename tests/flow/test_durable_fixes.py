@@ -28,6 +28,7 @@ from tests.flow.durable_helpers import (
     Crash,
     CrashingStore,
     Order,
+    node_fn,
     registry,
     reset,
     runner,
@@ -364,3 +365,28 @@ async def test_the_idempotency_key_is_stable_across_a_recovery() -> None:
     await runner(store, executor=executor).recover(flow, "run-1", rerun_in_doubt=True)
     assert keys[0] is not None and keys[0] == keys[1]
     assert idempotency_key() is None
+
+
+class _OneFailedLog(MemoryCheckpointStore):
+    """The store drops one call-log write (a network blip); later writes would succeed."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.failed = False
+
+    async def record_call(self, run_id: str, segment: str, call: Any) -> None:
+        if call.tool == "charge" and not self.failed:
+            self.failed = True
+            raise ConnectionError("store unreachable")
+        await super().record_call(run_id, segment, call)
+
+
+async def test_a_failed_log_write_stops_the_log_so_the_run_still_recovers() -> None:
+    store = _OneFailedLog()
+    executor = Executor(registry)
+    flow = Flow("two", state=Order).node("both", node_fn(executor, "charge", "lookup")).end("both")
+    with pytest.raises(FlowError):
+        await runner(store, executor=executor).run(flow, {}, executor.context(run_id="run-1"))
+    assert dict(RAN) == {}  # lookup never logged (or ran) after the hole
+    result = await runner(store, executor=executor).recover(flow, "run-1")
+    assert result.state.log == ["charged o-1", "value o-1"]

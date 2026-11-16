@@ -26,7 +26,7 @@ from agent_adapter.core.messages import (
 from agent_adapter.core.ports import LedgerPort, LLMPort
 from agent_adapter.core.registry import Registry
 from agent_adapter.exec._durable import durable_key
-from agent_adapter.exec._durable_loop import LoopCheckpoints, Saved, begin, claim, load
+from agent_adapter.exec._durable_loop import LoopCheckpoints, Saved, begin, claim, load, resumed
 from agent_adapter.exec._durable_seal import check_identity
 from agent_adapter.exec._loop_history import _history_digest as _history_digest
 from agent_adapter.exec._loop_history import _trailing_turn as _trailing_turn
@@ -85,14 +85,16 @@ async def run_tool_loop(
 
     With `checkpoints` (and a `run_id`, or a `ctx` with one), the history is saved signed
     after each step and every tool call is logged; `recover_tool_loop` continues the run
-    after a crash without re-running a finished call. A paused run resumes here.
+    after a crash without re-running a finished call. A paused run resumes here, from the
+    `messages` of its paused result (any other history is refused), or via `recover_tool_loop`.
 
     Raises:
         ToolUsageError: `max_steps < 1`, or bad `request_options` (reserved, unknown or
             invalid keys, or `metadata["call_id"]`), before anything runs.
         ConfigError: `compression` is not a `CompressionPolicy`, or no context window is
             known for the model, before anything runs; a durable store without a key.
-        CheckpointConflict: `checkpoints` holds this run as running or ended.
+        CheckpointConflict: `checkpoints` holds this run as running or ended, or as paused
+            with another history than `messages`.
         ModelError: the model call failed.
     """
     setup = _Setup.made(
@@ -112,7 +114,7 @@ async def run_tool_loop(
     durable = None
     if checkpoints is not None:
         key = durable_key(checkpoints, checkpoint_key, "run_tool_loop")
-        durable = await begin(checkpoints, key, stage, setup.ctx)
+        durable = await begin(checkpoints, key, stage, setup.ctx, messages)
     return await setup.run(
         list(messages),
         max_steps,
@@ -148,7 +150,8 @@ async def recover_tool_loop(
     A call that started but logged no result runs again only if its tool is
     `idempotent=True`, or with `rerun_in_doubt=True` after you checked it. `max_steps`
     counts the model calls of the whole run, before the crash too; `tool_results` and
-    `usage` cover this call only.
+    `usage` cover this call only. A paused loop goes on from its stored history: decided
+    calls run, and one still waiting returns `pending` again.
 
     Raises:
         CheckpointNotFound: nothing is stored for `run_id`.
@@ -184,7 +187,10 @@ async def recover_tool_loop(
         checkpoints,
         owned=owned,
     )
-    durable = await claim(saved, checkpoints, key, setup.ctx, registry, rerun=rerun_in_doubt)
+    if saved.paused:  # it goes on from the stored history, as run_tool_loop would resume it
+        durable = resumed(saved, checkpoints, key, setup.ctx)
+    else:
+        durable = await claim(saved, checkpoints, key, setup.ctx, registry, rerun=rerun_in_doubt)
     return await setup.run(
         saved.messages,
         max_steps,
