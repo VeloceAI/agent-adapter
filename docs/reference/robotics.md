@@ -28,7 +28,7 @@ Also exported here, documented under the canonical path: [`ActionSpec`](#agent_a
 
 ::: agent_adapter.robotics.kinematic
     options:
-      members: [straight_line]
+      members: [MAX_WAYPOINTS, straight_line]
 
 Also exported here, documented under the canonical path: [`KinematicSim`](#agent_adapter.robotics.KinematicSim), [`SimRobot`](#agent_adapter.robotics.SimRobot).
 

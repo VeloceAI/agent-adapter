@@ -100,10 +100,8 @@ The two executor features under it work for every framework and backend:
 
 - A tool with `effects="additive"` or `"destructive"` finishes when its caller is
   cancelled, then the cancellation goes on.
-- `Executor(dedupe_window_s=60)` returns the first result for a repeat of a finished or
-  running call with the same run, tool and validated arguments, marked "already done
-  earlier in this window; not run again" so the model knows. `idempotent=True` tools are
-  never deduped.
+- `Executor(dedupe_window_s=60)` returns the first result, marked "already done", for a
+  repeat of a call with the same run, tool and arguments. `idempotent=True` tools never are.
 
 ## Check it offline
 

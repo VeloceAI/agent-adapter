@@ -1312,7 +1312,7 @@ Executor: runs tools with guards, hooks, approval, cache, retries, batches, plan
 - `agent_depth() -> int`: How many agent tools are running around the current call (0 outside any).
 - `agent_tool(agent: LoopAgent | TaskAgent, *, name: str, description: str, executor: Executor | None = None, max_depth: int = 3, timeout: float | None = None, confirm: ConfirmRule = False, tags: Iterable[str] = ()) -> ToolSpec`: A tool (kind "agent") that runs `agent` on the model's `task` inside the calling run.
 - `call`: see `agent_adapter`
-- `changes_things(spec: ToolSpec) -> bool`: True when the tool declares an effect (`additive` or `destructive`).
+- `changes_things(spec: ToolSpec) -> bool`: True for an `additive` or `destructive` effect; with no `effects`, for `confirm` or `once_per_run` tools.
 - `configure`: see `agent_adapter`
 - `default_executor() -> Executor`: The default Executor, created on first use, on the default registry.
 - `handoff(to: LoopAgent | TaskAgent, *, name: str, description: str, executor: Executor | None = None, max_depth: int = 3, timeout: float | None = None) -> ToolSpec`: An agent tool tagged "handoff": under a `HandoffModel`, its answer is the loop's answer.
@@ -1520,9 +1520,9 @@ Retrieval (RAG): the `RetrieverPort`, `Document`, backends and a cited `retrieve
 
 Safe robot actions: envelopes, a shadow simulation, approvals and an e-stop (simulation first).
 
-- `ActionSpec(*, workspace: Box, max_speed: float, max_force: float, max_rate: float = 5.0, keep_out: tuple[Box, ...] = (), hard_workspace: Box | None = None, hard_max_speed: float | None = None, hard_max_force: float | None = None) -> None`: The envelope a robot works in without a person, and the hard limits beyond it.
+- `ActionSpec(*, workspace: Box, max_speed: float, max_force: float, min_speed: float | None = None, max_rate: float = 5.0, max_duration: float = 60.0, keep_out: tuple[Box, ...] = (), hard_workspace: Box | None = None, hard_max_speed: float | None = None, hard_max_force: float | None = None) -> None`: The envelope a robot works in without a person, and the hard limits beyond it.
 - `Box(*, lo: tuple[float, float, float], hi: tuple[float, float, float], name: str = '') -> None`: An axis-aligned box in metres, from corner `lo` to corner `hi`.
-- `CallbackRobot(*, execute: Callable[[Command], Any], stop: Callable[[], Any], position: Callable[[], Point]) -> None`: A `RobotPort` from your own functions: an rclpy publisher, a LeRobot robot, a driver.
+- `CallbackRobot(*, execute: Callable[[Command], Any], stop: Callable[[], Any], position: Callable[[], Point], reset: Callable[[], None] | None = None) -> None`: A `RobotPort` from your own functions: an rclpy publisher, a LeRobot robot, a driver.
 - `Command(*, kind: Literal['move', 'grip'], target: tuple[float, float, float] | None = None, speed: float = 0.0, force: float = 0.0) -> None`: One robot command: a move of the end effector, or a grip.
 - `Deadman(timeout: float, on_lost: Callable[[], Awaitable[None]], *, clock: Callable[[], float] = perf_counter) -> None`: Calls `on_lost` once when `beat()` has not been called for `timeout` seconds.
 - `KinematicSim(*, dt: float = 0.02) -> None`: `SimPort`: the end effector moves in a straight line at the commanded speed.
@@ -1659,8 +1659,8 @@ Voice agents: safe interruptions, spoken approval and one ledger, on any audio s
 - `TwilioCalls(account_sid: str | None = None, auth_token: str | None = None, *, api_key: str | None = None, api_secret: str | None = None, base_url: str = 'https://api.twilio.com', client: Any = None, timeout: float = 15) -> None`: A small async client for the Calls resource; `client` takes your `httpx.AsyncClient`.
 - `TwilioStream(socket: TextSocket, *, calls: TwilioCalls | None = None, frame_ms: int = 20, lead_ms: int = 80) -> None`: An `AudioTransport` over a Twilio Media Streams WebSocket (any `TextSocket`).
 - `VoiceAgent(model: LLMPort, executor: Executor, speaker: Speaker, *, instructions: str = '', registry: Registry | None = None, max_steps: int = 8, run_id: str | None = None, dedupe_window_s: float | None = 120.0, minute_item: str | None = None) -> None`: A voice agent from a model, an executor and a speaker; works with any audio stack.
-- `VoiceApproval(*, timeout_s: float = 10.0, prompt: Callable[[ApprovalRequest], str] = default_prompt, yes_words: frozenset[str] = ...) -> None`: Approval port for voice: says a prompt, then waits for the caller's next final words.
-- `VoiceSession(transport: AudioTransport, *, stt: STT, tts: TTS, turns: TurnDetector, confirm_ms: float = 300, pre_roll_ms: float = 300, early_ms: float = 200, backchannels: frozenset[str] = ..., echo_guard: EchoGuard | None = None, keypad_wait_ms: float = 1500, keypad_text: str = '(keypad) {digits}') -> None`: Runs a `VoiceAgent` on an `AudioTransport`; give the agent `session.speaker`.
+- `VoiceApproval(*, timeout_s: float = 10.0, prompt: Prompt = default_prompt, yes_words: frozenset[str] = ..., prompts: Mapping[str, Prompt] | None = None) -> None`: Approval port for voice: asks the caller aloud, then waits for their own answer.
+- `VoiceSession(transport: AudioTransport, *, stt: STT, tts: TTS, turns: TurnDetector, confirm_ms: float = 300, pre_roll_ms: float = 300, early_ms: float = 200, backchannels: frozenset[str] = ..., echo_guard: EchoGuard | None = None, keypad_wait_ms: float = 1500, keypad_text: str = '(keypad) {digits}', max_turn_s: float = 30.0, max_digits: int = 32) -> None`: Runs a `VoiceAgent` on an `AudioTransport`; give the agent `session.speaker`.
 - `YES_WORDS = ...`
 - `binary_socket(send: Callable[[str | bytes], Awaitable[Any]], messages: AsyncIterator[str | bytes]) -> BinarySocket`: A `BinarySocket` from a send function and an async iterator of received messages.
 - `is_yes(text: str, words: frozenset[str] = ...) -> bool`: True only when every word is a yes word: "yeah no", "yes but" and "" are all no.

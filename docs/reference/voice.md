@@ -124,7 +124,7 @@ Also exported here, documented under the canonical path: [`EchoGuard`](#agent_ad
 
 ::: agent_adapter.voice.realtime
     options:
-      members: [CallerSaid, CallsCancelled, RealtimeAgent, RealtimeCodec, RealtimeEvent, SpeechStarted, ToolCalled]
+      members: [CallerSaid, CallsCancelled, PromptDone, RealtimeAgent, RealtimeCodec, RealtimeEvent, SpeechStarted, ToolCalled]
 
 ## `agent_adapter.voice.openai_realtime`
 

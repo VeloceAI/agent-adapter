@@ -186,7 +186,7 @@ def _parse(raw: Any) -> dict[str, Any]:
         return {}
     try:
         message = json.loads(raw)
-    except ValueError:
+    except (ValueError, RecursionError):  # RecursionError: JSON nested too deep
         return {}
     return message if isinstance(message, dict) else {}
 

@@ -197,3 +197,9 @@ async def test_a_missing_websockets_names_the_extra(monkeypatch):
     monkeypatch.setitem(sys.modules, "websockets.asyncio.client", None)
     with pytest.raises(MissingDependency, match="voice-cloud"):
         await DeepgramSTT(api_key=KEY).open(16_000).finish()
+
+
+def test_deeply_nested_json_is_ignored_not_raised():
+    from agent_adapter.voice.deepgram import _parse
+
+    assert _parse("[" * 100_000 + "]" * 100_000) == {}

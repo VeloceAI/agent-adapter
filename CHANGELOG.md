@@ -133,7 +133,37 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   asks again for a booking it never heard back about gets the first result.
 - A tool declared `effects="additive"` or `"destructive"` now finishes when its caller is
   cancelled; the call is recorded, a new `tool.interrupted` event is emitted, then the
-  cancellation goes on. Read-only tools and tools with no `effects` still stop at once.
+  cancellation goes on. Read-only tools stop at once. A tool with no `effects` finishes if
+  it has `confirm` or `once_per_run`, and stops otherwise. New `effects="physical"` (robot
+  motion): marked destructive for MCP, and a cancelled call stops instead of finishing.
+- A repeat dropped by the repeat window is keyed on the validated arguments (`10`, `10.0`
+  and `"10"` for a float are one call), and its value says "already done earlier in this
+  window; not run again", so the model does not take it for a second success.
+- Spoken approvals say the arguments ("Shall I run refund with amount 9999?"), or a
+  per-tool prompt from `VoiceApproval(prompts={tool: fn})`.
+
+### Security
+
+- Voice approvals: one `VoiceApproval` shared by several calls sent every prompt to the
+  last call that connected, so one caller's "yes" could approve another caller's tool. It
+  now keeps one entry per run id; a run with no call bound is denied. One question is open
+  per call at a time, so one "yes" no longer approves two parallel calls. The question
+  opens only after the prompt has played, and a turn that began earlier (an early "yeah",
+  a queued transcript, the prompt's own echo) does not answer it; realtime agents wait for
+  the new `PromptDone` event.
+- Robots: an e-stop that landed while a move was in its shadow simulation did not stop the
+  move. The gate now re-checks the e-stop, its epoch and the heartbeat right before the
+  robot runs, and `SimRobot` and `CallbackRobot` refuse to move after `stop()` until
+  `reset()`. A cancelled move (a caller saying "stop") latches the e-stop instead of
+  finishing; the e-stop tool never waits behind a move. `ActionSpec.min_speed` and
+  `max_duration` block moves so slow they would freeze the process.
+- Voice transports: a turn ends at `max_turn_s` (30 s) and keypad digits are sent at
+  `max_digits` (32), so a peer cannot grow memory without limit; deeply nested JSON from a
+  peer is ignored instead of ending the session; `TwilioStream` accepts only the first
+  `start` message.
+- Executor: when the first of several identical waiting calls failed, every waiter ran it;
+  now one does. A side effect that finished just as its caller was cancelled is reported as
+  done and interrupted, not lost.
 
 ### Fixed
 
