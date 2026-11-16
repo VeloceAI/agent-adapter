@@ -36,7 +36,11 @@ _DIGITS = frozenset("0123456789*#ABCD")
 
 
 class TwilioStream:
-    """An `AudioTransport` over a Twilio Media Streams WebSocket (any `TextSocket`)."""
+    """An `AudioTransport` over a Twilio Media Streams WebSocket (any `TextSocket`).
+
+    The identity fields (`call_sid`, `stream_sid`, `parameters`) come from the first `start`
+    message only; trust them only if the host verified `X-Twilio-Signature` on the upgrade.
+    """
 
     in_rate = 8_000
     out_rate = 8_000
@@ -55,6 +59,7 @@ class TwilioStream:
         self.stream_sid = ""
         self.call_sid = ""
         self.parameters: dict[str, Any] = {}  # the <Parameter> values from your TwiML
+        self._has_started = False
         self._frame_ms = frame_ms
         self._lead_ms = lead_ms
         self._buffer: PlayoutBuffer | None = None
@@ -113,6 +118,10 @@ class TwilioStream:
                 await task
 
     def _started(self, message: dict[str, Any]) -> None:
+        if self._has_started:
+            logger.warning("twilio: a second 'start' on one stream was ignored")
+            return
+        self._has_started = True
         start = message.get("start")
         start = start if isinstance(start, dict) else {}
         self.stream_sid = str(message.get("streamSid") or start.get("streamSid") or "")
@@ -190,7 +199,7 @@ def _parse(raw: Any) -> dict[str, Any]:
         return {}
     try:
         message = json.loads(raw)
-    except ValueError:
+    except (ValueError, RecursionError):  # RecursionError: JSON nested too deep
         return {}
     return message if isinstance(message, dict) else {}
 

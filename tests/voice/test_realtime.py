@@ -125,21 +125,40 @@ async def test_openai_does_not_talk_over_a_caller_who_cut_in_and_rejects_bad_jso
     await asyncio.wait_for(run, 1)
 
 
-async def test_openai_approval_needs_the_callers_own_yes():
+def heard(item: str, transcript: str) -> dict:
+    return {"type": "conversation.item.input_audio_transcription.completed", "item_id": item,
+            "transcript": transcript}  # fmt: skip
+
+
+def spoke(item: str) -> dict:
+    return {"type": "input_audio_buffer.speech_started", "item_id": item}
+
+
+def played(ask: dict) -> dict:
+    return {"type": "response.done", "response": {"metadata": ask["metadata"]}}
+
+
+async def test_openai_approval_needs_the_callers_own_yes_after_the_prompt():
     provider, _, run = start(OpenAIRealtime(), approval=VoiceApproval(timeout_s=5))
     provider.send(openai_call("c1", "refund", '{"order": "A1"}'))
     await settle()
-    assert "Shall I run refund?" in provider.received[-1]["response"]["instructions"]
-    provider.send({"type": "conversation.item.input_audio_transcription.completed",
-                   "transcript": "yeah no"})  # fmt: skip
+    ask = provider.received[-1]["response"]
+    assert "Shall I run refund with order A1?" in ask["instructions"]
+    provider.send(spoke("i1"))  # over the prompt, before it has played
+    provider.send(played(ask))
+    provider.send(heard("i1", "yes"))
+    provider.send(spoke("i2"))
+    provider.send(heard("i2", "yeah no"))
     await settle()
     assert done == []
     provider.send(openai_call("c2", "refund", '{"order": "A1"}'))
     await settle()
-    provider.send({"type": "conversation.item.input_audio_transcription.completed",
-                   "transcript": " "})  # fmt: skip
-    provider.send({"type": "conversation.item.input_audio_transcription.completed",
-                   "transcript": "yes"})  # fmt: skip
+    ask = provider.received[-1]["response"]
+    provider.send(played(ask))
+    provider.send(heard("i0", "yes"))  # no speech start seen for it
+    provider.send(spoke("i3"))
+    provider.send(heard("i3", " "))
+    provider.send(heard("i3", "yes"))
     await settle()
     assert done == ["refunded A1"]
     provider.close()
@@ -188,9 +207,13 @@ async def test_gemini_joins_the_callers_words_and_approves_on_a_clear_yes():
     ]}})  # fmt: skip
     await settle()
     prompts = [m["clientContent"] for m in provider.received if "clientContent" in m]
-    assert "Shall I run refund?" in prompts[0]["turns"][0]["parts"][0]["text"]
+    assert "Shall I run refund with order A1?" in prompts[0]["turns"][0]["parts"][0]["text"]
     errors = [m["toolResponse"] for m in provider.received if "toolResponse" in m]
     assert "not JSON" in errors[0]["functionResponses"][0]["response"]["result"]
+    provider.send({"serverContent": {"inputTranscription": {"text": "Yes"}}})  # over the prompt
+    provider.send({"serverContent": {"turnComplete": True}})  # the prompt has played
+    await settle()
+    assert done == []
     provider.send({"serverContent": {"inputTranscription": {"text": "Ye"}}})
     provider.send({"serverContent": {"inputTranscription": {"text": "s."}}})
     await settle()

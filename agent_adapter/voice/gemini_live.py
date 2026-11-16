@@ -6,8 +6,9 @@ connection in. Gemini cancels pending calls when the caller cuts in (`toolCallCa
 read-only ones stop, and one that changes things finishes and is reported as done.
 
 Gemini sends the caller's words in pieces; they count as one answer once the model starts
-its reply or the turn ends. Gemini has no "say exactly" message, so an approval prompt is a
-text turn asking the model to read it.
+its reply or the turn ends, and the first piece marks when the caller began. Gemini has no
+"say exactly" message, so an approval prompt is a text turn asking the model to read it; the
+next `turnComplete` counts as the prompt having played (Gemini does not tag turns).
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from agent_adapter.core.tool import ToolSpec
 from agent_adapter.voice.realtime import (
     CallerSaid,
     CallsCancelled,
+    PromptDone,
     RealtimeEvent,
     SpeechStarted,
     ToolCalled,
@@ -28,10 +30,13 @@ from agent_adapter.voice.realtime import (
 class GeminiLive:
     """`RealtimeCodec` for the Gemini Live API; `setup` adds fields to the setup message."""
 
+    prompt_done_events = True
+
     def __init__(self, model: str, *, setup: Mapping[str, Any] | None = None) -> None:
         self.model = model if model.startswith("models/") else f"models/{model}"
         self.extra = dict(setup or {})
         self._heard: list[str] = []
+        self._asked = 0  # lines asked for whose turn has not completed
 
     def setup(self, instructions: str, tools: list[ToolSpec]) -> list[dict[str, Any]]:
         declarations = [
@@ -69,12 +74,18 @@ class GeminiLive:
             events.append(SpeechStarted())
         heard = _get(content, "inputTranscription").get("text")
         if isinstance(heard, str):
+            if not self._heard:
+                events.append(SpeechStarted())
             self._heard.append(heard)
+        complete = content.get("turnComplete") is True
         replying = "modelTurn" in content or "outputTranscription" in content
-        if self._heard and (replying or content.get("turnComplete") is True):
+        if self._heard and (replying or complete):
             text, self._heard = "".join(self._heard).strip(), []
             if text:
                 events.append(CallerSaid(text))
+        if complete and self._asked:
+            self._asked -= 1
+            events.append(PromptDone())  # after the words, so words from before it stay early
         return events
 
     def tool_result(self, call: ToolCalled, output: str, *, respond: bool) -> list[dict[str, Any]]:
@@ -83,6 +94,7 @@ class GeminiLive:
 
     def say(self, text: str) -> list[dict[str, Any]]:
         ask = f"(From the app, not the caller: read this to the caller word for word: {text})"
+        self._asked = min(self._asked + 1, 64)
         return [_turn(ask, complete=True)]
 
     def note(self, text: str) -> list[dict[str, Any]]:

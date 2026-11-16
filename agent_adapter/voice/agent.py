@@ -52,6 +52,8 @@ class VoiceAgent:
     changes things (`effects=`) and has started finishes once and is reported in the next
     turn. Repeats of a finished call within `dedupe_window_s` return the first result.
     With `minute_item` ("provider:name"), `close()` bills the call's minutes at its unit price.
+    With a `VoiceApproval`, a yes counts only if `user_started_speaking()` came after the
+    question finished playing.
     """
 
     def __init__(
@@ -84,19 +86,30 @@ class VoiceAgent:
         self._started = time.monotonic()
         self._closed = False
         self.approval = executor.approval if isinstance(executor.approval, VoiceApproval) else None
+        self._first_start: list[int | None] = []  # the question open as the caller began
         if self.approval is not None:
-            self.approval.bind(self._say_now)
+            self.approval.bind(self._ask_aloud, run_id=self.ctx.run_id)
 
     async def user_started_speaking(self) -> None:
         """The caller talks over the agent: stop speech now; cut the turn unless it asks yes/no."""
-        if self.approval is not None and self.approval.waiting:
-            await self._speech.stop()
-            return  # they may be answering the question
+        approval, run_id = self.approval, self.ctx.run_id
+        if approval is not None and approval.waiting_for(run_id):
+            question = approval.armed_question(run_id)
+            if not self._first_start:  # the earliest start since the last words: fail closed
+                self._first_start.append(question)
+            if question is not None:  # the question has played: they may be answering it
+                await self._speech.stop()
+            return
         await self._cut()
 
     async def user_said(self, text: str) -> None:
         """A final transcript: an answer to a waiting question, or a new turn."""
-        if self.approval is not None and self.approval.answer(text):
+        first, self._first_start = self._first_start, []
+        question = first[0] if first else None
+        approval = self.approval
+        if approval is not None and approval.answer(
+            text, run_id=self.ctx.run_id, question=question
+        ):
             return
         await self._cut()
         self._turn = asyncio.create_task(self._run_turn(text))
@@ -117,11 +130,14 @@ class VoiceAgent:
         if self._closed:
             return
         self._closed = True
+        if self.approval is not None:
+            self.approval.unbind(self.ctx.run_id, self._ask_aloud)
         if self._minute_item is not None:
             self.meter(self._minute_item, (time.monotonic() - self._started) / 60)
         self.executor.end_run(self.ctx.run_id)
 
-    async def _say_now(self, text: str) -> None:
+    async def _ask_aloud(self, text: str) -> None:
+        self._first_start = []  # speech that began before this question cannot answer it
         self._speech.put(text, record=False)
         await self._speech.drain()
 

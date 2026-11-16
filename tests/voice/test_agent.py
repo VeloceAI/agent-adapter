@@ -106,8 +106,10 @@ async def test_a_spoken_yes_from_the_caller_approves():
     agent, speaker = agent_for(model, approval=approval)
     await agent.user_said("cancel booking 7")
     await settle()
-    assert approval.waiting and speaker.said == ["Shall I run cancel? Say yes to confirm."]
-    await agent.user_started_speaking()  # answering over the prompt does not cut the turn
+    assert approval.waiting and speaker.said == [
+        "Shall I run cancel with booking 7? Say yes to confirm."
+    ]
+    await agent.user_started_speaking()  # answering after the prompt does not cut the turn
     await agent.user_said("Yes, please.")
     await agent.wait()
     assert done == ["cancelled 7"]
@@ -121,6 +123,7 @@ async def test_anything_but_a_clear_yes_denies():
         agent, _ = agent_for(model, approval=approval)
         await agent.user_said("cancel booking 7")
         await settle()
+        await agent.user_started_speaking()
         await agent.user_said(answer)
         await agent.wait()
         assert done == [], answer

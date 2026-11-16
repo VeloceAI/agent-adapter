@@ -132,7 +132,7 @@ def _control(message: Any) -> dict[str, Any]:
         return {}
     try:
         parsed = json.loads(message)
-    except ValueError:
+    except (ValueError, RecursionError):  # RecursionError: JSON nested too deep
         return {}
     return parsed if isinstance(parsed, dict) else {}
 
