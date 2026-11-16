@@ -6,6 +6,7 @@ public app on 0.0.0.0:8000; put TLS in front of it.
 """
 
 import asyncio
+import json
 import os
 import sys
 from typing import Any, cast
@@ -65,6 +66,42 @@ def public_app(tools: Registry, host: str, agent_token: str, reviewer_token: str
 # --8<-- [start:hosted]
 hosted = registry.subset(tags=["hosted"])  # no confirm tools: hosted runtimes cannot resume them
 # --8<-- [end:hosted]
+
+
+# --8<-- [start:realtime]
+async def park_realtime_approval(
+    item: dict[str, Any], rest: Any, session_id: str
+) -> tuple[str, dict[str, Any]]:
+    """OpenAI's `mcp_approval_request` -> one of our approvals; OpenAI never runs the call."""
+    invoked = await rest.post(  # `rest`: an httpx client with base_url and the agent token
+        f"/tools/{item['name']}/invoke",
+        json={"arguments": json.loads(item["arguments"]), "run_id": session_id},
+        headers={"Idempotency-Key": item["id"]},  # a replayed event parks nothing new
+    )
+    approval_id = invoked.json()["approval_id"]
+    return approval_id, {  # send it on the Realtime socket: the model hears "sent for review"
+        "type": "conversation.item.create",
+        "item": {
+            "type": "mcp_approval_response",
+            "approval_request_id": item["id"],
+            "approve": False,
+            "reason": f"sent to a human reviewer as {approval_id}; it runs once they approve",
+        },
+    }
+
+
+def realtime_outcome(approval_id: str, decided: dict[str, Any]) -> list[dict[str, Any]]:
+    """The reviewer's decision (the body `/approvals/{id}/decide` returns), for the model."""
+    said = f"Approval {approval_id}: {decided['status']}, result {decided.get('result')}"
+    message = {
+        "type": "message",
+        "role": "system",
+        "content": [{"type": "input_text", "text": said}],
+    }
+    return [{"type": "conversation.item.create", "item": message}, {"type": "response.create"}]
+
+
+# --8<-- [end:realtime]
 
 
 HOST = "tools.example.com"

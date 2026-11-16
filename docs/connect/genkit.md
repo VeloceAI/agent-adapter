@@ -5,7 +5,7 @@ description: "Use the @genkit-ai/mcp plugin to give Genkit's ai.generate your Py
 
 # Connect: Genkit
 
-:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30
+:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30 · MCP route tested live
 
 Genkit's `@genkit-ai/mcp` plugin runs an MCP host inside your Genkit app. It connects to
 our server and offers our tools to `ai.generate`.
@@ -52,7 +52,7 @@ const { text } = await ai.generate({
 | `mcpServers.<name>.url` | our `/mcp` endpoint (Streamable HTTP config) |
 | `requestInit` | the transport's request options: carries the bearer header |
 | `disabled` | stops a server without removing it |
-| `getActiveTools(ai)` | the tools of every connected server |
+| `getActiveTools(ai)` | the tools of every connected server, named `shopTools/shipping_rate` |
 
 This page covers Genkit JS. Genkit Go has its own MCP plugin, and a Python MCP client is
 landing (PR 6365); point either at the same URL with the same header.

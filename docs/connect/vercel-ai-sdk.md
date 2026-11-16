@@ -5,7 +5,7 @@ description: "Use your Python tools from Vercel AI SDK 7: the TypeScript client 
 
 # Connect: Vercel AI SDK
 
-:material-check-circle:{ .status-ok } Recipe · through the [TypeScript client](../cross-language/typescript-client.md) or our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30
+:material-check-circle:{ .status-ok } Recipe · through the [TypeScript client](../cross-language/typescript-client.md) or our [MCP server](../cross-language/mcp.md) · their docs checked 2026-10-30 · MCP route tested live
 
 AI SDK 7 (TypeScript). The TS client route keeps approval in Python and runs confirm tools
 end to end. The MCP route is one call, for tools that need no approval. There is no AI SDK
@@ -60,6 +60,9 @@ try {
 | `transport.url`, `transport.headers` | our `/mcp` endpoint and the bearer token |
 | `transport.authProvider` | OAuth; our `bearer_auth` takes static tokens, so use `headers` |
 | `toolApproval` on `generateText` / `streamText` | AI SDK 7's approval policy (`needsApproval` is deprecated) |
+
+`examples/connect/js/check.ts` runs this MCP route, with Mastra, Genkit and the
+[OpenAI Agents SDK](openai-agents-js.md), against a live server.
 
 ## Checklist
 

@@ -1,6 +1,6 @@
 ---
 title: "Connect any agent stack to Python tools"
-description: "Exact configs to connect Mastra, Vercel AI SDK, Spring AI, .NET, Go, Genkit, Letta, OpenAI, Azure and Bedrock agents to your Python tools over MCP."
+description: "Exact configs to connect Mastra, Vercel AI SDK, OpenAI Agents JS, LangChain4j, Koog, Rig, Spring AI, .NET, Go, Genkit, voice agents and hosted runtimes to your Python tools."
 ---
 
 # Connect anywhere
@@ -9,12 +9,14 @@ description: "Exact configs to connect Mastra, Vercel AI SDK, Spring AI, .NET, G
 
 One page per stack. Each page has three parts: the exact config on **their side**, our
 server on **our side**, and a **checklist** for a public host. Every config key was checked
-against that project's own docs on 2026-10-30; each page links them.
+against that project's own docs (2026-10-30, new pages 2026-11-16); each page links them.
+The TypeScript MCP routes (Vercel AI SDK, Mastra, Genkit, OpenAI Agents JS) also run live
+against our server in `examples/connect/js/check.ts`.
 
 ```mermaid
 flowchart LR
   REG[("Registry")] --> APP["public_app<br/>create_app + bearer_auth"]
-  APP -->|"POST /mcp"| MCP["MCP hosts:<br/>Hermes · Letta · Mastra · Spring AI<br/>MAF .NET · Genkit · ADK Go · LangGraph.js<br/>OpenAI · Foundry · AgentCore"]
+  APP -->|"POST /mcp"| MCP["MCP hosts:<br/>Hermes · Letta · Mastra · Spring AI · LangChain4j<br/>Koog · Rig · MAF .NET · Genkit · ADK Go<br/>LangGraph.js · OpenAI Agents JS · Vercel AI SDK<br/>OpenAI · Realtime · ElevenLabs · Foundry · AgentCore"]
   APP -->|"REST /tools, /approvals"| TS["TS client:<br/>Vercel AI SDK · Mastra"]
   REV["Reviewer"] -->|"POST /approvals/{id}/decide"| APP
 ```
@@ -27,12 +29,17 @@ flowchart LR
 | :brand-letta: Letta | server (Python / TS SDK) | MCP | [Letta](letta.md) |
 | :brand-mastra: Mastra | TypeScript | MCP or TS client | [Mastra](mastra.md) |
 | :brand-spring: Spring AI | Java | MCP | [Spring AI](spring-ai.md) |
+| :brand-java: LangChain4j | Java | MCP | [LangChain4j](langchain4j.md) |
+| :brand-jetbrains: Koog | Kotlin | MCP | [Koog](koog.md) |
+| :brand-rust: Rig | Rust | MCP | [Rig](rig.md) |
 | :brand-microsoft: Microsoft Agent Framework | .NET | MCP | [MAF .NET](maf-dotnet.md) |
 | :brand-firebase: Genkit | TypeScript | MCP | [Genkit](genkit.md) |
 | :brand-go: ADK Go | Go | MCP | [ADK Go](adk-go.md) |
 | :brand-langgraph: LangGraph.js | TypeScript | MCP | [LangGraph.js](langgraph-js.md) |
 | :brand-vercel: Vercel AI SDK | TypeScript | TS client or MCP | [Vercel AI SDK](vercel-ai-sdk.md) |
+| :brand-openai: OpenAI Agents SDK (JS) | TypeScript | MCP | [OpenAI Agents JS](openai-agents-js.md) |
 | :brand-openai: OpenAI Responses `mcp` tool | hosted | public MCP | [OpenAI hosted MCP](openai-hosted-mcp.md) |
+| :brand-elevenlabs: OpenAI Realtime · ElevenLabs Agents | hosted voice | public MCP + REST | [Voice agents](voice-realtime.md) |
 | :brand-azure: Azure AI Foundry Agent Service | hosted | public MCP | [Azure AI Foundry](azure-foundry.md) |
 | :brand-bedrock: Bedrock AgentCore Gateway | hosted | public MCP | [Bedrock AgentCore](bedrock-agentcore.md) |
 

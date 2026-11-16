@@ -1,0 +1,8 @@
+name: agent_adapter_client
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  mcp_dart: ^2.4.4

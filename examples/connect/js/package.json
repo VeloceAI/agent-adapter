@@ -1,0 +1,15 @@
+{
+  "name": "agent-adapter-connect-js",
+  "private": true,
+  "type": "module",
+  "scripts": { "check": "node check.ts" },
+  "dependencies": {
+    "@ai-sdk/mcp": "2.0.99",
+    "@genkit-ai/mcp": "1.44.0",
+    "@mastra/mcp": "2.9.0",
+    "@openai/agents": "0.22.0",
+    "ai": "7.0.173",
+    "genkit": "1.44.0",
+    "zod": "4.6.7"
+  }
+}

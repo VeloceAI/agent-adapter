@@ -1,7 +1,8 @@
 # Clients in every language
 
 One Agent Adapter server, one small client per language. Each client calls the same Python
-tool twice: over MCP with that language's official SDK, then over plain REST.
+tool twice: over MCP with that language's official SDK (a community SDK for Elixir and
+Dart), then over plain REST.
 
 ```bash
 python scripts/check_clients.py            # every language (needs Docker)

@@ -210,18 +210,24 @@ nav:
           - HTTP server: cross-language/http-server.md
           - OpenAPI: cross-language/openapi.md
           - TypeScript client: cross-language/typescript-client.md
+          - C++, Scala, Zig, Lua: cross-language/more-languages.md
       - Connect anywhere:
           - connect/index.md
           - Hermes Agent: connect/hermes.md
           - Letta: connect/letta.md
           - Mastra: connect/mastra.md
           - Spring AI: connect/spring-ai.md
+          - LangChain4j: connect/langchain4j.md
+          - Koog: connect/koog.md
+          - Rig: connect/rig.md
           - MAF .NET: connect/maf-dotnet.md
           - Genkit: connect/genkit.md
           - ADK Go: connect/adk-go.md
           - LangGraph.js: connect/langgraph-js.md
           - Vercel AI SDK: connect/vercel-ai-sdk.md
+          - OpenAI Agents JS: connect/openai-agents-js.md
           - OpenAI hosted MCP: connect/openai-hosted-mcp.md
+          - OpenAI Realtime, ElevenLabs: connect/voice-realtime.md
           - Azure AI Foundry: connect/azure-foundry.md
           - Bedrock AgentCore: connect/bedrock-agentcore.md
   - Integrations:

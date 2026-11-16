@@ -103,17 +103,23 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [HTTP server](https://agent-adapter.veloceai.in/cross-language/http-server/): REST + SSE over one `Registry`, for what MCP cannot carry: approval decided in Python (with edited arguments), run events, cost per run, provider-shaped...
 - [OpenAPI](https://agent-adapter.veloceai.in/cross-language/openapi/): The server publishes an **OpenAPI 3.1** document generated from the registry, so other languages can generate typed clients
 - [TypeScript client](https://agent-adapter.veloceai.in/cross-language/typescript-client/): A zero-dependency client for the HTTP tool server
+- [C++, Scala, Zig, Lua](https://agent-adapter.veloceai.in/cross-language/more-languages/): These four languages have no official MCP SDK, so they reach your tools over plain REST
 - [Connect anywhere](https://agent-adapter.veloceai.in/connect/): One page per stack
 - [Hermes Agent](https://agent-adapter.veloceai.in/connect/hermes/): Hermes Agent (Nous Research) has a built-in MCP client
 - [Letta](https://agent-adapter.veloceai.in/connect/letta/): Letta is a server platform
 - [Mastra](https://agent-adapter.veloceai.in/connect/mastra/): Two ways in
 - [Spring AI](https://agent-adapter.veloceai.in/connect/spring-ai/): Spring AI's MCP client Boot starter connects at start-up and turns each of our tools into a `ToolCallback`
+- [LangChain4j](https://agent-adapter.veloceai.in/connect/langchain4j/): LangChain4j's `langchain4j-mcp` module connects an AI Service to any MCP server
+- [Koog](https://agent-adapter.veloceai.in/connect/koog/): Koog (JetBrains, Kotlin) turns an MCP server into a `ToolRegistry` with `McpToolRegistryProvider`
+- [Rig](https://agent-adapter.veloceai.in/connect/rig/): Rig (Rust) reads MCP tools through the official Rust SDK, `rmcp`, behind its `rmcp` feature
 - [MAF .NET](https://agent-adapter.veloceai.in/connect/maf-dotnet/): MAF .NET uses the official MCP C# SDK
 - [Genkit](https://agent-adapter.veloceai.in/connect/genkit/): Genkit's `@genkit-ai/mcp` plugin runs an MCP host inside your Genkit app
 - [ADK Go](https://agent-adapter.veloceai.in/connect/adk-go/): ADK Go's `mcptoolset` turns an MCP server into a `tool.Toolset` for an `llmagent`
 - [LangGraph.js](https://agent-adapter.veloceai.in/connect/langgraph-js/): `@langchain/mcp-adapters` (2.0 or later) turns our MCP tools into LangChain.js tools
 - [Vercel AI SDK](https://agent-adapter.veloceai.in/connect/vercel-ai-sdk/): AI SDK 7 (TypeScript)
+- [OpenAI Agents JS](https://agent-adapter.veloceai.in/connect/openai-agents-js/): `@openai/agents` runs the agent loop in your Node process
 - [OpenAI hosted MCP](https://agent-adapter.veloceai.in/connect/openai-hosted-mcp/): With the Responses API `mcp` tool, OpenAI's servers call our server for you
+- [OpenAI Realtime, ElevenLabs](https://agent-adapter.veloceai.in/connect/voice-realtime/): Both voice platforms call remote MCP servers from their own cloud, so our server must be public, with auth
 - [Azure AI Foundry](https://agent-adapter.veloceai.in/connect/azure-foundry/): A Foundry agent's `mcp` tool is run by the Foundry service: Azure calls our server, so it must be reachable from the internet, with auth
 - [Bedrock AgentCore](https://agent-adapter.veloceai.in/connect/bedrock-agentcore/): AgentCore Gateway puts our server behind one MCP endpoint for your agents
 
