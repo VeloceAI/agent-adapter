@@ -95,15 +95,16 @@ caller's audio and pull the agent's), `ScriptedSTT` and `WordTTS`.
 Silero and Smart Turn detectors, the same Moonshine models and the same scripted model. The
 caller asks for a booking, then cuts in 0.3, 0.8, 1.5 or 2.5 s into it. Each stack is timed
 from what the caller hears. 20 runs per stack (5 at each cut point) on a Windows laptop, CPU
-only; medians, with the range in brackets:
+only (Pipecat and LiveKit re-run after the fix to the quiet measure below); medians, with
+the range in brackets:
 
 | | Our pipeline | Pipecat 1.16 | LiveKit 1.8 |
 |---|---|---|---|
 | Charged once | 20 of 20 | 20 of 20 | 20 of 20 |
-| First reply heard, after the caller stops | **2.4 s** (2.1 to 2.7) | 4.2 s (3.7 to 9.5) | 4.4 s (4.2 to 10.5) |
-| Agent goes quiet, after the caller cuts in | **54 ms** (0 to 78), 10 runs | 5.5 s (4.5 to 10.1), 8 runs | 422 ms (406 to 594), 5 runs |
-| The VoiceAgent is told of the cut | 352 ms | 62 ms | 399 ms |
-| CPU time for the call | 47 s | 29 s | 48 s |
+| First reply heard, after the caller stops | **2.4 s** (2.1 to 2.7) | 4.3 s (4.0 to 4.4) | 4.3 s (4.2 to 8.7) |
+| Agent goes quiet, after the caller cuts in | **54 ms** (0 to 78), 10 runs | **54 ms** (31 to 79), 10 runs | 484 ms (453 to 485), 5 runs |
+| The VoiceAgent is told of the cut | 352 ms | 63 ms | 391 ms |
+| CPU time for the call | 47 s | 25 s | 47 s |
 
 How to read it:
 
@@ -112,10 +113,10 @@ How to read it:
   last pass early, and the voice plays from its first chunk. Pipecat runs its own
   `MoonshineSTTService`, which transcribes once the turn ends. LiveKit has no Moonshine
   service, so both use the same batch adapters we wrote for them.
-- **Goes quiet** counts only runs where the agent was talking when the caller cut in. In the
-  Pipecat runs, a line whose audio was still being made when the cut came played in full
-  afterwards. That comes from our Pipecat connector and test TTS service as much as from
-  Pipecat, and it is a fault we will fix in the connector.
+- **Goes quiet** counts only runs where the agent was talking when the caller cut in. We tie
+  with Pipecat; LiveKit is slower because its turn detection hears the cut later. A gap in
+  the audio counts as quiet: Pipecat writes nothing while silent, and a first version of
+  this script missed that and showed Pipecat taking 5.5 s.
 - **Told of the cut** is later for us by design: playback stops at once, but the turn is cut
   only after 300 ms of speech, so a cough does not throw away the agent's work.
 - **CPU**: we use more than Pipecat, because the streaming passes and the early pass

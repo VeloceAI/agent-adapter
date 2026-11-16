@@ -188,17 +188,22 @@ class Measure:
         """None when the agent was silent as the cut began (nothing to stop)."""
         if t is None or not any(t - 0.1 <= at < t and loud for at, loud in self.blocks):
             return None
+        # An output may write nothing while silent (Pipecat does), so a gap counts as quiet.
         quiet_from: float | None = None
+        last = t
         for at, loud in self.blocks:
             if at < t:
                 continue
+            if at - last >= QUIET_S:
+                return round(((quiet_from or last) - t) * 1000)
+            last = at
             if loud:
                 quiet_from = None
             elif quiet_from is None:
                 quiet_from = at
             elif at - quiet_from >= QUIET_S:
                 return round((quiet_from - t) * 1000)
-        return None
+        return round(((quiet_from or last) - t) * 1000)
 
 
 def loud_span(pcm: bytes) -> tuple[int, int]:
