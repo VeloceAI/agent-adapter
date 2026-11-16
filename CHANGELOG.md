@@ -24,6 +24,12 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `import_mcp` keeps a remote tool's media even when it also sent `structuredContent`. A
   matrix test covers every media type × every rewrite × with and without structured data.
   Guide: Media in tool results.
+- Coverage: "Connect anywhere" recipes for OpenAI Agents SDK (JS), LangChain4j, Koog, Rig,
+  and OpenAI Realtime with ElevenLabs Agents, where OpenAI's `mcp_approval_request` parks
+  one of our approvals instead of running the call. The Vercel AI SDK, Mastra, Genkit and
+  OpenAI Agents JS MCP routes now run live against our server (`examples/connect/js`).
+  Elixir (Anubis MCP) and Dart/Flutter (`mcp_dart`) clients in `examples/clients`, and a
+  REST and OpenAPI-generated client page for C++, Scala, Zig and Lua.
 - Our own voice pipeline, no framework needed: `VoiceSession(transport, stt=, tts=, turns=)`
   runs a whole call from raw audio to a `VoiceAgent` and back. Playback pauses within one
   audio block when the caller starts talking; the turn is cut only after `confirm_ms` of

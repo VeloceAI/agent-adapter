@@ -21,12 +21,15 @@ flowchart LR
 | HTTP tool server | approval must be decided in Python (with edits), you need run events as SSE, cost per run, or provider-shaped catalogues | [HTTP server](http-server.md) |
 | OpenAPI | the caller generates a typed client from a spec | [OpenAPI](openapi.md) |
 | TypeScript client | a TS / JS app calls the HTTP server | [TypeScript client](typescript-client.md) |
+| Plain REST | C++, Scala, Zig, Lua and any language without an MCP SDK | [More languages](more-languages.md) |
 
 ## Every backend language
 
 MCP has official SDKs in ten languages, and all ten are tested end to end: each client in
 [`examples/clients`](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients) calls a live server over MCP with its official SDK, then over
 plain REST. `python scripts/check_clients.py` runs them all in Docker.
+Elixir and Dart (Flutter too) use community MCP SDKs; their clients follow the same shape
+but have not had a live run yet.
 
 | Language | Native route | Plain HTTP | Tested client |
 |---|---|---|---|
@@ -40,6 +43,9 @@ plain REST. `python scripts/check_clients.py` runs them all in Docker.
 | :brand-ruby: Ruby | MCP Ruby SDK | `Net::HTTP` | [ruby/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/ruby) |
 | :brand-php: PHP | MCP PHP SDK | curl | [php/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/php) |
 | :brand-swift: Swift | MCP Swift SDK | `URLSession` | [swift/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/swift) |
+| :brand-elixir: Elixir | community Anubis MCP | `:httpc` | [elixir/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/elixir) |
+| :brand-dart: Dart / Flutter | community `mcp_dart` | `dart:io` | [dart/](https://github.com/VeloceAI/agent-adapter/tree/main/examples/clients/dart) |
+| :brand-cplusplus: C++ · Scala · Zig · Lua | no MCP SDK yet | any HTTP client, or a generated one ([page](more-languages.md)) | |
 | :brand-openapi: Anything else | | any HTTP client, or one generated from `/openapi.json` | |
 
 Every route runs the same executor, so approvals, budgets, cost and traces apply the same way.

@@ -5,7 +5,7 @@ description: "Load your Python tools into Mastra in one MCP call, or use the Typ
 
 # Connect: Mastra
 
-:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) or the [TypeScript client](../cross-language/typescript-client.md) · their docs checked 2026-10-30
+:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) or the [TypeScript client](../cross-language/typescript-client.md) · their docs checked 2026-10-30 · MCP route tested live
 
 Two ways in. MCP loads every tool in one call. The TS client keeps approvals in Python:
 `decide` runs the call, so confirm tools work end to end.
@@ -33,8 +33,11 @@ const mcp = new MCPClient({
   },
   timeout: 60_000,
 });
-const tools = await mcp.listTools(); // names are namespaced by server
+const tools = await mcp.listTools(); // namespaced: shopTools_shipping_rate
 ```
+
+A parked confirm tool comes back as a thrown `MastraError` whose message is
+`approval required: apr_…`; a read-only tool returns our structured result.
 
 | Key | Meaning |
 |---|---|

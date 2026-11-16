@@ -29,3 +29,5 @@ services:
   swift: { <<: *client, build: ./swift }
   ruby: { <<: *client, build: ./ruby }
   php: { <<: *client, build: ./php }
+  elixir: { <<: *client, build: ./elixir }
+  dart: { <<: *client, build: ./dart }

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-CACHES = {"__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache"}
+CACHES = {"__pycache__", ".mypy_cache", ".pytest_cache", ".ruff_cache", "node_modules"}
 TEXT_SUFFIXES = {".py", ".md", ".txt", ".jsonl", ".json", ".yaml", ".yml", ".tmpl", ".toml"}
 TEXT_SUFFIXES |= {".svg", ".css", ".html", ".js", ""}  # "": Dockerfile
 ROOT_FILES = ("README.md", "CHANGELOG.md", "AGENTS.md", "pyproject.toml", "mkdocs.yml")

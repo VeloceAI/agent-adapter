@@ -63,7 +63,7 @@ def test_connect_example_type_checks_strictly() -> None:
 
 def test_index_links_every_recipe_page() -> None:
     index = (CONNECT / "index.md").read_text(encoding="utf-8")
-    assert len(PAGES) == 12
+    assert len(PAGES) == 17
     assert [page.name for page in PAGES if f"]({page.name})" not in index] == []
 
 
