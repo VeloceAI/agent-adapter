@@ -1,23 +1,33 @@
 {% set feats = [
-  ("Legacy code migration", "Point <code>agent-adapter migrate</code> at your code: it finds tool definitions from 11 frameworks and APIs (LangChain, CrewAI, OpenAI, ADK...) and suggests registry code, without running anything. <code>registry.wrap()</code> turns classes you cannot edit into tools.", "migration/"),
-  ("Graph flows", "Portable <code>Flow</code> graphs with branches, waves and sub-flows. Run them on their own, or compile them to LangGraph and Google ADK.", "concepts/flows/"),
-  ("Approvals that survive restarts", "A risky tool waits for a person. The approval is stored, used once, and the run resumes in any process.", "how-to/human-in-the-loop/"),
-  ("Budgets per user and team", "Cap spend per run, per user or per team with <code>BudgetHook</code>. The call stops before the money is spent.", "how-to/team-budgets/"),
-  ("See every run", "A local viewer for runs, cost, timelines and the call graph. OpenTelemetry spans for your own stack.", "assets/demo/sample-run.html#run=run_00000000000000000000000000000001"),
-  ("Durable runs", "Long runs survive crashes and deploys on Temporal or DBOS, with the same tools and rules.", "how-to/durable-engines/"),
-  ("Context compression", "Shrink long histories before each model call, in each framework's own message type.", "concepts/context-compression/"),
-  ("Evals from production", "Turn a failure seen in production into a regression case that CI runs on every change.", "how-to/evals-from-production/"),
-  ("Optimiser", "An offline loop that proposes a reviewable prompt diff, scored on your own cases.", "optimiser/"),
+  ("Migration", "Move your old tools over", "Point <code>agent-adapter migrate</code> at your code. It finds tools written for other frameworks and shows the same tools in our format. Nothing runs.", "migration/",
+    [("LangChain", "langchain"), ("CrewAI", "crewai"), ("OpenAI", "openai"), ("Google ADK", "google"), ("OpenAPI", "openapi")]),
+  ("Flows", "Graph flows", "Steps, branches and loops in one flow. Run it on its own, or turn it into LangGraph or Google ADK.", "concepts/flows/",
+    [("LangGraph", "langgraph"), ("Google ADK", "google")]),
+  ("Approvals", "Approvals that survive restarts", "A risky action waits for a person. The \"yes\" is saved, used once, and the work continues even after a restart.", "how-to/human-in-the-loop/",
+    [("LangGraph", "langgraph"), ("OpenAI Agents SDK", "openai"), ("Pydantic AI", "pydantic-ai"), ("MCP", "mcp")]),
+  ("Budgets", "Spending limits", "Set a money limit per user or team. The call stops before the money is spent.", "how-to/team-budgets/",
+    [("OpenAI", "openai"), ("Anthropic", "anthropic"), ("Gemini", "gemini"), ("AWS Bedrock", "bedrock")]),
+  ("Tracing", "See every run", "A local page shows each run's steps, cost and timing. It can also send traces to your own tools.", "assets/demo/sample-run.html#run=run_00000000000000000000000000000001",
+    [("OpenTelemetry", "opentelemetry"), ("Langfuse", "langfuse"), ("Phoenix", "")]),
+  ("Durable", "Runs that survive crashes", "Long jobs keep going after a crash or a deploy, without repeating payments.", "how-to/durable-engines/",
+    [("Temporal", "temporal"), ("DBOS", "")]),
+  ("Context", "Shorter long chats", "Long conversations are trimmed before each AI call, so you pay less.", "concepts/context-compression/",
+    [("LangChain", "langchain"), ("OpenAI", "openai"), ("Anthropic", "anthropic"), ("Gemini", "gemini")]),
+  ("Evals", "Tests from real failures", "A mistake seen in production becomes a test that runs on every change.", "how-to/evals-from-production/",
+    [("pytest", "pytest"), ("GitHub Actions", "githubactions")]),
+  ("Optimiser", "Better prompts, offline", "Tries better prompts and tool descriptions against your own test cases, and shows you the change to approve.", "optimiser/", []),
 ] %}
 <section class="aa-band">
   <div class="aa-inner">
     <h2>Everything an agent needs <span class="aa-hl2">in production</span></h2>
     <div class="aa-cards">
-      {% for title, body, href in feats %}
+      {% for tag, title, body, href, logos in feats %}
         {% set demo = href.startswith("assets/") %}
         <a class="aa-card aa-feat aa-reveal" href="{{ href.split('#')[0] | url }}{{ '#' ~ href.split('#')[1] if demo else '' }}"{% if demo %} target="_blank" rel="noopener"{% endif %}>
+          <span class="aa-tag">{{ tag }}</span>
           <b>{{ title }}</b>
           <p>{{ body | safe }}</p>
+          {% include "partials/home/pills.html" %}
           <span class="aa-more">{{ "Try the live demo" if demo else "Learn more" }} &rarr;</span>
         </a>
       {% endfor %}

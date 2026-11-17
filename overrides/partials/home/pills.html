@@ -1,0 +1,8 @@
+{#- Logo pills inside a home card; `logos` is a list of (name, icon), an empty icon draws a dot. -#}
+{% if logos %}
+<ul class="aa-logos">
+  {% for name, icon in logos %}
+    <li>{% if icon %}<span class="aa-logo" aria-hidden="true">{% include ".icons/brand/" ~ icon ~ ".svg" %}</span>{% else %}<span class="aa-logo aa-logo--dot" aria-hidden="true"></span>{% endif %}{{ name }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
