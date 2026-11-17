@@ -5,7 +5,7 @@ description: "Give a LangChain4j AI Service your Python tools through our MCP se
 
 # Connect: LangChain4j
 
-:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-11-16
+:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-11-17 · MCP route tested live
 
 LangChain4j's `langchain4j-mcp` module connects an AI Service to any MCP server. Point its
 Streamable HTTP transport at our `/mcp` endpoint and the model sees our tools next to its

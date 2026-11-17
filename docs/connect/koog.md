@@ -5,7 +5,7 @@ description: "Load your Python tools into a JetBrains Koog agent's ToolRegistry 
 
 # Connect: Koog
 
-:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-11-16
+:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-11-17 · MCP route tested live
 
 Koog (JetBrains, Kotlin) turns an MCP server into a `ToolRegistry` with
 `McpToolRegistryProvider`. Its `streamableHttp { }` helper sets no request headers; to send

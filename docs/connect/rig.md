@@ -5,7 +5,7 @@ description: "Give a Rig agent your Python tools through our MCP server with the
 
 # Connect: Rig
 
-:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-11-16
+:material-check-circle:{ .status-ok } Recipe · through our [MCP server](../cross-language/mcp.md) · their docs checked 2026-11-17 · MCP route tested live
 
 Rig (Rust) reads MCP tools through the official Rust SDK, `rmcp`, behind its `rmcp`
 feature. The transport below is the one our tested
@@ -29,18 +29,20 @@ one machine, `local_app()` is enough.
 version Rig pins.
 
 ```rust
-use rig::tool::rmcp::{client_config, McpConnection};
+use rig::tool::rmcp::McpConnection;
+use rmcp::model::{ClientCapabilities, ClientConfig, Implementation};
 use rmcp::transport::{
     streamable_http_client::StreamableHttpClientTransportConfig, StreamableHttpClientTransport,
 };
-use rmcp::ClientServiceExt; // rmcp 3.9, the version Rig 0.46 pins
+use rmcp::ServiceExt; // tested with Rig 0.46 and rmcp 3.10
 
 let token = std::env::var("AA_AGENT_TOKEN")?;
 let config = StreamableHttpClientTransportConfig::with_uri("https://tools.example.com/mcp")
     .auth_header(token); // the token alone: rmcp adds "Bearer "
 let transport = StreamableHttpClientTransport::from_config(config);
 
-let client = client_config("shop-agent", "1.0.0").serve(transport).await?;
+let info = ClientConfig::new(ClientCapabilities::default(), Implementation::new("shop-agent", "1.0.0"));
+let client = info.serve(transport).await?;
 let connection = McpConnection::new(client);
 let tools = connection.tools().await?; // each converts into a rig DynamicTool
 ```
@@ -49,7 +51,7 @@ let tools = connection.tools().await?; // each converts into a rig DynamicTool
 |---|---|
 | `StreamableHttpClientTransportConfig::with_uri(...)` | our `/mcp` endpoint |
 | `auth_header(token)` | sends `Authorization: Bearer <token>` on every request |
-| `client_config(name, version).serve(transport)` | Rig's client info; starts the MCP session |
+| `ClientConfig::new(...).serve(transport)` | our client info; starts the MCP session |
 | `McpConnection::tools()` | our tools, ready for the agent's tool set |
 | `McpClientHandler` with a `ToolServerHandle` | for agents: keeps the tools in sync when the list changes |
 
