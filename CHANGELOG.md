@@ -8,6 +8,13 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Voice call features for `VoiceSession`, all offline: `IdlePolicy` (asks "Are you still
+  there?", then hangs up), `VoiceAgent.say(text, interruptible=False)` and
+  `mute_during_tools=True`, `end_call_tool(session)` and `session.hang_up()`,
+  `session.send_text()` for typed input, `CallRecorder` (stereo WAV), `ThinkingSound`,
+  `VoicemailDetector` (greeting words plus beep; leaves a message after the beep) and
+  `NoiseGate` behind a new `filters=` port. New `observers=` port (`CallObserver`) for your
+  own. Guides: Voice call features, and Voice stacks compared (ours vs LiveKit vs Pipecat).
 - Voice pipeline gaps against Pipecat, LiveKit, Vapi and Retell: hosted speech providers
   `DeepgramSTT` (streams each turn over the live WebSocket), `OpenAISTT`, `OpenAITTS`,
   `ElevenLabsTTS` and `CartesiaTTS` (extra `voice-cloud`: httpx, websockets);

@@ -48,7 +48,7 @@ class Player:
     def speaking(self) -> bool:
         """Audio is queued or a line is being spoken."""
         live = self._current is not None and not self._current[1].done.done()
-        return live or not self.buffer.idle
+        return live or self.buffer.busy
 
     def prepare(self, text: str) -> None:
         """Start synthesising `text` now; `say(text)` will use it."""

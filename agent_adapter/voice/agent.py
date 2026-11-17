@@ -43,6 +43,24 @@ class _Done(Hook):
         return None
 
 
+class _Busy(Hook):
+    """Counts the tool calls running now, for `mute_during_tools`."""
+
+    name = "voice_busy"
+
+    def __init__(self) -> None:
+        self.running = 0
+
+    async def before_tool(self, inv: ToolInvocation) -> None:
+        self.running += 1
+
+    async def after_tool(self, inv: ToolInvocation, result: ToolResult) -> None:
+        self.running = max(0, self.running - 1)
+
+    async def on_tool_error(self, inv: ToolInvocation, error: BaseException) -> None:
+        self.running = max(0, self.running - 1)
+
+
 class VoiceAgent:
     """A voice agent from a model, an executor and a speaker; works with any audio stack.
 
@@ -53,7 +71,8 @@ class VoiceAgent:
     turn. Repeats of a finished call within `dedupe_window_s` return the first result.
     With `minute_item` ("provider:name"), `close()` bills the call's minutes at its unit price.
     With a `VoiceApproval`, a yes counts only if `user_started_speaking()` came after the
-    question finished playing.
+    question finished playing. With `mute_during_tools`, the caller cannot cut in while a
+    tool runs (a `VoiceSession` drops that speech).
     """
 
     def __init__(
@@ -68,9 +87,12 @@ class VoiceAgent:
         run_id: str | None = None,
         dedupe_window_s: float | None = DEDUPE_WINDOW_S,
         minute_item: str | None = None,
+        mute_during_tools: bool = False,
     ) -> None:
         self._done = _Done()
-        changes: dict[str, Any] = {"hooks": (*executor.hooks, self._done)}
+        self._busy = _Busy()
+        self.mute_during_tools = mute_during_tools
+        changes: dict[str, Any] = {"hooks": (*executor.hooks, self._done, self._busy)}
         if dedupe_window_s is not None:
             changes["dedupe_window_s"] = dedupe_window_s
         self.executor = executor.replace(**changes)
@@ -113,6 +135,34 @@ class VoiceAgent:
             return
         await self._cut()
         self._turn = asyncio.create_task(self._run_turn(text))
+
+    @property
+    def busy(self) -> bool:
+        """A turn is running: the model is thinking, a tool runs, or the reply plays."""
+        return self._turn is not None and not self._turn.done()
+
+    @property
+    def interruptible(self) -> bool:
+        """Whether the caller may cut in now."""
+        if self._speech.holding:
+            return False
+        return not (self.mute_during_tools and self._busy.running)
+
+    def say(self, text: str, *, interruptible: bool = True, record: bool = True) -> None:
+        """Speak `text` now, outside a model turn: a greeting, a notice, a goodbye.
+
+        With `record`, what the caller heard of it joins the history. With
+        `interruptible=False`, the caller cannot cut it (a `VoiceSession` drops that speech).
+        """
+        heard = self._heard if record else None
+        self._speech.put(text, record=False, hold=not interruptible, heard=heard)
+
+    async def wait_spoken(self) -> None:
+        """Wait until everything queued to speak has played."""
+        await self._speech.drain()
+
+    def _heard(self, text: str) -> None:
+        self.history.append(Message(role="assistant", content=text))
 
     async def wait(self) -> None:
         """Wait until the current turn has finished speaking."""
@@ -175,6 +225,8 @@ class VoiceAgent:
         except asyncio.CancelledError:
             self.history = self._after_cut(start, reply)
             raise
+        finally:
+            self._busy.running = 0  # a hook that short-circuits can skip after_tool
 
     def _after_cut(self, start: list[Message], reply: Sequence[Message] | None) -> list[Message]:
         """The history after a cut: only what was really said, plus what was really done."""

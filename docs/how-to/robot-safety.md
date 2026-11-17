@@ -74,6 +74,12 @@ directly (`spec.invoke`) raises `ToolUsageError`.
 - Cancelling a move stops the robot: motion tools are `effects="physical"`, so a cancelled
   move is not finished; the gate latches the e-stop and the move reports where it stopped.
   A caller saying "stop" over a voice agent does the same.
+- `scripts/voice_robot.py` runs that whole loop in simulation: a Kokoro voice asks for a slow
+  move and says "Stop!" a second into it; our `VoiceSession` (Moonshine, Smart Turn), a
+  scripted model, the gate, a `SimRobot` in real time and MuJoCo as the shadow. In 5 of 5
+  runs the arm held still a median 470 ms (462 to 483) after "Stop!" began, and the e-stop
+  latched. Most of that is the session waiting for 300 ms of speech before it cuts the turn,
+  so a cough does not stop the arm; a lower `confirm_ms` stops sooner.
 
 ## Audit
 

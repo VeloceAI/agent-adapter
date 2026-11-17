@@ -142,6 +142,8 @@ nav:
       - Run flows on Temporal or DBOS: how-to/durable-engines.md
       - Build a voice agent: how-to/voice-agents.md
       - A voice call with no framework: how-to/voice-pipeline.md
+      - Voice call features: how-to/voice-call-features.md
+      - Voice stacks compared: how-to/voice-compared.md
       - Hosted speech, echo and phone calls: how-to/voice-providers-and-phone.md
       - Voice transports and realtime models: how-to/voice-transports.md
       - Gate a robot: how-to/robot-safety.md
@@ -350,6 +352,7 @@ nav:
       - Handlers: reference/handlers.md
       - Chat contract: reference/chat.md
       - Voice agents: reference/voice.md
+      - Voice calls and transports: reference/voice-calls.md
       - Robot safety: reference/robotics.md
       - Run viewer: reference/viewer.md
       - "Integrations: model APIs and protocols": reference/integrations-providers.md

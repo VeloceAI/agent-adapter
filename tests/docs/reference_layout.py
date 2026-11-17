@@ -194,6 +194,33 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
         "chat page and evals. Guide: [Chat with your agent](../how-to/chat-with-your-agent.md).",
         ("agent_adapter.chat",),
     ),
+    "voice-calls": (
+        "Voice calls and transports",
+        "Transports (sound card, WebSocket, phone networks, WebRTC), hosted and local speech, "
+        "and call features such as recording, idle prompts and voicemail. "
+        "Guide: [Voice call features](../how-to/voice-call-features.md).",
+        tuple(
+            "agent_adapter.voice" + suffix
+            for suffix in (
+                ".observers",
+                ".ending",
+                ".recorder",
+                ".ambience",
+                ".voicemail",
+                ".denoise",
+                ".local",
+                ".audio_socket",
+                ".socket",
+                ".twilio",
+                ".twilio_calls",
+                ".webrtc",
+                ".webrtc_page",
+                ".moonshine",
+                ".deepgram",
+                ".cloud",
+            )
+        ),
+    ),
     "voice": (
         "Voice agents",
         "Turns, safe interruptions and spoken approval around the executor, our own audio "
@@ -207,17 +234,7 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
                 ".media",
                 ".player",
                 ".playout",
-                ".local",
-                ".audio_socket",
-                ".twilio",
-                ".twilio_calls",
-                ".webrtc",
-                ".webrtc_page",
-                ".moonshine",
-                ".deepgram",
-                ".cloud",
                 ".pcm",
-                ".socket",
                 ".turns",
                 ".silero",
                 ".smart_turn",

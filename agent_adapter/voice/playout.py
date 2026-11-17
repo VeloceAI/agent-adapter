@@ -28,6 +28,7 @@ class Segment:
     played: int = 0  # bytes pulled by the transport
     finished: bool = False  # no more audio will be written
     started_at: float | None = None  # monotonic time its first byte was pulled
+    ambient: bool = False  # a background sound, not speech: it never counts as speaking
 
     @property
     def heard(self) -> float:
@@ -55,6 +56,7 @@ class PlayoutBuffer:
     on_clear: list[Callable[[], None]] = field(default_factory=list)
     on_start: list[Callable[[Segment], None]] = field(default_factory=list)
     on_drained: list[Callable[[Segment], None]] = field(default_factory=list)
+    on_pull: list[Callable[[bytes], None]] = field(default_factory=list)  # may be any thread
 
     def __post_init__(self) -> None:
         self._lock = threading.Lock()
@@ -71,14 +73,20 @@ class PlayoutBuffer:
             return not self._chunks
 
     @property
+    def busy(self) -> bool:
+        """Speech is queued (background sound does not count)."""
+        with self._lock:
+            return any(not chunk.segment.ambient for chunk in self._chunks)
+
+    @property
     def paused(self) -> bool:
         return self._paused
 
-    def open(self) -> Segment:
+    def open(self, *, ambient: bool = False) -> Segment:
         """Start a new line; write its audio, then `finish` it and await `done`."""
         self._loop = asyncio.get_running_loop()
         self._next += 1
-        segment = Segment(self._next, self._loop.create_future())
+        segment = Segment(self._next, self._loop.create_future(), ambient=ambient)
         with self._lock:
             self._live[segment.id] = segment
         return segment
@@ -122,8 +130,13 @@ class PlayoutBuffer:
                         drained.append(segment)
                 else:
                     chunk.offset = offset + len(take)
+        if out and self.on_pull:
+            played = bytes(out)
+            for hook in self.on_pull:
+                hook(played)
         for segment in started:
-            self._later(self.on_start, segment)
+            if not segment.ambient:
+                self._later(self.on_start, segment)
         for segment in drained:
             self._drained(segment)
         if pad and len(out) < size:

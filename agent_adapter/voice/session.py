@@ -12,21 +12,25 @@ agent's own voice in the mic and is dropped.
 
 While the agent asks a spoken yes/no question, only a turn that began after the question
 finished playing can answer it; earlier speech, an echo of the prompt included, is dropped.
+Speech that starts while the agent cannot be cut (`VoiceAgent.interruptible`) is dropped too.
 """
 
 from __future__ import annotations
 
 import asyncio
 import contextlib
+import inspect
 import logging
 import re
 import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from agent_adapter.core.errors import log_failure
 from agent_adapter.tracing.events import emit, make_event
 from agent_adapter.voice.media import STT, TTS, AudioTransport, StreamingSTT, STTStream
+from agent_adapter.voice.observers import CallObserver
 from agent_adapter.voice.pcm import Resampler, rms
 from agent_adapter.voice.player import Player
 from agent_adapter.voice.playout import PlayoutBuffer, Segment, fire
@@ -90,6 +94,10 @@ class VoiceSession:
     Keypad digits from a transport with `on_digit` (`TwilioStream`) reach the agent as
     `keypad_text`, once `keypad_wait_ms` passes with no new digit, at once on `#`, or
     after `max_digits`. A turn that never pauses ends after `max_turn_s`.
+
+    `filters` transform the caller's 16 kHz audio first (a noise filter); `observers`
+    (`CallObserver`) add call features such as `CallRecorder`, `IdlePolicy` and
+    `VoicemailDetector`.
     """
 
     def __init__(
@@ -108,6 +116,8 @@ class VoiceSession:
         keypad_text: str = "(keypad) {digits}",
         max_turn_s: float = 30.0,
         max_digits: int = 32,
+        filters: Sequence[Callable[[bytes], bytes]] = (),
+        observers: Sequence[CallObserver] = (),
     ) -> None:
         self.transport = transport
         self.stt = stt
@@ -119,6 +129,8 @@ class VoiceSession:
         self.keypad_wait_ms = keypad_wait_ms
         self.keypad_text = keypad_text
         self.max_digits = max_digits
+        self.filters = tuple(filters)
+        self.observers = tuple(observers)
         self._max_turn = int(RATE * max_turn_s) * 2
         self.buffer = PlayoutBuffer(transport.out_rate)
         self.speaker = Player(tts, self.buffer)
@@ -142,7 +154,48 @@ class VoiceSession:
         self._texts: asyncio.Queue[_Turn] = asyncio.Queue()
         self._agent: VoiceAgent | None = None
         self._pump: EventPump | None = None
+        self._muted = False  # began while the agent could not be cut: dropped
+        self._reader: asyncio.Task[None] | None = None
+        self._ending: asyncio.Task[None] | None = None
         self.buffer.on_start.append(self._audio_started)
+        self.buffer.on_pull.extend(observer.agent_audio for observer in self.observers)
+
+    @property
+    def agent(self) -> VoiceAgent | None:
+        """The agent this session runs, once `run` started."""
+        return self._agent
+
+    @property
+    def caller_talking(self) -> bool:
+        """A caller turn is open."""
+        return self._turn is not None
+
+    def send_text(self, text: str) -> None:
+        """A typed message from the caller, handled like a spoken turn."""
+        if self._pump is not None:
+            self._pump.said(text)
+
+    async def hang_up(self, *, after_speech: bool = False) -> None:
+        """End the call; with `after_speech`, once the current reply has played."""
+        agent = self._agent
+        if after_speech and agent is not None:
+            await agent.wait()
+            await agent.wait_spoken()
+            while self.buffer.busy:
+                await asyncio.sleep(0.02)
+        end = getattr(self.transport, "hang_up", None)
+        try:
+            if callable(end) and inspect.isawaitable(result := end()):
+                await result
+        finally:
+            reader = self._reader
+            if reader is not None:
+                reader.cancel()
+
+    def end_after_reply(self) -> None:
+        """Hang up once the agent's current reply has played (an `end_call` tool)."""
+        if self._ending is None or self._ending.done():
+            self._ending = asyncio.ensure_future(self.hang_up(after_speech=True))
 
     async def run(self, agent: VoiceAgent) -> None:
         """Run the call until the transport ends; then close the agent and the transport."""
@@ -152,14 +205,21 @@ class VoiceSession:
         on_digit = getattr(self.transport, "on_digit", None)
         if isinstance(on_digit, list):
             on_digit.append(self._digit)
+        for observer in self.observers:
+            observer.started(self)
         try:
             await self.transport.start(self.buffer)
-            async for frame in self.transport.frames():
-                self._frame(resampler.feed(frame))
-            await self._texts.join()
-            await self._pump.idle()
+            self._reader = asyncio.create_task(self._read(resampler))
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._reader
+            if not self._reader.cancelled():  # after a hang-up, the last words are moot
+                await self._texts.join()
+                await self._pump.idle()
         finally:
             worker.cancel()
+            ending = self._ending
+            if ending is not None and ending is not asyncio.current_task():
+                ending.cancel()
             if self._digit_timer is not None:
                 self._digit_timer.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -171,10 +231,23 @@ class VoiceSession:
             await self._pump.aclose()
             await agent.close()
             await self.transport.close()
+            for observer in self.observers:
+                try:
+                    await observer.ended()
+                except Exception as exc:
+                    log_failure(logger, logging.WARNING, exc, "call observer failed")
+
+    async def _read(self, resampler: Resampler) -> None:
+        async for frame in self.transport.frames():
+            self._frame(resampler.feed(frame))
 
     def _frame(self, pcm: bytes) -> None:
         if not pcm:
             return
+        for step in self.filters:
+            pcm = step(pcm)
+        for observer in self.observers:
+            observer.caller_audio(pcm)
         now = time.monotonic()
         self._recent += pcm
         del self._recent[: max(0, len(self._recent) - self._pre_roll)]
@@ -191,7 +264,7 @@ class VoiceSession:
             self._ended(now)  # bounds memory and the speech-to-text request
             return
         timing = self._timing
-        if timing is None or self._turn is None:
+        if timing is None or self._turn is None or self._muted:
             return
         speech = self._timer is None or self._timer.quiet_ms == 0
         ms = len(pcm) * 500 / RATE
@@ -216,6 +289,10 @@ class VoiceSession:
         self._turn_question = self._question()[1]
         self._speech_ms = self._loud_ms = 0.0
         self._drop_early()
+        agent = self._agent
+        self._muted = agent is not None and not agent.interruptible
+        if self._muted:
+            return
         self._guarded = self.echo_guard is not None and self.speaker.speaking
         if not self._guarded:
             self._barge_in(self._timing)
@@ -242,8 +319,9 @@ class VoiceSession:
         timing = self._timing
         if timing is None or self._turn is None:
             return
-        if self._guarded:  # never loud or long enough: the agent's own voice
-            self._guarded, self._turn, self._timing = False, None, None
+        if self._guarded or self._muted:  # its own voice, or speech while it could not be cut
+            self._guarded = self._muted = False
+            self._turn, self._timing = None, None
             return
         text, self._early, self._early_stream = self._early or self._start_text(), None, None
         self._turn, self._timing = None, None
@@ -286,6 +364,10 @@ class VoiceSession:
             try:
                 text = await turn.text
                 timing.transcribed, timing.text = time.monotonic(), text
+                if self._observed(text):
+                    if timing.confirmed is None:
+                        self._resume(timing)
+                    continue
                 self._deliver(turn, text)
             except Exception as exc:
                 log_failure(logger, logging.WARNING, exc, "speech-to-text failed")
@@ -293,6 +375,18 @@ class VoiceSession:
                     self._resume(timing)
             finally:
                 self._texts.task_done()
+
+    def _observed(self, text: str) -> bool:
+        """Observers see each transcript; True if one keeps it from the agent."""
+        if not text.strip():
+            return False
+        kept = False
+        for observer in self.observers:
+            try:
+                kept = bool(observer.caller_said(text)) or kept
+            except Exception as exc:
+                log_failure(logger, logging.WARNING, exc, "call observer failed")
+        return kept
 
     async def _text_of(self, audio: bytes, stream: STTStream | None) -> str:
         if stream is not None:

@@ -6,7 +6,7 @@ Turns, safe interruptions and spoken approval around the executor, our own audio
 
 ::: agent_adapter.voice
     options:
-      members: [AudioSocket, AudioTransport, CallableSTT, CallableSpeaker, CallableTTS, EchoGuard, EventPump, LocalAudio, Player, STT, Speaker, TTS, TurnTiming, TwilioCalls, TwilioStream, VoiceAgent, VoiceApproval, VoiceSession, YES_WORDS, binary_socket, is_yes]
+      members: [AudioSocket, AudioTransport, CallObserver, CallRecorder, CallableSTT, CallableSpeaker, CallableTTS, EchoGuard, EventPump, IdlePolicy, LocalAudio, NoiseGate, Player, STT, Speaker, TTS, ThinkingSound, TurnTiming, TwilioCalls, TwilioStream, VoiceAgent, VoiceApproval, VoiceSession, VoicemailDetector, YES_WORDS, binary_socket, end_call_tool, is_yes]
 
 ## `agent_adapter.voice.session`
 
@@ -34,71 +34,11 @@ Also exported here, documented under the canonical path: [`AudioTransport`](#age
     options:
       members: [Pacer, PlayoutBuffer, Segment, fire]
 
-## `agent_adapter.voice.local`
-
-`agent_adapter.voice.local` re-exports, documented under the canonical path: [`LocalAudio`](#agent_adapter.voice.LocalAudio).
-
-## `agent_adapter.voice.audio_socket`
-
-::: agent_adapter.voice.audio_socket
-    options:
-      members: [BinarySocket, starlette_messages]
-
-Also exported here, documented under the canonical path: [`AudioSocket`](#agent_adapter.voice.AudioSocket), [`binary_socket`](#agent_adapter.voice.binary_socket).
-
-## `agent_adapter.voice.twilio`
-
-`agent_adapter.voice.twilio` re-exports, documented under the canonical path: [`TwilioStream`](#agent_adapter.voice.TwilioStream).
-
-## `agent_adapter.voice.twilio_calls`
-
-::: agent_adapter.voice.twilio_calls
-    options:
-      members: [dial_twiml, stream_twiml]
-
-Also exported here, documented under the canonical path: [`TwilioCalls`](#agent_adapter.voice.TwilioCalls).
-
-## `agent_adapter.voice.webrtc`
-
-::: agent_adapter.voice.webrtc
-    options:
-      members: [OUT_RATE, WebRTCAudio, without_dtx]
-
-## `agent_adapter.voice.webrtc_page`
-
-::: agent_adapter.voice.webrtc_page
-    options:
-      members: [webrtc_page]
-
-## `agent_adapter.voice.moonshine`
-
-::: agent_adapter.voice.moonshine
-    options:
-      members: [MoonshineSTT, MoonshineTTS]
-
-## `agent_adapter.voice.deepgram`
-
-::: agent_adapter.voice.deepgram
-    options:
-      members: [Connect, DeepgramSTT, LiveSocket]
-
-## `agent_adapter.voice.cloud`
-
-::: agent_adapter.voice.cloud
-    options:
-      members: [CartesiaTTS, ElevenLabsTTS, OpenAISTT, OpenAITTS]
-
 ## `agent_adapter.voice.pcm`
 
 ::: agent_adapter.voice.pcm
     options:
       members: [Resampler, bytes_of, rms, samples_of, ulaw_decode, ulaw_encode]
-
-## `agent_adapter.voice.socket`
-
-::: agent_adapter.voice.socket
-    options:
-      members: [TextSocket, VoiceSocket, text_socket]
 
 ## `agent_adapter.voice.turns`
 

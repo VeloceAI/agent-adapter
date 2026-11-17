@@ -210,6 +210,7 @@ ODM_ROOTS: dict[str, set[str]] = {
     "retrieval/llamaindex.py": {"llama_index"},
     "voice/silero.py": {"onnxruntime", "numpy"},
     "voice/smart_turn.py": {"onnxruntime", "numpy"},
+    "voice/denoise.py": {"numpy"},
     "voice/local.py": {"sounddevice"},
     "voice/moonshine.py": {"moonshine_voice"},
     "voice/webrtc.py": {"aiortc", "av"},

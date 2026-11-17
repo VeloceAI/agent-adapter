@@ -90,6 +90,10 @@ local addresses only; pass your STUN or TURN servers for calls across networks.
 Test all of it offline with `agent_adapter.voice.testing`: `MemoryTransport` (you send the
 caller's audio and pull the agent's), `ScriptedSTT` and `WordTTS`.
 
+Idle prompts, voicemail, recording, a thinking sound, hang-up and a noise filter are on
+[Voice call features](voice-call-features.md). How this stack compares with LiveKit and
+Pipecat, feature by feature: [Voice stacks compared](voice-compared.md).
+
 ## The same call on three stacks
 
 `scripts/voice_race.py` runs one scripted call on our pipeline, on Pipecat with
