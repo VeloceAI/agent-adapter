@@ -292,8 +292,10 @@ async def test_speech_after_the_early_pass_drops_it_and_hears_the_whole_turn():
     stt = StreamingFake(["book the jazz show"], delay=0.05)
     transport, session, _, run = streaming_call(stt, ScriptedModel([text("Ok.")]))
     transport.speak(tone(300) + silence(200) + tone(300) + silence(500))
-    await asyncio.sleep(0.1)
-    await settle()
+    for _ in range(200):  # the fake STT answers after 50 ms of wall time: wait, do not guess
+        if session.timings and session.timings[0].text:
+            break
+        await asyncio.sleep(0.01)
     first, second = stt.streams
     assert first.cancelled and second.fed > first.fed
     assert session.timings[0].text == "book the jazz show"

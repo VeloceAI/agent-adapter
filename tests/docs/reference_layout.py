@@ -218,6 +218,7 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
                 ".vonage",
                 ".webrtc",
                 ".webrtc_page",
+                ".video",
                 ".moonshine",
                 ".deepgram",
                 ".cloud",

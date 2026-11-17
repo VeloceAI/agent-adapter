@@ -1665,6 +1665,7 @@ Voice agents: safe interruptions, spoken approval and one ledger, on any audio s
 - `TurnTiming(started: float, confirmed: float | None = None, ended: float | None = None, speech_end: float | None = None, transcribed: float | None = None, first_audio: float | None = None, text: str = '', resumed: bool = False) -> None`: When each step of one caller turn happened, in seconds on the monotonic clock.
 - `TwilioCalls(account_sid: str | None = None, auth_token: str | None = None, *, api_key: str | None = None, api_secret: str | None = None, base_url: str = 'https://api.twilio.com', client: Any = None, timeout: float = 15) -> None`: A small async client for the Calls resource; `client` takes your `httpx.AsyncClient`.
 - `TwilioStream(socket: TextSocket, *, calls: TwilioCalls | None = None, frame_ms: int = 20, lead_ms: int = 80) -> None`: An `AudioTransport` over a Twilio Media Streams WebSocket (any `TextSocket`).
+- `VideoFeed(*, fps: float = 2.0, max_side: int = 1024, quality: int = 80) -> None`: The latest frame of one video source, for `look_tool`.
 - `VoiceAgent(model: LLMPort, executor: Executor, speaker: Speaker, *, instructions: str = '', registry: Registry | None = None, max_steps: int = 8, run_id: str | None = None, dedupe_window_s: float | None = 120.0, minute_item: str | None = None, mute_during_tools: bool = False) -> None`: A voice agent from a model, an executor and a speaker; works with any audio stack.
 - `VoiceApproval(*, timeout_s: float = 10.0, prompt: Prompt = default_prompt, yes_words: frozenset[str] = ..., prompts: Mapping[str, Prompt] | None = None) -> None`: Approval port for voice: asks the caller aloud, then waits for their own answer.
 - `VoiceSession(transport: AudioTransport, *, stt: STT, tts: TTS, turns: TurnDetector, confirm_ms: float = 300, pre_roll_ms: float = 300, early_ms: float = 200, backchannels: frozenset[str] = ..., echo_guard: EchoGuard | None = None, keypad_wait_ms: float = 1500, keypad_text: str = '(keypad) {digits}', max_turn_s: float = 30.0, max_digits: int = 32, filters: Sequence[Callable[[bytes], bytes]] = (), observers: Sequence[CallObserver] = ()) -> None`: Runs a `VoiceAgent` on an `AudioTransport`; give the agent `session.speaker`.
@@ -1674,6 +1675,7 @@ Voice agents: safe interruptions, spoken approval and one ledger, on any audio s
 - `binary_socket(send: Callable[[str | bytes], Awaitable[Any]], messages: AsyncIterator[str | bytes]) -> BinarySocket`: A `BinarySocket` from a send function and an async iterator of received messages.
 - `end_call_tool(session: VoiceSession, *, name: str = 'end_call', description: str = ...) -> ToolSpec`: A tool for the agent to hang up after its goodbye: `registry.add(end_call_tool(session))`.
 - `is_yes(text: str, words: frozenset[str] = ...) -> bool`: True only when every word is a yes word: "yeah no", "yes but" and "" are all no.
+- `look_tool(feed: VideoFeed, name: str = 'look', *, description: str | None = None, max_age: float | None = None) -> ToolSpec`: A read-only tool that returns the feed's latest frame as a JPEG image.
 
 ### `agent_adapter.integrations.a2a`
 

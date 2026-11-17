@@ -84,6 +84,14 @@ Also exported here, documented under the canonical path: [`TwilioCalls`](voice.m
     options:
       members: [webrtc_page]
 
+## `agent_adapter.voice.video`
+
+::: agent_adapter.voice.video
+    options:
+      members: [device_input, to_jpeg]
+
+Also exported here, documented under the canonical path: [`VideoFeed`](voice.md#agent_adapter.voice.VideoFeed), [`look_tool`](voice.md#agent_adapter.voice.look_tool).
+
 ## `agent_adapter.voice.moonshine`
 
 ::: agent_adapter.voice.moonshine

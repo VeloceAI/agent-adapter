@@ -35,6 +35,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Build a voice agent](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor
 - [A voice call with no framework](https://agent-adapter.veloceai.in/how-to/voice-pipeline/): `VoiceSession` is a whole voice pipeline in this package
 - [Voice call features](https://agent-adapter.veloceai.in/how-to/voice-call-features/): Everything on this page plugs into `VoiceSession` and runs offline, with no account or key
+- [Let a voice agent see](https://agent-adapter.veloceai.in/how-to/voice-video/): The agent sees through a tool
 - [Voice stacks compared](https://agent-adapter.veloceai.in/how-to/voice-compared/): We run voice calls three ways: our own `VoiceSession`, or our `VoiceAgent` inside LiveKit Agents or Pipecat through the connectors on Build a voice agent
 - [Hosted speech, echo and phone calls](https://agent-adapter.veloceai.in/how-to/voice-providers-and-phone/): This page adds three things to our own voice pipeline: hosted speech providers, a guard against the agent hearing itself on speakers, and the phone basics...
 - [Voice transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides

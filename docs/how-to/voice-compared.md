@@ -43,7 +43,7 @@ Their columns come from their documentation, read on 2026-11-17.
 | Telnyx, Plivo, Vonage | ✓ format-tested | ✓ SIP | ✓ |
 | SIP trunks | → LiveKit | ✓ | ◐ Daily |
 | **Video** | | | |
-| The agent sees the caller's camera or screen | ✓ `look` tool | ✓ | ✓ |
+| The agent sees the caller's camera or screen | ✓ [`look` tool](voice-video.md) | ✓ | ✓ |
 | A face (avatar) for the agent | ✗ | ◐ 16 paid vendors | ◐ paid vendors |
 | **Around it** | | | |
 | Ready-made speech providers | Moonshine, OpenAI, Deepgram, ElevenLabs, Cartesia; any via `CallableSTT`/`CallableTTS` | 70+ | 100+ |

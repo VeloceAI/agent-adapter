@@ -8,6 +8,13 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Voice agents can see: `VideoFeed` keeps the latest frame from the caller's camera or
+  screen (`WebRTCAudio(video=feed)`, with Camera and Share screen on `webrtc_page`), a local
+  camera or screen, any FFmpeg input, or a robot camera (`feed.poll(render)`).
+  `look_tool(feed)` is a read-only tool that hands the model that frame as a JPEG.
+  `scripts/vision_check.py` (SmolVLM-256M, offline) named 4 of 5 frames;
+  `scripts/robot_vision.py` sorted 6 of 6 MuJoCo blocks to the right bin through the robot
+  gate. Guide: Let a voice agent see.
 - Phone networks beyond Twilio: `TelnyxStream`, `PlivoStream` and `VonageStream` share one
   phone-stream base with `TwilioStream` (paced playout, per-line playout confirmation, cut,
   keypad, hang-up). Tested against each network's documented messages, not on live calls.

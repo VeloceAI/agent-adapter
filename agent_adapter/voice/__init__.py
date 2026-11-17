@@ -24,6 +24,7 @@ from agent_adapter.voice.telnyx import TelnyxStream
 from agent_adapter.voice.turns import EchoGuard
 from agent_adapter.voice.twilio import TwilioStream
 from agent_adapter.voice.twilio_calls import TwilioCalls
+from agent_adapter.voice.video import VideoFeed, look_tool
 from agent_adapter.voice.voicemail import VoicemailDetector
 from agent_adapter.voice.vonage import VonageStream
 
@@ -51,6 +52,7 @@ __all__ = [
     "TurnTiming",
     "TwilioCalls",
     "TwilioStream",
+    "VideoFeed",
     "VoiceAgent",
     "VoiceApproval",
     "VoiceSession",
@@ -59,4 +61,5 @@ __all__ = [
     "binary_socket",
     "end_call_tool",
     "is_yes",
+    "look_tool",
 ]
