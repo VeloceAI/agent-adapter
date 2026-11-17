@@ -12,36 +12,26 @@ Calls REST API through the `TwilioCalls` you pass as `calls=`.
 
 from __future__ import annotations
 
-import asyncio
-import base64
-import binascii
-import contextlib
-import json
-import logging
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any
 
-from agent_adapter.core.errors import ConfigError, log_failure
+from agent_adapter.core.errors import ConfigError
+from agent_adapter.voice._phone_stream import PhoneStream, b64, field, parse_json, to_b64
 from agent_adapter.voice.pcm import ulaw_decode, ulaw_encode
-from agent_adapter.voice.playout import Pacer, PlayoutBuffer, Segment, fire
 from agent_adapter.voice.socket import TextSocket
 
 if TYPE_CHECKING:
     from agent_adapter.voice.twilio_calls import TwilioCalls
 
-logger = logging.getLogger(__name__)
-_MAX_MESSAGE = 256_000
-_MARK = "aa-line-"
-_DIGITS = frozenset("0123456789*#ABCD")
 
-
-class TwilioStream:
+class TwilioStream(PhoneStream):
     """An `AudioTransport` over a Twilio Media Streams WebSocket (any `TextSocket`).
 
     The identity fields (`call_sid`, `stream_sid`, `parameters`) come from the first `start`
     message only; trust them only if the host verified `X-Twilio-Signature` on the upgrade.
     """
 
+    network = "twilio"
     in_rate = 8_000
     out_rate = 8_000
 
@@ -53,44 +43,12 @@ class TwilioStream:
         frame_ms: int = 20,
         lead_ms: int = 80,
     ) -> None:
+        super().__init__(frame_ms=frame_ms, lead_ms=lead_ms)
         self.socket = socket
         self.calls = calls
-        self.on_digit: list[Callable[[str], None]] = []
         self.stream_sid = ""
         self.call_sid = ""
         self.parameters: dict[str, Any] = {}  # the <Parameter> values from your TwiML
-        self._has_started = False
-        self._frame_ms = frame_ms
-        self._lead_ms = lead_ms
-        self._buffer: PlayoutBuffer | None = None
-        self._pacer: asyncio.Task[None] | None = None
-        self._ended = asyncio.Event()
-
-    async def start(self, buffer: PlayoutBuffer) -> None:
-        self._buffer = buffer
-        buffer.confirm_playout = True
-        buffer.on_drained.append(self._mark)
-        buffer.on_clear.append(self._clear)
-        pacer = Pacer(buffer, self._media, frame_ms=self._frame_ms, lead_ms=self._lead_ms)
-        self._pacer = asyncio.create_task(pacer.run())
-
-    async def frames(self) -> AsyncIterator[bytes]:
-        messages = aiter(self.socket)
-        while (raw := await self._next(messages)) is not None:
-            message = _parse(raw)
-            event = message.get("event")
-            if event == "start":
-                self._started(message)
-            elif event == "media":
-                pcm = self._audio(message)
-                if pcm:
-                    yield pcm
-            elif event == "mark":
-                self._marked(message)
-            elif event == "dtmf":
-                self._digit(message)
-            elif event == "stop":
-                return
 
     async def hang_up(self) -> None:
         """End the call: through the Calls API when `calls` is set, and end `frames()`.
@@ -102,7 +60,7 @@ class TwilioStream:
             if self.calls is not None and self.call_sid:
                 await self.calls.hang_up(self.call_sid)
         finally:
-            self._ended.set()
+            await super().hang_up()
 
     async def transfer(self, to: str, *, caller_id: str | None = None) -> None:
         """Hand the caller to a person at `to`; Twilio ends this stream as it dials."""
@@ -110,98 +68,55 @@ class TwilioStream:
             raise ConfigError("transfer() needs TwilioStream(..., calls=TwilioCalls())")
         await self.calls.transfer(self.call_sid, to, caller_id=caller_id)
 
-    async def close(self) -> None:
-        task, self._pacer = self._pacer, None
-        if task is not None:
-            task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await task
+    @property
+    def _ready(self) -> bool:
+        return bool(self.stream_sid)
+
+    def _messages(self) -> AsyncIterator[Any]:
+        return aiter(self.socket)
+
+    def _handle(self, raw: Any) -> bytes | None:
+        message = parse_json(raw)
+        event = message.get("event")
+        if event == "start":
+            self._started(message)
+        elif event == "media":
+            media = field(message, "media")
+            if media and media.get("track", "inbound") == "inbound":
+                return ulaw_decode(b64(media.get("payload")))
+        elif event == "mark":
+            self._confirmed(field(message, "mark").get("name"))
+        elif event == "dtmf":
+            self._digit(str(field(message, "dtmf").get("digit", "")))
+        elif event == "stop":
+            return None
+        return b""
 
     def _started(self, message: dict[str, Any]) -> None:
-        if self._has_started:
-            logger.warning("twilio: a second 'start' on one stream was ignored")
+        if not self._first_start():
             return
-        self._has_started = True
-        start = message.get("start")
-        start = start if isinstance(start, dict) else {}
+        start = field(message, "start")
         self.stream_sid = str(message.get("streamSid") or start.get("streamSid") or "")
         self.call_sid = str(start.get("callSid") or "")
         params = start.get("customParameters")
         self.parameters = dict(params) if isinstance(params, dict) else {}
 
-    async def _next(self, messages: AsyncIterator[Any]) -> Any:
-        """The next message, or None once the socket ends or `hang_up()` is called."""
-        if self._ended.is_set():
-            return None
-        receive = asyncio.ensure_future(anext(messages, None))
-        ended = asyncio.ensure_future(self._ended.wait())
-        try:
-            await asyncio.wait({receive, ended}, return_when=asyncio.FIRST_COMPLETED)
-        finally:
-            ended.cancel()
-            if not receive.done():
-                receive.cancel()
-                with contextlib.suppress(asyncio.CancelledError, StopAsyncIteration):
-                    await receive
-        return None if receive.cancelled() else receive.result()
-
-    def _digit(self, message: dict[str, Any]) -> None:
-        dtmf = message.get("dtmf")
-        digit = str(dtmf.get("digit", "")) if isinstance(dtmf, dict) else ""
-        if digit not in _DIGITS:
-            return
-        for callback in list(self.on_digit):
-            try:
-                callback(digit)
-            except Exception as exc:
-                log_failure(logger, logging.WARNING, exc, "keypad callback failed")
-
-    def _audio(self, message: dict[str, Any]) -> bytes:
-        media = message.get("media")
-        if not isinstance(media, dict) or media.get("track", "inbound") != "inbound":
-            return b""
-        try:
-            return ulaw_decode(base64.b64decode(str(media.get("payload", "")), validate=True))
-        except (binascii.Error, ValueError):
-            return b""
-
-    def _marked(self, message: dict[str, Any]) -> None:
-        mark = message.get("mark")
-        name = str(mark.get("name", "")) if isinstance(mark, dict) else ""
-        if name.startswith(_MARK) and name[len(_MARK) :].isdigit() and self._buffer is not None:
-            self._buffer.confirm(int(name[len(_MARK) :]))
-
     async def _media(self, pcm: bytes) -> None:
-        payload = base64.b64encode(ulaw_encode(pcm)).decode("ascii")
-        await self._send({"event": "media", "media": {"payload": payload}})
+        await self._send(
+            self._stamped({"event": "media", "media": {"payload": to_b64(ulaw_encode(pcm))}})
+        )
 
-    def _mark(self, segment: Segment) -> None:
-        if not self.stream_sid and self._buffer is not None:
-            self._buffer.confirm(segment.id)  # nothing reached Twilio, so nothing to wait for
-            return
-        fire(self._send({"event": "mark", "mark": {"name": f"{_MARK}{segment.id}"}}))
+    def _mark_message(self, name: str) -> dict[str, Any]:
+        return self._stamped({"event": "mark", "mark": {"name": name}})
 
-    def _clear(self) -> None:
-        fire(self._send({"event": "clear"}))
+    def _clear_message(self) -> dict[str, Any]:
+        return self._stamped({"event": "clear"})
 
-    async def _send(self, message: dict[str, Any]) -> None:
-        if not self.stream_sid:
-            logger.debug("twilio: %s dropped before the stream started", message["event"])
-            return
-        try:
-            await self.socket.send(json.dumps({**message, "streamSid": self.stream_sid}))
-        except Exception as exc:  # Twilio hung up; frames() ends the call
-            logger.debug("twilio: %s not sent (%s)", message["event"], type(exc).__name__)
+    def _stamped(self, message: dict[str, Any]) -> dict[str, Any]:
+        return {**message, "streamSid": self.stream_sid}
 
-
-def _parse(raw: Any) -> dict[str, Any]:
-    if not isinstance(raw, str) or len(raw) > _MAX_MESSAGE:
-        return {}
-    try:
-        message = json.loads(raw)
-    except (ValueError, RecursionError):  # RecursionError: JSON nested too deep
-        return {}
-    return message if isinstance(message, dict) else {}
+    async def _write(self, data: str | bytes) -> None:
+        await self.socket.send(str(data))
 
 
 __all__ = ["TwilioStream"]
