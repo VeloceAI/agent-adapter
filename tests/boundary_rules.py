@@ -217,6 +217,7 @@ ODM_ROOTS: dict[str, set[str]] = {
     "voice/_http.py": {"httpx"},
     "voice/deepgram.py": {"websockets"},
     "robotics/mujoco_sim.py": {"mujoco"},
+    "robotics/ros2.py": {"rclpy", "geometry_msgs", "turtlesim"},
     **{
         f"integrations/{name}": {*own, *_INTEGRATION_COMMON}
         for name, own in INTEGRATION_ROOTS.items()
