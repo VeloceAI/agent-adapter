@@ -66,6 +66,8 @@ class EventType:
     SANDBOX_STARTED = "sandbox.started"
     SANDBOX_FINISHED = "sandbox.finished"
     SANDBOX_FAILED = "sandbox.failed"
+    BOARD_POSTED = "board.posted"
+    BOARD_CLAIMED = "board.claimed"
 
 
 _LLM = ("provider", "model", "stage")
@@ -163,6 +165,10 @@ REQUIRED_DATA: Mapping[str, frozenset[str]] = {
         }
     ),
     EventType.SANDBOX_FAILED: frozenset({*_SANDBOX, "error_kind", "duration_ms"}),
+    # The entry's id, kind, key and author and its text length, never the text.
+    EventType.BOARD_POSTED: frozenset({"entry_id", "kind", "key", "by", "seq"}),
+    # won is False when another agent held the key first (a contested claim).
+    EventType.BOARD_CLAIMED: frozenset({"key", "by", "holder", "won"}),
 }
 
 

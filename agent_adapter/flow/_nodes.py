@@ -12,6 +12,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from agent_adapter.approval.store import ApprovalStore
+from agent_adapter.board.context import post_status
 from agent_adapter.core.context import NODE_KEY, ToolContext
 from agent_adapter.core.control import is_control_flow
 from agent_adapter.core.errors import (
@@ -195,6 +196,8 @@ async def run_node(
         ctx.sink,
         make_event(EventType.NODE_FINISHED, ctx, call_id=call_id, **ids, **state_data),
     )
+    note = "finished (cached)" if done.cached else "finished"
+    await post_status(ctx, f"{note}; set {', '.join(changed)}" if changed else note, by=node.name)
     return NodeOutcome(node.name, updates=tuple(done.items))
 
 

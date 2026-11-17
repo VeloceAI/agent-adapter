@@ -157,7 +157,8 @@ class LLMCall:
             self._record(entry)
         self._register(response)
         if source == "cache":
-            self.emit(EventType.LLM_CACHED, **self._ids())
+            usage = response.usage.model_dump(mode="json")  # tokens the cache saved
+            self.emit(EventType.LLM_CACHED, **self._ids(), usage=usage)
             return
         data: dict[str, Any] = {"nested": True} if nested else {}
         self.emit_content(

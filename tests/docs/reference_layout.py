@@ -249,6 +249,12 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
             )
         ),
     ),
+    "board": (
+        "Shared board",
+        "One board per run: agents post statuses, findings, claims and handoffs, and read "
+        "what the others are doing. Guide: [Share a board](../how-to/shared-board.md).",
+        ("agent_adapter.board",),
+    ),
     "robotics": (
         "Robot safety",
         "Action envelopes, a shadow simulation, approvals through the executor, an e-stop and "

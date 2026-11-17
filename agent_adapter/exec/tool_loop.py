@@ -6,10 +6,12 @@ import dataclasses
 import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Literal
 
 from pydantic import ValidationError
 
+from agent_adapter.board.context import NOTE_CHARS, board_note, check_note_chars, restore
 from agent_adapter.context.policy import CompressionPolicy
 from agent_adapter.context.run import (
     check_policy,
@@ -33,9 +35,9 @@ from agent_adapter.exec._loop_history import _trailing_turn as _trailing_turn
 from agent_adapter.exec._loop_history import _unanswered as _unanswered
 from agent_adapter.exec._loop_steps import EventCallback as EventCallback
 from agent_adapter.exec._loop_steps import LoopFinish as LoopFinish
+from agent_adapter.exec._loop_steps import NoteFn, _Loop
 from agent_adapter.exec._loop_steps import TextCallback as TextCallback
 from agent_adapter.exec._loop_steps import ToolLoopResult as ToolLoopResult
-from agent_adapter.exec._loop_steps import _Loop
 from agent_adapter.exec._loop_steps import _tool_content as _tool_content
 from agent_adapter.exec.checkpoints import CheckpointStore
 from agent_adapter.exec.executor import Executor, bind_model
@@ -67,6 +69,8 @@ async def run_tool_loop(
     run_id: str | None = None,
     checkpoints: CheckpointStore | None = None,
     checkpoint_key: bytes | None = None,
+    board: Literal["auto", "off"] = "off",
+    board_chars: int = NOTE_CHARS,
 ) -> ToolLoopResult:
     """Call the model, run its tool calls, feed the results back, until it answers.
 
@@ -88,15 +92,22 @@ async def run_tool_loop(
     after a crash without re-running a finished call. A paused run resumes here, from the
     `messages` of its paused result (any other history is refused), or via `recover_tool_loop`.
 
+    With `board="auto"`, a model call gets what the other agents posted to the run's board
+    since the loop's last note (at most `board_chars` characters) as a fenced data message
+    kept in the history; nothing is added when nothing is new.
+
     Raises:
-        ToolUsageError: `max_steps < 1`, or bad `request_options` (reserved, unknown or
-            invalid keys, or `metadata["call_id"]`), before anything runs.
+        ToolUsageError: `max_steps < 1`, a `board` other than "auto" or "off", a
+            `board_chars` under 200, or bad
+            `request_options` (reserved, unknown or invalid keys, or `metadata["call_id"]`),
+            before anything runs.
         ConfigError: `compression` is not a `CompressionPolicy`, or no context window is
             known for the model, before anything runs; a durable store without a key.
         CheckpointConflict: `checkpoints` holds this run as running or ended, or as paused
             with another history than `messages`.
         ModelError: the model call failed.
     """
+    note = _note(board, board_chars)
     setup = _Setup.made(
         model,
         registry,
@@ -122,6 +133,7 @@ async def run_tool_loop(
         on_text=on_text,
         on_event=on_event,
         durable=durable,
+        note=note,
     )
 
 
@@ -144,6 +156,8 @@ async def recover_tool_loop(
     compression: CompressionPolicy | None = None,
     on_text: TextCallback | None = None,
     on_event: EventCallback | None = None,
+    board: Literal["auto", "off"] = "off",
+    board_chars: int = NOTE_CHARS,
 ) -> ToolLoopResult:
     """Continue a durable tool loop from its last checkpoint; finished tool calls replay.
 
@@ -151,7 +165,8 @@ async def recover_tool_loop(
     `idempotent=True`, or with `rerun_in_doubt=True` after you checked it. `max_steps`
     counts the model calls of the whole run, before the crash too; `tool_results` and
     `usage` cover this call only. A paused loop goes on from its stored history: decided
-    calls run, and one still waiting returns `pending` again.
+    calls run, and one still waiting returns `pending` again. The run's board entries
+    saved in the checkpoint are put back first.
 
     Raises:
         CheckpointNotFound: nothing is stored for `run_id`.
@@ -160,6 +175,7 @@ async def recover_tool_loop(
         RecoveryNeedsDecision: a call may have run and its tool is not idempotent.
         ToolUsageError, ConfigError, ModelError: as `run_tool_loop`.
     """
+    note = _note(board, board_chars)
     key = durable_key(checkpoints, checkpoint_key, "recover_tool_loop")
     saved: Saved = await load(checkpoints, key, run_id, stage)
     if ctx is not None and ctx.run_id not in ("", run_id):
@@ -187,6 +203,7 @@ async def recover_tool_loop(
         checkpoints,
         owned=owned,
     )
+    await restore(setup.ctx, saved.board)
     if saved.paused:  # it goes on from the stored history, as run_tool_loop would resume it
         durable = resumed(saved, checkpoints, key, setup.ctx)
     else:
@@ -199,6 +216,7 @@ async def recover_tool_loop(
         on_event=on_event,
         durable=durable,
         steps=saved.steps,
+        note=note,
     )
 
 
@@ -277,6 +295,7 @@ class _Setup:
         durable: LoopCheckpoints | None,
         on_event: EventCallback | None = None,
         steps: int = 0,
+        note: NoteFn | None = None,
     ) -> ToolLoopResult:
         """Run the loop on `messages`; the run ends here when this call made it."""
         ctx, stage = self.ctx, self.stage
@@ -299,6 +318,7 @@ class _Setup:
             on_text=on_text,
             durable=durable,
             on_event=on_event,
+            note=note,
         )
         loop.steps = steps
         try:
@@ -306,6 +326,13 @@ class _Setup:
         finally:
             if self.owned:
                 self.executor.end_run(ctx.run_id)
+
+
+def _note(board: object, board_chars: object) -> NoteFn | None:
+    if board not in ("auto", "off"):
+        raise ToolUsageError(f"board must be 'auto' or 'off', got {board!r}")
+    chars = check_note_chars(board_chars)
+    return partial(board_note, max_chars=chars) if board == "auto" else None
 
 
 def _request_fields(

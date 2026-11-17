@@ -326,7 +326,8 @@ async def test_tools_get_a_child_context_with_the_executor_ports():
     ex, sink, ledger, _ = make(reg)
     call_id = await ex.run("peek", ctx=ex.context(run_id="r", extras={"k": 1}))
     ctx = seen[0]
-    assert ctx.call_id == call_id and ctx.run_id == "r" and ctx.extras == {"k": 1}
+    assert ctx.call_id == call_id and ctx.run_id == "r"
+    assert {k: v for k, v in ctx.extras.items() if k != "aa.board"} == {"k": 1}
     assert ctx.ledger is ledger and ctx.sink is ex.sink and ex.sink.sinks == (sink,)
     assert sink.of_type("custom.progress")[0].call_id == call_id
 

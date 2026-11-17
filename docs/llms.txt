@@ -62,6 +62,8 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Chat flows by example](https://agent-adapter.veloceai.in/how-to/chat-flows/): `examples/chat_flows.py` is a scripted city help desk (no model, no API key): one agent picks a `Flow` per question, one per pattern
 - [Wrap a framework for chat](https://agent-adapter.veloceai.in/how-to/chat-wrappers/): The Agent Adapter chat page talks to one function: `agent(message, session)`, returning text or an async iterator of text chunks (Chat with your agent)
 - [Multi-agent](https://agent-adapter.veloceai.in/how-to/multi-agent/): Any agent can be a tool of another
+- [Share a board between agents](https://agent-adapter.veloceai.in/how-to/shared-board/): Agents of one run can share a board
+- [See how parallel agents went](https://agent-adapter.veloceai.in/how-to/parallel-runs/): `analyse_run(events)` turns a run's events into one report: how long each parallel branch waited for the slowest, which calls ran twice, what the cache and...
 - [Evaluate your agent](https://agent-adapter.veloceai.in/how-to/evaluate-your-agent/): Evals run a set of cases on your agent, grade each answer, and report
 - [Evals from production](https://agent-adapter.veloceai.in/how-to/evals-from-production/): Turn recorded runs into eval cases, so a failure seen in production becomes a regression case that CI runs on every change
 - [See your evals](https://agent-adapter.veloceai.in/how-to/see-your-evals/): Save each eval report to a folder, then open the **Evals** tab of the local viewer
@@ -257,6 +259,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Voice agents](https://agent-adapter.veloceai.in/reference/voice/): Turns, safe interruptions and spoken approval around the executor, our own audio pipeline and transports, plus offline fakes
 - [Voice calls and transports](https://agent-adapter.veloceai.in/reference/voice-calls/): Transports (sound card, WebSocket, phone networks, WebRTC), hosted and local speech, and call features such as recording, idle prompts and voicemail
 - [Robot safety](https://agent-adapter.veloceai.in/reference/robotics/): Action envelopes, a shadow simulation, approvals through the executor, an e-stop and a deadman watchdog, for robots in simulation
+- [Shared board](https://agent-adapter.veloceai.in/reference/board/): One board per run: agents post statuses, findings, claims and handoffs, and read what the others are doing
 - [Run viewer](https://agent-adapter.veloceai.in/reference/viewer/): Record runs to a folder and browse them on 127.0.0.1 (`agent-adapter ui`), or chat with an agent there
 - [Integrations: model APIs and protocols](https://agent-adapter.veloceai.in/reference/integrations-providers/): Export tools to model APIs and agent protocols (MCP, A2A, AG-UI); import tools from LangChain, OpenAPI and MCP
 - [Integrations: frameworks](https://agent-adapter.veloceai.in/reference/integrations-frameworks/): Export tools, approval and flows to agent frameworks

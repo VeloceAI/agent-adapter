@@ -10,6 +10,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from agent_adapter.board.context import entries_of, restore, snapshot
 from agent_adapter.core.context import ToolContext
 from agent_adapter.core.errors import CheckpointConflict, CheckpointNotFound, ToolUsageError
 from agent_adapter.core.messages import Message
@@ -66,6 +67,9 @@ class LoopCheckpoints:
             "steps": steps,
             "messages": [m.model_dump(mode="json") for m in history],
         }
+        board = await snapshot(self.ctx)
+        if board:  # absent when empty, so loops without a board seal as before
+            payload["board"] = list(board)
         record = Checkpoint(
             kind="loop", name=self.stage, status=status, segment=new_segment(), data=""
         )
@@ -117,6 +121,7 @@ class Saved:
     steps: int
     calls: tuple[CallRecord, ...]
     identity: Mapping[str, str]
+    board: tuple[dict[str, Any], ...] = ()
 
     @property
     def paused(self) -> bool:
@@ -167,6 +172,7 @@ async def begin(
             "the messages are not the paused run's stored history; "
             "recover_tool_loop continues it from the store",
         )
+    await restore(ctx, _board(ctx.run_id, envelope.body))
     return _resuming(store, key, stage, ctx, found.step)
 
 
@@ -175,6 +181,18 @@ def _resuming(
 ) -> LoopCheckpoints:
     log = CallLog(store, ctx.run_id, new_segment(), key)
     return LoopCheckpoints(store, key, stage, ctx, step, log)
+
+
+def _board(run_id: str, payload: Any) -> tuple[dict[str, Any], ...]:
+    """The board entries a loop checkpoint holds (none before boards existed).
+
+    Raises:
+        CheckpointStoreCorrupt: the entries are unreadable.
+    """
+    try:
+        return entries_of(payload.get("board", ()))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise corrupt(run_id, "the tool loop checkpoint's board is unreadable") from exc
 
 
 def _dumped(messages: Sequence[Message]) -> list[dict[str, Any]]:
@@ -223,7 +241,8 @@ async def load(store: CheckpointStore, key: bytes, run_id: str, stage: str) -> S
     if saved.status == "running":
         logged = await store.calls(run_id, saved.segment)
         calls = merge_calls(envelope.carried, verified_calls(key, run_id, saved.segment, logged))
-    return Saved(stored, messages, steps, tuple(calls), envelope.identity)
+    board = _board(run_id, envelope.body)
+    return Saved(stored, messages, steps, tuple(calls), envelope.identity, board)
 
 
 def resumed(saved: Saved, store: CheckpointStore, key: bytes, ctx: ToolContext) -> LoopCheckpoints:

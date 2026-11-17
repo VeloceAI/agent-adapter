@@ -2,6 +2,7 @@
 
 from agent_adapter.viewer._files import DEFAULT_FOLDER
 from agent_adapter.viewer._otlp_import import import_otlp
+from agent_adapter.viewer._overlap import analyse_run
 from agent_adapter.viewer.approvals import ApprovalDesk
 from agent_adapter.viewer.chat import Attachment, ChatAgent, ChatMessage, ChatSession
 from agent_adapter.viewer.export import export
@@ -23,6 +24,7 @@ __all__ = [
     "Recorder",
     "RunFolder",
     "ViewerServer",
+    "analyse_run",
     "assign_lanes",
     "build_spans",
     "check_host",

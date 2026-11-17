@@ -1006,7 +1006,7 @@ Agent Adapter: framework-independent tools, parallel execution and flows for LLM
 - `Decision`: alias of `ApprovalDecision`
 - `DeferredApproval(store: ApprovalStore) -> None`: ApprovalPort for out-of-band review (HTTP server, queues); emits no events itself.
 - `Event(type: str, run_id: str = '', call_id: str = '', parent_id: str = '', ts: float = <factory>, data: Mapping[str, Any] = <factory>) -> None`: A trace event (see `tracing.events` for the catalogue).
-- `Executor(registry: Registry | None = None, *, hooks: Sequence[Hook] = (), approval: ApprovalPort | None = None, cache: CachePort | None = None, ledger: LedgerPort | None = None, sink: EventSink | None = None, limits: RunLimits | None = None, backoff: Backoff | None = None, namespace: str = 'aa', clock: Callable[[], float] = monotonic, sleep: Callable[[float], Awaitable[None]] = sleep, rng: Callable[[], float] = random, max_tracked_runs: int = 10000, policy: ToolPolicy | None = None, dedupe_window_s: float | None = None) -> None`: Runs tools with run guards, hooks, approval, cache, retries, ledger and events.
+- `Executor(registry: Registry | None = None, *, hooks: Sequence[Hook] = (), approval: ApprovalPort | None = None, cache: CachePort | None = None, ledger: LedgerPort | None = None, sink: EventSink | None = None, limits: RunLimits | None = None, backoff: Backoff | None = None, namespace: str = 'aa', clock: Callable[[], float] = monotonic, sleep: Callable[[float], Awaitable[None]] = sleep, rng: Callable[[], float] = random, max_tracked_runs: int = 10000, policy: ToolPolicy | None = None, dedupe_window_s: float | None = None, board: BoardStore | BoardSettings | None = None) -> None`: Runs tools with run guards, hooks, approval, cache, retries, ledger and events.
 - `FallbackModel(models: Sequence[LLMPort], *, fall_on: tuple[type[ModelError], ...] = ..., sink: EventSink | None = None) -> None`: An `LLMPort` over `models`: the next one answers after a `fall_on` error.
 - `Flow(name: str, *, state: type[S], description: str = '') -> None`: A portable graph flow over a pydantic state model; every builder method returns `self`.
 - `FlowRunner(executor: Executor, *, approval: ApprovalPort | None = None, hooks: Sequence[Hook] = (), sink: EventSink | None = None, max_steps: int = 100, concurrency: int | None = None, model: LLMPort | None = None, checkpoint_key: bytes | None = None, seal_encoder: Callable[[object], object] | None = None, seal_decoder: Callable[[str, object], object] | None = None, trace_state: bool = False, checkpoints: CheckpointStore | None = None) -> None`: Runs a `Flow` locally: nodes on the executor, supersteps, merges, routes and pauses.
@@ -1043,7 +1043,7 @@ Agent Adapter: framework-independent tools, parallel execution and flows for LLM
 - `configure(registry: Registry | None = None, **options: Any) -> Executor`: Make `Executor(registry, **options)` the default (`call`, integrations) and return it.
 - `default_registry`: `Registry` instance
 - `run_sync(work: Awaitable[T] | Callable[[], Awaitable[T]], *, timeout: float | None = None) -> T`: Run `work` to completion on a fresh event loop and return its result.
-- `async run_tool_loop(model: LLMPort, registry: Registry, messages: Sequence[Message], *, max_steps: int = 8, executor: Executor | None = None, ctx: ToolContext | None = None, output_schema: OutputSchema | None = None, tool_choice: Literal['auto', 'none', 'required'] | str = 'auto', concurrency: int | None = None, stage: str = 'tool_loop', request_options: Mapping[str, Any] | None = None, compression: CompressionPolicy | None = None, on_text: TextCallback | None = None, on_event: EventCallback | None = None, run_id: str | None = None, checkpoints: CheckpointStore | None = None, checkpoint_key: bytes | None = None) -> ToolLoopResult`: Call the model, run its tool calls, feed the results back, until it answers.
+- `async run_tool_loop(model: LLMPort, registry: Registry, messages: Sequence[Message], *, max_steps: int = 8, executor: Executor | None = None, ctx: ToolContext | None = None, output_schema: OutputSchema | None = None, tool_choice: Literal['auto', 'none', 'required'] | str = 'auto', concurrency: int | None = None, stage: str = 'tool_loop', request_options: Mapping[str, Any] | None = None, compression: CompressionPolicy | None = None, on_text: TextCallback | None = None, on_event: EventCallback | None = None, run_id: str | None = None, checkpoints: CheckpointStore | None = None, checkpoint_key: bytes | None = None, board: Literal['auto', 'off'] = 'off', board_chars: int = 600) -> ToolLoopResult`: Call the model, run its tool calls, feed the results back, until it answers.
 - `set_default_executor(executor: Executor) -> None`: Make `executor` the default for every integration that is not given one.
 - `spec_from_schema(name: str, description: str, input_schema: Mapping[str, Any], func: Callable[..., Any], *, output_schema: Mapping[str, Any] | None = None, portable: bool | None = None, context_param: str | None = None, **policy: Any) -> ToolSpec`: A tool whose arguments are described by `input_schema` instead of a signature.
 - `tool(func: F | None = None, /, **options: Any) -> F | Callable[[F], F]`: Decorator: register a function as a tool and return it unchanged.
@@ -1156,6 +1156,25 @@ Audit export: a signed, tamper-evident log of approvals, budgets, guards, memory
 - `read_entries(path: str | PathLike[str], key: str | bytes | None = None) -> Iterator[dict[str, Any]]`: The event records of a verified log, oldest first, one at a time.
 - `verify(path: str | PathLike[str], key: str | bytes | None = None, *, anchor: str | None = None) -> AuditVerification`: Check the audit folder `path` line by line; `anchor` (an earlier one) catches rollbacks.
 - `verify_records(records: Iterable[Mapping[str, Any]], key: str | bytes | None = None) -> AuditVerification`: Check shipped records in the order received; interleaved streams are checked apart.
+
+### `agent_adapter.board`
+
+Shared board: agents of one run see what the others are doing and have found.
+
+- `BOARD_KEY = 'aa.board'`
+- `Board(store: BoardStore | None = None, *, scope: str, run_id: str = '', sink: EventSink | None = None, max_entries: int = 500, max_bytes: int = 262144, clock: Callable[[], float] = time) -> None`: One board: what the agents of a run (or thread) are doing and have found.
+- `BoardSettings(store: BoardStore = <factory>, scope: Literal['run', 'thread'] = 'run', max_entries: int = 500, max_bytes: int = 262144) -> None`: How an executor makes each run's board: the store, the scope and the caps.
+- `BoardStore` (protocol: append, claim, drop, read): Where boards keep their entries and claims, one `scope` (run or thread) per board.
+- `Claim(key: str, holder: str, won: bool) -> None`: The outcome of `Board.claim`: who holds the key, and whether that is the caller.
+- `Entry(id: str, at: float, by: str, kind: str, text: str, key: str = '', data: Mapping[str, Any] = <factory>, seq: int = 0) -> None`: One board post: who wrote it, what kind, an optional key, the text and JSON data.
+- `KINDS = ('status', 'finding', 'claim', 'handoff')`
+- `MemoryBoardStore(*, max_scopes: int = 256) -> None`: A `BoardStore` in this process (threads and event loops share it), the default.
+- `RedisBoardStore(client_factory: Callable[[], Any], *, prefix: str = 'aa:board:', ttl_s: float | None = 604800) -> None`: A `BoardStore` on Redis (`agent-adapter[redis]`), shared by every worker and host.
+- `SQLiteBoardStore(path: str | PathLike[str], *, timeout: float = 5.0) -> None`: A `BoardStore` in a SQLite file (WAL), safe across threads, loops and processes.
+- `board_of(ctx: ToolContext | None = None) -> Board`: The board of `ctx`'s run (default: the call running now), made on first use.
+- `board_tools(include: Iterable[str] = ('read', 'post', 'claim')) -> list[ToolSpec]`: `board_read`, `board_post` and `board_claim` (or the ones in `include`).
+- `current_author() -> str`: The innermost `posting_as` name, else the current flow node's name, else "".
+- `posting_as(name: str) -> Iterator[None]`: Board posts inside the block default to `by=name` (agent tools set their name).
 
 ### `agent_adapter.cache`
 
@@ -1302,7 +1321,7 @@ Executor: runs tools with guards, hooks, approval, cache, retries, batches, plan
 - `Backoff(base_s: float = 0.5, max_s: float = 30.0, multiplier: float = 2.0, jitter: float = 0.25) -> None`: Exponential backoff with jitter; delays in seconds.
 - `Executor`: see `agent_adapter`
 - `HandoffModel(model: LLMPort, handoffs: Registry | Iterable[str]) -> None`: Wraps a model: once a handoff tool has answered, the loop ends with that answer.
-- `LoopAgent(model: LLMPort, registry: Registry, instructions: str = '', max_steps: int = 8, request_options: Mapping[str, Any] | None = None) -> None`: A `run_tool_loop` agent: its model, the tools it may use and its instructions.
+- `LoopAgent(model: LLMPort, registry: Registry, instructions: str = '', max_steps: int = 8, request_options: Mapping[str, Any] | None = None, board: Literal['auto', 'off'] = 'off', board_chars: int = 600) -> None`: A `run_tool_loop` agent: its model, the tools it may use and its instructions.
 - `OnError = Literal['collect', 'fail_fast']`
 - `RunLimits`: see `agent_adapter`
 - `Step`: see `agent_adapter`
@@ -1310,7 +1329,7 @@ Executor: runs tools with guards, hooks, approval, cache, retries, batches, plan
 - `ToolLoopResult(messages: tuple[Message, ...], final: LLMResponse, steps: int, finish: LoopFinish, tool_results: tuple[ToolResult, ...], usage: Usage) -> None`: Where a tool loop ended: the full history, the last reply and every tool result.
 - `acall`: see `agent_adapter`
 - `agent_depth() -> int`: How many agent tools are running around the current call (0 outside any).
-- `agent_tool(agent: LoopAgent | TaskAgent, *, name: str, description: str, executor: Executor | None = None, max_depth: int = 3, timeout: float | None = None, confirm: ConfirmRule = False, tags: Iterable[str] = ()) -> ToolSpec`: A tool (kind "agent") that runs `agent` on the model's `task` inside the calling run.
+- `agent_tool(agent: LoopAgent | TaskAgent, *, name: str, description: str, executor: Executor | None = None, max_depth: int = 3, timeout: float | None = None, confirm: ConfirmRule = False, tags: Iterable[str] = (), parallel_safe: bool = False) -> ToolSpec`: A tool (kind "agent") that runs `agent` on the model's `task` inside the calling run.
 - `call`: see `agent_adapter`
 - `changes_things(spec: ToolSpec) -> bool`: True for an `additive` or `destructive` effect; with no `effects`, for `confirm` or `once_per_run` tools.
 - `configure`: see `agent_adapter`
@@ -1319,7 +1338,7 @@ Executor: runs tools with guards, hooks, approval, cache, retries, batches, plan
 - `is_control_flow(exc: BaseException) -> bool`: True for CancelledError, a registered type, a class named GraphBubbleUp in the MRO, or an exception group holding any of them.
 - `listen_progress(listener: ProgressListener) -> Iterator[None]`: Send `progress(...)` texts of the tools run inside this block to `listener`.
 - `progress(text: str) -> None`: Tell the host what a slow tool is doing; never a result, never sent to the model.
-- `async recover_tool_loop(model: LLMPort, registry: Registry, run_id: str, *, checkpoints: CheckpointStore, checkpoint_key: bytes | None = None, rerun_in_doubt: bool = False, max_steps: int = 8, executor: Executor | None = None, ctx: ToolContext | None = None, output_schema: OutputSchema | None = None, tool_choice: Literal['auto', 'none', 'required'] | str = 'auto', concurrency: int | None = None, stage: str = 'tool_loop', request_options: Mapping[str, Any] | None = None, compression: CompressionPolicy | None = None, on_text: TextCallback | None = None, on_event: EventCallback | None = None) -> ToolLoopResult`: Continue a durable tool loop from its last checkpoint; finished tool calls replay.
+- `async recover_tool_loop(model: LLMPort, registry: Registry, run_id: str, *, checkpoints: CheckpointStore, checkpoint_key: bytes | None = None, rerun_in_doubt: bool = False, max_steps: int = 8, executor: Executor | None = None, ctx: ToolContext | None = None, output_schema: OutputSchema | None = None, tool_choice: Literal['auto', 'none', 'required'] | str = 'auto', concurrency: int | None = None, stage: str = 'tool_loop', request_options: Mapping[str, Any] | None = None, compression: CompressionPolicy | None = None, on_text: TextCallback | None = None, on_event: EventCallback | None = None, board: Literal['auto', 'off'] = 'off', board_chars: int = 600) -> ToolLoopResult`: Continue a durable tool loop from its last checkpoint; finished tool calls replay.
 - `register_control_flow(*types: type[BaseException]) -> None`: Treat `types` (and subclasses) as control flow in the executor and the approval ports.
 - `reset_default_executor() -> None`: Drop the default Executor and its default sinks; the next use starts fresh.
 - `run_tool_loop`: see `agent_adapter`
@@ -1629,6 +1648,7 @@ Run viewer: record runs to JSONL files, browse them and chat locally (`agent-ada
 - `Recorder(folder: str | PathLike[str] = '.agent_adapter/runs', *, capture_content: bool = False, capture_confirm_content: bool = False, keep_runs: int = 200, max_events_per_run: int = 50000, max_queue: int = 10000, registry: RegistrySource = None, source: str = '', policy: PolicySource = None) -> None`: Writes events under `folder`, one segment file per run and process (append-only).
 - `RunFolder(target: str | Path) -> None`: A runs folder, or a single run file, read again on each `refresh` from where it stopped.
 - `ViewerServer(folder: RunFolder, desk: ApprovalDesk | None, port: int, chat: ChatHost | None = None, evals: EvalFolder | None = None, cases_dir: Path | None = None) -> None`: A ThreadingHTTPServer holding the runs folder, the approval desk and its secrets.
+- `analyse_run(events: Iterable[Mapping[str, Any] | Event]) -> dict[str, Any]`: A run's overlap report from its events (recorded dicts or `Event`s), JSON-ready.
 - `assign_lanes(spans: Iterable[dict[str, Any]]) -> int`: Give each span the lowest free lane at its start (greedy interval colouring).
 - `build_spans(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]`: One span per call (tool, LLM, node, flow, compression), in start order, with lanes.
 - `check_host(host: str) -> None`: Refuse any bind address but the IPv4 loopback.

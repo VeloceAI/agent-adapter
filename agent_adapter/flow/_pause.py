@@ -12,6 +12,7 @@ from typing import Any, cast
 from pydantic import BaseModel
 
 from agent_adapter.approval.store import ApprovalStore
+from agent_adapter.board.context import snapshot
 from agent_adapter.core.context import ToolContext
 from agent_adapter.core.types import ApprovalDecision, ApprovalRequest
 from agent_adapter.exec._canon import NotSealable
@@ -40,6 +41,7 @@ class Cursor:
     items: dict[str, Mapping[int, tuple[str, Any]]] = field(default_factory=dict)  # Map items
     journal: dict[str, JournalData] = field(default_factory=dict)  # replays
     children: dict[str, FlowCheckpoint] = field(default_factory=dict)  # paused sub-flow runs
+    board: tuple[Mapping[str, Any], ...] = ()  # the run's board entries at the last snapshot
 
 
 @dataclass(frozen=True)
@@ -73,6 +75,7 @@ def cursor_from(
         items=dict(checkpoint._items),
         journal=dict(checkpoint._journal),
         children=dict(checkpoint._children if children is None else children),
+        board=tuple(checkpoint._board),
     )
 
 
@@ -106,6 +109,7 @@ def build_checkpoint(
         _items=frozen({o.node: frozen(dict(o.items)) for o in waiting if o.items}),
         _journal=frozen({o.node: o.journal for o in waiting if o.journal}),
         _children=frozen({o.node: o.child for o in waiting if o.child is not None}),
+        _board=cursor.board,
         _graph=run.digest,
     )
     return checkpoint, pendings, waiting
@@ -125,6 +129,7 @@ async def paused(
         FlowError: `state-not-sealable`: some part cannot be sealed; every pending record the
             pause made is withdrawn first (denied and consumed), so nothing runs it later.
     """
+    cursor.board = await snapshot(run.ctx)
     checkpoint, pendings, waiting = build_checkpoint(run, cursor, pending, decisions, outcomes)
     try:
         _check_journals(checkpoint)

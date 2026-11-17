@@ -62,6 +62,7 @@ Every event is an `Event(type, run_id, call_id, parent_id, ts, data)`. Types out
 | Memory | `memory.added`, `memory.searched`, `memory.deleted`, `memory.exported` ([counts only](memory.md)) |
 | Retrieval | `retrieval.searched`, `retrieval.failed` (ids and counts; texts only with `capture_content`) |
 | Sandbox | `sandbox.started`, `sandbox.finished`, `sandbox.failed` (sizes and exit codes; code and output only with `capture_content`) |
+| Shared board | `board.posted` (entry id, kind, key, author, length; never the text), `board.claimed` (key, who asked, holder, `won`) |
 | Reranking | `rerank.started`, `rerank.finished`, `rerank.failed` (`CallableReranker`) |
 | Context compression | `context.compressed`, `context.compress_failed` ([counts only](context-compression.md#errors-events-and-cost)) |
 | Flow | `flow.started`, `flow.finished`, `node.started`, `node.finished`, `node.failed`, `node.paused`, `node.cached`; durable runs: `checkpoint.saved`, `run.recovered` |

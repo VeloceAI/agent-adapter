@@ -39,6 +39,7 @@ _MEMORY_VERBS = {
     "memory.deleted": "forget",
     "memory.exported": "export",
 }
+_BOARD = {"board.posted", "board.claimed"}  # points on the timeline, one per post or claim
 _MARKS = {
     "tool.retry",
     "tool.progress",
@@ -71,6 +72,11 @@ def build_spans(events: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
                 span["name"] = f"{_MEMORY_VERBS[kind]} ({data.get('backend', '')})"
                 span["count"] = _number(data.get("count"))
             spans[key] = span
+            order.append(key)
+            continue
+        if kind in _BOARD:
+            key = f"board:{index}"
+            spans[key] = _board_point(key, kind, ts, event, index)
             order.append(key)
             continue
         if family not in SPAN_FAMILIES:
@@ -176,6 +182,23 @@ def _close(
     span["timeout"] = "timeout" in kind
     if "tokens_before" in data:
         span["tokens"] = {"before": data.get("tokens_before"), "after": data.get("tokens_after")}
+
+
+def _board_point(
+    key: str, kind: str, ts: float, event: Mapping[str, Any], index: int
+) -> dict[str, Any]:
+    """A board post or claim; it hangs under the call it came from, owning no call id."""
+    data = event.get("data") or {}
+    span = _new(key, "board", ts, event, index)
+    span["call_id"], span["parent_id"] = "", str(event.get("call_id") or "")
+    by, topic = str(data.get("by") or "someone"), str(data.get("key") or "")
+    if kind == "board.posted":
+        span["name"] = f"{by} posted {data.get('kind', '')} {topic}".strip()
+    else:
+        lost = "" if data.get("won") else f" (held by {data.get('holder', '')})"
+        span["name"] = f"{by} claimed {topic}{lost}"
+    _close(span, "ok", ts, {}, index)
+    return span
 
 
 def _attach_nodes(spans: list[dict[str, Any]]) -> None:
