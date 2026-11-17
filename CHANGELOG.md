@@ -188,6 +188,10 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- SQLite stores (budgets, approvals, checkpoints, memory): several processes opening the same
+  new file at once could fail with "database is locked" despite `timeout=`, because SQLite
+  refuses the switch to WAL at once. The switch is now retried within the timeout (1 in 120
+  processes failed before, 0 in 320 after).
 - Durable flows: a node that changed the state in place into an invalid one and returned
   nothing was not validated, so the invalid state could be stored; a recovery that spent a
   stored approval decision also consulted the process's memory of spent approvals, so it

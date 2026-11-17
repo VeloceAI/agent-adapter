@@ -22,6 +22,7 @@ from agent_adapter.hooks.builtin.budgets.store import (
     check_reserve,
     check_usd,
 )
+from agent_adapter.runtime._sqlite_wal import enable_wal
 
 logger = logging.getLogger(__name__)
 
@@ -247,8 +248,8 @@ def _create_private(path: str) -> None:
 
 def _migrate(conn: sqlite3.Connection) -> None:
     """Switch the file to WAL and create (or check) schema version `SCHEMA_VERSION`."""
-    (mode,) = conn.execute("PRAGMA journal_mode=WAL").fetchone()
-    if str(mode).lower() != "wal":
+    mode = enable_wal(conn)
+    if mode != "wal":
         raise ConfigError(f"SQLiteBudgetStore needs WAL journal mode; the file reports {mode!r}")
     with _transaction(conn, "BEGIN IMMEDIATE"):
         conn.execute(f"CREATE TABLE IF NOT EXISTS {META} (key TEXT PRIMARY KEY, value)")

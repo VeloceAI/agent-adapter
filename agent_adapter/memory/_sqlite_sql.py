@@ -13,6 +13,7 @@ from contextlib import contextmanager
 
 from agent_adapter.core.errors import ConfigError
 from agent_adapter.memory.records import FilterValue, MemoryScope
+from agent_adapter.runtime._sqlite_wal import enable_wal
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +102,8 @@ def migrate(conn: sqlite3.Connection) -> tuple[bool, bool]:
     Raises:
         ConfigError: no WAL support, another schema version, or foreign tables with our names.
     """
-    (mode,) = conn.execute("PRAGMA journal_mode=WAL").fetchone()
-    if str(mode).lower() != "wal":
+    mode = enable_wal(conn)
+    if mode != "wal":
         raise ConfigError(f"SQLiteMemory needs WAL journal mode; the file reports {mode!r}")
     fts = fts5_available(conn)
     with immediate(conn):

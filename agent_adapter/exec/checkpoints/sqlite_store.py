@@ -29,6 +29,7 @@ from agent_adapter.exec.checkpoints._port import (
     stale_segment,
     stored,
 )
+from agent_adapter.runtime._sqlite_wal import enable_wal
 
 logger = logging.getLogger(__name__)
 
@@ -295,8 +296,8 @@ def _create_private(path: str) -> None:
 
 def _migrate(conn: sqlite3.Connection) -> None:
     """Switch the file to WAL and create (or check) schema version `SCHEMA_VERSION`."""
-    (mode,) = conn.execute("PRAGMA journal_mode=WAL").fetchone()
-    if str(mode).lower() != "wal":
+    mode = enable_wal(conn)
+    if mode != "wal":
         raise ConfigError(
             f"SQLiteCheckpointStore needs WAL journal mode; the file reports {mode!r}"
         )
