@@ -104,6 +104,20 @@ TOOLS: tuple[Recipe, ...] = (
         full_only=True,
     ),
     Recipe(
+        "fill a document template from many model or agent calls",
+        "`Template`, `Blank`, `compose()` (`agent_adapter.compose`)",
+        (
+            "from agent_adapter.compose import Blank, Template, compose",
+            "",
+            'today = Blank("today", "Weather in {{ city }}?", max_words=50)  # or "table", '
+            '"diagram"',
+            'page = Template("# {{ city }}\\n\\n{{ today }}", [today])',
+            'doc = await compose(page, model=model, inputs={"city": "Oslo"}, executor=executor)',
+            "print(doc.markdown)  # also: Editor(model, style=), per-blank cache, on_blank",
+        ),
+        index="template documents",
+    ),
+    Recipe(
         "get structured output (JSON matching a schema)",
         "`output_schema=OutputSchema(...)`, then `.final.parsed`",
         (

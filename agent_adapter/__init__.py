@@ -184,6 +184,7 @@ _SUBPACKAGES = frozenset(
         "cache",
         "chat",
         "cli",
+        "compose",
         "context",
         "core",
         "cost",

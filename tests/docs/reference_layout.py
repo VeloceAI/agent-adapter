@@ -268,6 +268,13 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
             )
         ),
     ),
+    "compose": (
+        "Template documents",
+        "A Markdown template with typed blanks, filled by models or agents as a flow, checked, "
+        "cached per blank and revised by one editor. "
+        "Guide: [Template documents](../how-to/template-documents.md).",
+        ("agent_adapter.compose",),
+    ),
     "viewer": (
         "Run viewer",
         "Record runs to a folder and browse them on 127.0.0.1 (`agent-adapter ui`), or chat "

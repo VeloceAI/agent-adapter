@@ -62,6 +62,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Chat flows by example](https://agent-adapter.veloceai.in/how-to/chat-flows/): `examples/chat_flows.py` is a scripted city help desk (no model, no API key): one agent picks a `Flow` per question, one per pattern
 - [Wrap a framework for chat](https://agent-adapter.veloceai.in/how-to/chat-wrappers/): The Agent Adapter chat page talks to one function: `agent(message, session)`, returning text or an async iterator of text chunks (Chat with your agent)
 - [Multi-agent](https://agent-adapter.veloceai.in/how-to/multi-agent/): Any agent can be a tool of another
+- [Template documents](https://agent-adapter.veloceai.in/how-to/template-documents/): Write the document once as Markdown with `{{ name }}` blanks
 - [Evaluate your agent](https://agent-adapter.veloceai.in/how-to/evaluate-your-agent/): Evals run a set of cases on your agent, grade each answer, and report
 - [Evals from production](https://agent-adapter.veloceai.in/how-to/evals-from-production/): Turn recorded runs into eval cases, so a failure seen in production becomes a regression case that CI runs on every change
 - [See your evals](https://agent-adapter.veloceai.in/how-to/see-your-evals/): Save each eval report to a folder, then open the **Evals** tab of the local viewer
@@ -239,6 +240,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Hooks](https://agent-adapter.veloceai.in/reference/hooks/): Hooks around tool, model and node calls, the built-in hooks and content guards
 - [Approval](https://agent-adapter.veloceai.in/reference/approval/): Confirm rules, approval ports and stores
 - [Flows](https://agent-adapter.veloceai.in/reference/flow/): Flow graphs, nodes and the runner
+- [Template documents](https://agent-adapter.veloceai.in/reference/compose/): A Markdown template with typed blanks, filled by models or agents as a flow, checked, cached per blank and revised by one editor
 - [Cost](https://agent-adapter.veloceai.in/reference/cost/): Ledger sinks, summaries and resolved prices
 - [Cache](https://agent-adapter.veloceai.in/reference/cache/): Tool-result and model-response caches, keys and provider prompt caches
 - [Embeddings](https://agent-adapter.veloceai.in/reference/embeddings/): The embedding port, a callable embedder and its cache

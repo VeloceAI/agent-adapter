@@ -171,6 +171,7 @@ nav:
       - Chat flows by example: how-to/chat-flows.md
       - Wrap a framework for chat: how-to/chat-wrappers.md
       - Multi-agent: how-to/multi-agent.md
+      - Template documents: how-to/template-documents.md
       - Evaluate your agent: how-to/evaluate-your-agent.md
       - Evals from production: how-to/evals-from-production.md
       - See your evals: how-to/see-your-evals.md
@@ -342,6 +343,7 @@ nav:
       - Hooks: reference/hooks.md
       - Approval: reference/approval.md
       - Flows: reference/flow.md
+      - Template documents: reference/compose.md
       - Cost: reference/cost.md
       - Cache: reference/cache.md
       - Embeddings: reference/embeddings.md

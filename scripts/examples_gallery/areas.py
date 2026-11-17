@@ -68,6 +68,7 @@ AREA_OF = {
     "openapi_gateway": "serving",
     "openapi_import": "serving",
     "optimiser_demo": "optimiser",
+    "report_template": "flows",
     "serve_tools": "serving",
     "template_adk": "frameworks",
     "template_agno": "frameworks",

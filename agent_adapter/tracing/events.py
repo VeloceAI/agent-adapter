@@ -66,6 +66,9 @@ class EventType:
     SANDBOX_STARTED = "sandbox.started"
     SANDBOX_FINISHED = "sandbox.finished"
     SANDBOX_FAILED = "sandbox.failed"
+    COMPOSE_BLANK_STARTED = "compose.blank_started"
+    COMPOSE_BLANK_FILLED = "compose.blank_filled"
+    COMPOSE_EDITED = "compose.edited"
 
 
 _LLM = ("provider", "model", "stage")
@@ -77,6 +80,7 @@ _CONTEXT = ("provider", "model", "trigger", "latency_ms")  # trigger: "threshold
 _MEMORY = ("backend", "count", "latency_ms", "scope_kind")
 _RETRIEVAL = ("retriever", "backend", "k", "latency_ms")  # ids and counts; texts as content
 _SANDBOX = ("sandbox", "backend", "language")  # sizes and exit codes; code and output as content
+_COMPOSE = ("document", "blank", "kind")
 
 REQUIRED_DATA: Mapping[str, frozenset[str]] = {
     EventType.RUN_STARTED: frozenset(),
@@ -163,6 +167,10 @@ REQUIRED_DATA: Mapping[str, frozenset[str]] = {
         }
     ),
     EventType.SANDBOX_FAILED: frozenset({*_SANDBOX, "error_kind", "duration_ms"}),
+    # Template documents: names, kinds and counts; the Markdown only as content.
+    EventType.COMPOSE_BLANK_STARTED: frozenset(_COMPOSE),
+    EventType.COMPOSE_BLANK_FILLED: frozenset({*_COMPOSE, "ok", "attempts", "cached"}),
+    EventType.COMPOSE_EDITED: frozenset({"document", "revised", "rejected"}),
 }
 
 

@@ -60,6 +60,7 @@
     views.events = AA.createEvents($("tab-events"));
     views.state = AA.createStatePanel($("tab-state"));
     views.compare = AA.createCompare($("tab-compare"), loadAll);
+    views.doc = AA.createDocument($("doc-card"));
     document.addEventListener("keydown", (ev) => { // Esc closes the node panel (the graph handles its own)
       const tag = ev.target && ev.target.tagName;
       if (ev.key !== "Escape" || ev.defaultPrevented || !state.node || $("runs-view").hidden) return;
@@ -162,6 +163,7 @@
     $("graph-card").hidden = !graph;
     renderFlowPicker();
     if (graph) views.graph.update(graph, run);
+    views.doc.update(run);
     renderTab();
     renderDetail();
   }

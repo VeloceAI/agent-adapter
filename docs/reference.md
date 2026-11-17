@@ -32,6 +32,7 @@ flowchart LR
 | [Hooks](reference/hooks.md) | `agent_adapter.hooks`, `.hooks.builtin` |
 | [Approval](reference/approval.md) | `agent_adapter.approval` |
 | [Flows](reference/flow.md) | `agent_adapter.flow`, `.flow.runner`, `.flow.visit` |
+| [Template documents](reference/compose.md) | `agent_adapter.compose`: templates with blanks, checks, editor, per-blank cache |
 | [Cost](reference/cost.md) | `agent_adapter.cost` |
 | [Cache](reference/cache.md) | `agent_adapter.cache`, `.cache.providers` |
 | [Embeddings](reference/embeddings.md) | `agent_adapter.embeddings` |

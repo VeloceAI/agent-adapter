@@ -22,6 +22,8 @@ SCRIPTS = (
     "events.js",
     "statepanel.js",
     "compare.js",
+    "markdown.js",
+    "document.js",
     "panels.js",
     "views.js",
     "runsearch.js",
@@ -31,7 +33,6 @@ STYLES = ("viewer.css", "graph.css", "tabs.css")
 # The chat page: served live, left out of an export (chat never runs offline).
 CHAT_SCRIPTS = (
     "chatapi.js",
-    "markdown.js",
     "chatcards.js",
     "chatmemory.js",
     "inspector.js",

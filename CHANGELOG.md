@@ -8,6 +8,18 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Template documents (`agent_adapter.compose`): a Markdown template with `{{ name }}`
+  blanks, each a `Blank(name, prompt, kind=, agent=, max_words=, required=)` filled by a
+  model or a `LoopAgent` with tools. Kinds `text`, `list`, `number`, `table` (rows through
+  structured output; the code draws the pipe table) and `diagram` (nodes and edges; the
+  code writes Mermaid). Blanks used in other prompts fill first; the rest fill in
+  parallel, as a `Flow`. Each blank is checked (required, words, schema, columns, diagram
+  links) and retried once alone with its problems, and cached by its exact messages, so
+  changing one blank re-runs only it and the blanks that use it. `Editor(model, style=)`
+  revises blanks for one voice and cannot break a table or a diagram; every revision is
+  recorded. `ComposeResult` has `.markdown`, `.blanks`, `.revisions` and `.cost`. New
+  events `compose.blank_started`, `compose.blank_filled` and `compose.edited`, an
+  `on_blank` callback, and a Document panel in the run viewer. Guide: Template documents.
 - Voice agents can see: `VideoFeed` keeps the latest frame from the caller's camera or
   screen (`WebRTCAudio(video=feed)`, with Camera and Share screen on `webrtc_page`), a local
   camera or screen, any FFmpeg input, or a robot camera (`feed.poll(render)`).

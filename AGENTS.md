@@ -610,7 +610,7 @@ if __name__ == "__main__":
 - Run a flow inside a flow, or cache a node
 - Evaluate an agent on eval cases (scores, JUnit for CI, regressions)
 
-More features (full recipes in llms-full.txt): durable runs, Temporal and DBOS, sandboxed code, team budgets, streaming deltas, viewer search, tags and OTLP import, framework templates and migrate, policy file, audit log, evals from production, cost advisor.
+More features (full recipes in llms-full.txt): template documents, durable runs, Temporal and DBOS, sandboxed code, team budgets, streaming deltas, viewer search, tags and OTLP import, framework templates and migrate, policy file, audit log, evals from production, cost advisor.
 
 ## Common errors → fixes
 

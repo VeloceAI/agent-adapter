@@ -46,25 +46,6 @@
 @keyframes aa-blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .typing i { animation: none; opacity: .7; } }
 
-/* markdown */
-.md { overflow-wrap: anywhere; }
-.md p, .md ul, .md ol, .md blockquote { margin: 4px 0; }
-.md ul, .md ol { padding-left: 22px; }
-.md li.md-d1 { margin-left: 18px; } .md li.md-d2 { margin-left: 36px; } .md li.md-d3 { margin-left: 54px; }
-.md .md-h { font-weight: 700; margin-top: 8px; }
-.md .md-h1 { font-size: 16px; } .md .md-h2 { font-size: 15px; }
-.md blockquote { border-left: 3px solid var(--line); padding-left: 10px; color: var(--muted); }
-.md hr { border: 0; border-top: 1px solid var(--line); }
-.md code { background: var(--code-bg); border-radius: 4px; padding: 0 4px; }
-.md a { color: var(--accent); }
-.md-code { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin: 4px 0; }
-.md-code-head { display: flex; justify-content: space-between; align-items: center; padding: 2px 8px; font-size: 11px; background: var(--code-bg); border-bottom: 1px solid var(--line); }
-.md-code pre { margin: 0; border-radius: 0; white-space: pre; max-height: 50vh; }
-.md-code pre code { padding: 0; background: none; }
-.md-table { overflow-x: auto; margin: 4px 0; }
-.md-table table { width: auto; min-width: 50%; }
-.md-left { text-align: left; } .md-center { text-align: center; } .md-right { text-align: right; }
-
 /* tool and approval cards */
 .tc { border: 1px solid var(--line); border-left: 3px solid var(--tool); border-radius: 6px; padding: 4px 8px; font-size: 13px; }
 .tc summary { cursor: pointer; display: flex; align-items: center; gap: 8px; list-style: none; }
