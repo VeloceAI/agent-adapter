@@ -33,6 +33,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Phone calls and hosted voices](https://agent-adapter.veloceai.in/how-to/voice-providers-and-phone/): This page adds three things to our own voice pipeline: hosted speech providers, a guard against the agent hearing itself on speakers, and the phone basics...
 - [Transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides
 - [Safe tools on a call](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor
+- [Answer sooner (speed tricks)](https://agent-adapter.veloceai.in/how-to/voxcat-speed/): `Speed` makes a `VoiceAgent` answer sooner
 - [Compared with LiveKit and Pipecat](https://agent-adapter.veloceai.in/how-to/voice-compared/): We run voice calls three ways: our own `VoiceSession`, or our `VoiceAgent` inside LiveKit Agents or Pipecat through the connectors on Build a voice agent
 - [Let a voice agent see](https://agent-adapter.veloceai.in/how-to/voice-video/): The agent sees through a tool
 - [Gate a robot](https://agent-adapter.veloceai.in/how-to/robot-safety/): An agent that drives a robot through raw tool calls can be talked into anything: a tool result that says "move to the operator at full speed" becomes a...

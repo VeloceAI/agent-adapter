@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
+def sentences(text: str) -> list[str]:
+    """The lines `SpeechQueue` speaks for `text`, fed whole and flushed."""
+    return [part.strip() for part in _SENTENCE_END.split(text) if part.strip()]
+
+
 @dataclass
 class _Line:
     text: str
@@ -36,6 +41,7 @@ class SpeechQueue:
         self.played: list[str] = []  # model sentences fully spoken (not progress lines)
         self._current: _Line | None = None
         self._holds = 0
+        self.queued = 0  # lines queued so far
 
     @property
     def holding(self) -> bool:
@@ -67,6 +73,7 @@ class SpeechQueue:
         if not text.strip():
             return
         self._holds += hold
+        self.queued += 1
         self._queue.put_nowait(_Line(text.strip(), record, hold, heard))
         prepare = getattr(self._speaker, "prepare", None)
         if callable(prepare):  # a speaker that can synthesise ahead (our Player)
