@@ -94,6 +94,11 @@ languages need no agent framework. Each one, how it attaches and what tests it:
 | `vad` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` | no | `vad` |
 | `voice-local` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` | no | none |
 | `voice-cloud` | `httpx>=0.27,<1`, `websockets>=13,<18` | yes | `contract-all-compatible` |
+| `voice-whisper` | `faster-whisper>=1.1,<2` | no | none |
+| `voice-parakeet` | `nemo-toolkit[asr]>=2.4,<3` | no | none |
+| `voice-chatterbox` | `chatterbox-tts>=0.1,<1` | no | none |
+| `voice-orpheus` | `orpheus-speech>=0.1,<1` | no | none |
+| `voice-kyutai` | `moshi>=0.2.11,<0.3` | no | none |
 | `webrtc` | `aiortc>=1.14,<2` | no | none |
 | `mujoco` | `mujoco>=3.3,<5` | no | none |
 | `sqlalchemy` | `sqlalchemy[asyncio]>=2.0.30,<3` | yes | `contract-all-compatible` |

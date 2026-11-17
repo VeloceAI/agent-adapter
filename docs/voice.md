@@ -58,6 +58,7 @@ it comes in the next release; the rest of the SDK is on [Features](features.md).
 | talk to the agent in a browser or on my laptop | [A voice call with no framework](how-to/voice-pipeline.md), [Transports](how-to/voice-transports.md) |
 | use hosted voices (OpenAI, Deepgram, ElevenLabs, Cartesia) or a realtime model | [Hosted speech](how-to/voice-providers-and-phone.md#use-a-hosted-speech-provider), [Realtime models](how-to/voice-transports.md#openai-realtime-and-gemini-live) |
 | add idle prompts, recording, voicemail detection or a noise filter | [Voice call features](how-to/voice-call-features.md) |
+| run on open models I host (Whisper, Parakeet, Kyutai, Chatterbox, Orpheus) or add a talker | [Open speech models](how-to/voxcat-open-models.md) |
 | keep payments and bookings safe when the caller interrupts | [Build a voice agent](how-to/voice-agents.md) |
 | choose between our stack, LiveKit and Pipecat | [Voice stacks compared](how-to/voice-compared.md) |
 | let the agent see a camera or a screen | [Let a voice agent see](how-to/voice-video.md) |

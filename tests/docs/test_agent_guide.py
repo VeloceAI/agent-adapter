@@ -16,7 +16,7 @@ import pytest
 
 import agent_adapter
 from scripts.agent_guide import api_index, recipes, render
-from scripts.agent_guide.install import CHECKOUT_ONLY, pyproject
+from scripts.agent_guide.install import CHECKOUT_ONLY, FULL_ONLY, pyproject
 from tests.docs.test_no_internal_refs import _hits
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -129,7 +129,7 @@ def test_agent_guide_install_table_lists_every_extra(tier: str, request) -> None
     install = text[text.index("## Install") : text.index("## Import rules")]
     for extra in pyproject()["project"]["optional-dependencies"]:
         shown = f'"agent-adapter[{extra}]"' in install or f'".[{extra}]"' in install
-        assert shown is (tier == "full" or extra not in CHECKOUT_ONLY), extra
+        assert shown is (tier == "full" or extra not in CHECKOUT_ONLY | FULL_ONLY), extra
     assert "on PyPI" in install and "internal-index" not in install
     assert "install '" not in install  # single quotes fail in cmd.exe
 

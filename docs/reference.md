@@ -49,6 +49,7 @@ flowchart LR
 | [Handlers](reference/handlers.md) | `agent_adapter.handlers` |
 | [Chat contract](reference/chat.md) | `agent_adapter.chat`: what a chat agent receives and returns |
 | [Voice agents](reference/voice.md) | `agent_adapter.voice`: turns, safe interruptions, spoken approval, offline fakes |
+| [Open speech models](reference/voice-open.md) | open STT and TTS adapters (Whisper, Parakeet, Kyutai, Chatterbox, Orpheus) and the talker port |
 | [Voice calls and transports](reference/voice-calls.md) | transports, phone networks, speech providers, recording, idle prompts, voicemail |
 | [Robot safety](reference/robotics.md) | `agent_adapter.robotics`: envelopes, shadow simulation, approvals, e-stop, deadman |
 | [Shared board](reference/board.md) | `agent_adapter.board`: one board per run, its stores and the board tools |

@@ -13,6 +13,8 @@ GATE = re.compile(r"^_?SUPPORTED(?:_SDK)? = \(\(([\d, ]+)\), \(([\d, ]+)\)\)", r
 OWN_ENV = re.compile(r"([a-z][a-z0-9-]*) \(([^)]+)\)")
 NL = "\n"
 CHECKOUT_ONLY = {"dev", "docs"}  # tooling for this repository, installed from a checkout
+# Niche extras only the full guide lists, so the concise guide stays within its byte budget.
+FULL_ONLY = {"voice-whisper", "voice-parakeet", "voice-chatterbox", "voice-orpheus", "voice-kyutai"}
 
 # extra -> what you need it for, in plain words. Every extra in pyproject.toml needs a row.
 NEEDS: dict[str, str] = {
@@ -48,6 +50,11 @@ NEEDS: dict[str, str] = {
     "vad": "turn detection: `SileroTurns`, `SmartTurn`",
     "voice-local": "local voice: Moonshine and the sound card",
     "voice-cloud": "hosted STT and TTS, Twilio calls",
+    "voice-whisper": "open speech-to-text: faster-whisper (`FasterWhisperSTT`)",
+    "voice-parakeet": "open speech-to-text: NVIDIA Parakeet on NeMo (`ParakeetSTT`)",
+    "voice-chatterbox": "open text-to-speech: Chatterbox (`ChatterboxTTS`)",
+    "voice-orpheus": "open text-to-speech: Orpheus on vLLM (`OrpheusTTS`)",
+    "voice-kyutai": "Kyutai streaming STT and TTS, Moshi talker (`KyutaiSTT`, `MoshiTalker`)",
     "webrtc": "browser calls over WebRTC (`WebRTCAudio`)",
     "mujoco": "MuJoCo robot sim (`MujocoSim`)",
     "sqlalchemy": "SQLAlchemy approval store (Postgres, SQLite)",
@@ -156,8 +163,11 @@ def _rows(*, full: bool) -> list[str]:
                 cmd = f'`pip install -e ".[{extra}]"` (in a checkout)'
                 rows.append(f"| {NEEDS[extra]} | {cmd} | {pins(requirements)} |")
             continue
+        if extra in FULL_ONLY and not full:
+            continue
         if extra == "all":
-            outside = sorted(set(extras) - shared - CHECKOUT_ONLY - {"all"})
+            hidden = CHECKOUT_ONLY | ({"all"} if full else FULL_ONLY | {"all"})
+            outside = sorted(set(extras) - shared - hidden)
             note = "every extra above except " + ", ".join(f"`{e}`" for e in outside)
             rows.append(f"| {NEEDS[extra]} | {command(extra)} | {note} |")
             continue
