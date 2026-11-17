@@ -41,3 +41,9 @@ Also exported here, documented under the canonical path: [`KinematicSim`](#agent
 ::: agent_adapter.robotics.mujoco_sim
     options:
       members: [GANTRY_XML, MujocoSim]
+
+## `agent_adapter.robotics.ros2`
+
+::: agent_adapter.robotics.ros2
+    options:
+      members: [ROS2Robot, odometry_pose, turtlesim_pose]

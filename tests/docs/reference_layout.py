@@ -235,7 +235,16 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
         "Guide: [Gate a robot](../how-to/robot-safety.md).",
         tuple(
             "agent_adapter.robotics" + suffix
-            for suffix in ("", ".gate", ".spec", ".ports", ".kinematic", ".watchdog", ".mujoco_sim")
+            for suffix in (
+                "",
+                ".gate",
+                ".spec",
+                ".ports",
+                ".kinematic",
+                ".watchdog",
+                ".mujoco_sim",
+                ".ros2",
+            )
         ),
     ),
     "viewer": (
