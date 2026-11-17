@@ -6,7 +6,7 @@ Turns, safe interruptions and spoken approval around the executor, our own audio
 
 ::: agent_adapter.voice
     options:
-      members: [AudioSocket, AudioTransport, CallObserver, CallRecorder, CallableSTT, CallableSpeaker, CallableTTS, EchoGuard, EventPump, IdlePolicy, LocalAudio, NoiseGate, Player, STT, Speaker, TTS, ThinkingSound, TurnTiming, TwilioCalls, TwilioStream, VoiceAgent, VoiceApproval, VoiceSession, VoicemailDetector, YES_WORDS, binary_socket, end_call_tool, is_yes]
+      members: [AudioSocket, AudioTransport, CallObserver, CallRecorder, CallableSTT, CallableSpeaker, CallableTTS, EchoGuard, EventPump, IdlePolicy, LocalAudio, NoiseGate, Player, PlivoStream, STT, Speaker, TTS, TelnyxStream, ThinkingSound, TurnTiming, TwilioCalls, TwilioStream, VoiceAgent, VoiceApproval, VoiceSession, VoicemailDetector, VonageStream, YES_WORDS, binary_socket, end_call_tool, is_yes]
 
 ## `agent_adapter.voice.session`
 

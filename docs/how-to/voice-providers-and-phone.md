@@ -115,3 +115,18 @@ Twilio's own errors raise the same typed errors (`provider="twilio"`); the crede
 only in HTTP Basic auth. Test all of it offline: pass `client=` an
 `httpx.AsyncClient(transport=httpx.MockTransport(handler))`, and `DeepgramSTT(connect=)` a
 fake socket.
+
+## Other phone networks
+
+`TelnyxStream`, `PlivoStream` and `VonageStream` work like `TwilioStream`: paced playout,
+a cut clears what is queued, each line is confirmed by the network, keypad presses reach
+the agent and `hang_up()` ends our side.
+
+| Network | Transport | Start it with | Audio |
+|---|---|---|---|
+| Telnyx | `TelnyxStream(text_socket(...))` | Call Control `stream_url` with `stream_bidirectional_mode="rtp"`, or TeXML `<Stream bidirectionalMode="rtp">` | 8 kHz μ-law; `mark` per line |
+| Plivo | `PlivoStream(text_socket(...), content_type=...)` | `<Stream bidirectional="true">` | 8 or 16 kHz PCM, or μ-law; `checkpoint` per line |
+| Vonage | `VonageStream(socket, rate=16000)` | NCCO `connect` to a WebSocket, `audio/l16;rate=16000` | 8, 16 or 24 kHz PCM; `notify` per line |
+
+These are tested against each network's documented message formats with fake sockets,
+not on live calls: run one test call on your account before going live.

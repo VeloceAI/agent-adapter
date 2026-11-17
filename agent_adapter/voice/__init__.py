@@ -1,7 +1,8 @@
 """Voice agents: safe interruptions, spoken approval and one ledger, on any audio stack.
 
 `VoiceSession` is our own pipeline (audio, turns, speech-to-text, text-to-speech); the
-transports are `LocalAudio`, `AudioSocket`, `TwilioStream` and `WebRTCAudio`.
+transports are `LocalAudio`, `AudioSocket`, `TwilioStream`, `TelnyxStream`, `PlivoStream`,
+`VonageStream` and `WebRTCAudio`.
 """
 
 from agent_adapter.voice.agent import VoiceAgent
@@ -14,14 +15,17 @@ from agent_adapter.voice.local import LocalAudio
 from agent_adapter.voice.media import STT, TTS, AudioTransport, CallableSTT, CallableTTS
 from agent_adapter.voice.observers import CallObserver
 from agent_adapter.voice.player import Player
+from agent_adapter.voice.plivo import PlivoStream
 from agent_adapter.voice.ports import CallableSpeaker, Speaker
 from agent_adapter.voice.pump import EventPump
 from agent_adapter.voice.recorder import CallRecorder
 from agent_adapter.voice.session import TurnTiming, VoiceSession
+from agent_adapter.voice.telnyx import TelnyxStream
 from agent_adapter.voice.turns import EchoGuard
 from agent_adapter.voice.twilio import TwilioStream
 from agent_adapter.voice.twilio_calls import TwilioCalls
 from agent_adapter.voice.voicemail import VoicemailDetector
+from agent_adapter.voice.vonage import VonageStream
 
 __all__ = [
     "STT",
@@ -40,7 +44,9 @@ __all__ = [
     "LocalAudio",
     "NoiseGate",
     "Player",
+    "PlivoStream",
     "Speaker",
+    "TelnyxStream",
     "ThinkingSound",
     "TurnTiming",
     "TwilioCalls",
@@ -49,6 +55,7 @@ __all__ = [
     "VoiceApproval",
     "VoiceSession",
     "VoicemailDetector",
+    "VonageStream",
     "binary_socket",
     "end_call_tool",
     "is_yes",

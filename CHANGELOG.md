@@ -8,6 +8,13 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Phone networks beyond Twilio: `TelnyxStream`, `PlivoStream` and `VonageStream` share one
+  phone-stream base with `TwilioStream` (paced playout, per-line playout confirmation, cut,
+  keypad, hang-up). Tested against each network's documented messages, not on live calls.
+- `ROS2Robot` (`agent_adapter.robotics.ros2`): the robot gate drives a ROS 2 mobile base
+  through `cmd_vel` velocity commands and a pose topic; rclpy comes from a ROS 2 install.
+  `examples/robotics/ros2` runs it on turtlesim in Docker (move, review, e-stop, refusal,
+  reset: 5 of 5 runs).
 - Voice call features for `VoiceSession`, all offline: `IdlePolicy` (asks "Are you still
   there?", then hangs up), `VoiceAgent.say(text, interruptible=False)` and
   `mute_during_tools=True`, `end_call_tool(session)` and `session.hang_up()`,

@@ -98,9 +98,16 @@ Both ports are protocols:
   `from agent_adapter.robotics.mujoco_sim import MujocoSim`. Its default model is a
   three-axis gantry; your own model needs the same actuator layout.
 - `RobotPort` has `execute`, `stop` and `position`. `CallbackRobot(execute=, stop=,
-  position=)` wraps an rclpy publisher, a LeRobot robot or your driver. Nothing here
+  position=)` wraps an rclpy publisher, a LeRobot robot or your driver. Nothing else
   imports ROS or LeRobot. Test on a simulator first; a real robot needs its own safety
   case, a hardware e-stop and a person in charge.
+- `ROS2Robot` (`agent_adapter.robotics.ros2`) drives a ROS 2 mobile base: velocity
+  commands (`geometry_msgs/Twist`) on `cmd_vel`, position from a pose topic (turtlesim or
+  `nav_msgs/Odometry`), our x and y with z fixed. It needs a ROS 2 install (rclpy is not on
+  PyPI). `stop()` sends zero velocity at once. Velocity only: a navigation goal could not be
+  cancelled that way. `examples/robotics/ros2` runs it on turtlesim (Jazzy) in Docker: in
+  5 of 5 runs a move arrived, a too-fast move went to the reviewer, the e-stop halted the
+  turtle within one tick (0.016 m), a move after it was refused and a reset freed it.
 
 ## The bench
 
@@ -127,5 +134,5 @@ limits what a command can do, it does not read intent. A 20-command burst ran 5.
 
 `gate.estop()` to a halted simulated robot: median 0.05 ms, max 0.94 ms. That is the
 gate's own cost; a real robot adds its driver and brakes. The MuJoCo shadow gave the same
-verdicts as the kinematic one on these streams. Not tested: real hardware, ROS 2 or
-LeRobot through `CallbackRobot`, and arm models in MuJoCo (the built-in model is a gantry).
+verdicts as the kinematic one on these streams. Not tested: real hardware, ROS 2
+robot arms, LeRobot through `CallbackRobot`, and arm models in MuJoCo (the built-in model is a gantry).

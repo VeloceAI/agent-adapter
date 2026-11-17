@@ -60,6 +60,18 @@ Also exported here, documented under the canonical path: [`AudioSocket`](voice.m
 
 Also exported here, documented under the canonical path: [`TwilioCalls`](voice.md#agent_adapter.voice.TwilioCalls).
 
+## `agent_adapter.voice.telnyx`
+
+`agent_adapter.voice.telnyx` re-exports, documented under the canonical path: [`TelnyxStream`](voice.md#agent_adapter.voice.TelnyxStream).
+
+## `agent_adapter.voice.plivo`
+
+`agent_adapter.voice.plivo` re-exports, documented under the canonical path: [`PlivoStream`](voice.md#agent_adapter.voice.PlivoStream).
+
+## `agent_adapter.voice.vonage`
+
+`agent_adapter.voice.vonage` re-exports, documented under the canonical path: [`VonageStream`](voice.md#agent_adapter.voice.VonageStream).
+
 ## `agent_adapter.voice.webrtc`
 
 ::: agent_adapter.voice.webrtc
