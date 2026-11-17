@@ -196,6 +196,7 @@ omit = [
     "agent_adapter/voice/smart_turn.py",
     "agent_adapter/voice/moonshine.py",
     "agent_adapter/voice/webrtc.py",
+    "agent_adapter/voice/video.py",
     "agent_adapter/integrations/langchain.py",
     "agent_adapter/integrations/langgraph.py",
     "agent_adapter/integrations/langgraph/*",
