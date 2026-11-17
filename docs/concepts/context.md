@@ -58,6 +58,7 @@ Every event is an `Event(type, run_id, call_id, parent_id, ts, data)`. Types out
 | Tool | `tool.started`, `tool.finished`, `tool.failed`, `tool.retry`, `tool.cached`, `tool.pending` |
 | Approval | `approval.requested`, `approval.decided` |
 | LLM | `llm.started`, `llm.finished`, `llm.cached`, `llm.failed`, `llm.fallback` |
+| Shared calls | `inflight.shared` (a caller got the result of the same [cached call](../how-to/caching.md#same-call-at-the-same-moment) running at that moment) |
 | Embeddings | `embedding.started`, `embedding.finished`, `embedding.failed` |
 | Memory | `memory.added`, `memory.searched`, `memory.deleted`, `memory.exported` ([counts only](memory.md)) |
 | Retrieval | `retrieval.searched`, `retrieval.failed` (ids and counts; texts only with `capture_content`) |

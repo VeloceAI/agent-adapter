@@ -36,6 +36,7 @@ class EventType:
     LLM_CACHED = "llm.cached"
     LLM_FAILED = "llm.failed"
     LLM_FALLBACK = "llm.fallback"
+    INFLIGHT_SHARED = "inflight.shared"
     EMBEDDING_STARTED = "embedding.started"
     EMBEDDING_FINISHED = "embedding.finished"
     EMBEDDING_FAILED = "embedding.failed"
@@ -103,6 +104,8 @@ REQUIRED_DATA: Mapping[str, frozenset[str]] = {
     EventType.LLM_FALLBACK: frozenset(
         {"from_provider", "from_model", "to_provider", "to_model", "error_kind"}
     ),
+    # kind "tool" | "llm"; name: the tool or the model; a waiter got the leader's result.
+    EventType.INFLIGHT_SHARED: frozenset({"kind", "name", "waited_ms"}),
     EventType.EMBEDDING_STARTED: frozenset(_EMBEDDING),
     EventType.EMBEDDING_FINISHED: frozenset(
         {*_EMBEDDING, "cache_hits", "batches", "latency_ms", "usage", "units", "cost_usd"}

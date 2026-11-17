@@ -35,6 +35,7 @@ CATALOGUE = {
     "llm.cached": {"provider", "model", "stage"},
     "llm.failed": {"provider", "model", "stage", "error_kind"},
     "llm.fallback": {"from_provider", "from_model", "to_provider", "to_model", "error_kind"},
+    "inflight.shared": {"kind", "name", "waited_ms"},
     "embedding.started": {"provider", "model", "stage", "texts"},
     "embedding.finished": {
         "provider",
