@@ -28,13 +28,13 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 ## Voice & robots
 
 - [Overview](https://agent-adapter.veloceai.in/voice/): Your agent can **talk** on a phone or browser call, **see** a camera or a shared screen, and **move** a robot, with the same approvals, budgets, cost and...
-- [Build a voice agent](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor
-- [A voice call with no framework](https://agent-adapter.veloceai.in/how-to/voice-pipeline/): `VoiceSession` is a whole voice pipeline in this package
-- [Voice call features](https://agent-adapter.veloceai.in/how-to/voice-call-features/): Everything on this page plugs into `VoiceSession` and runs offline, with no account or key
+- [Our own voice framework](https://agent-adapter.veloceai.in/how-to/voice-pipeline/): `VoiceSession` is a whole voice pipeline in this package
+- [Call features](https://agent-adapter.veloceai.in/how-to/voice-call-features/): Everything on this page plugs into `VoiceSession` and runs offline, with no account or key
+- [Phone calls and hosted voices](https://agent-adapter.veloceai.in/how-to/voice-providers-and-phone/): This page adds three things to our own voice pipeline: hosted speech providers, a guard against the agent hearing itself on speakers, and the phone basics...
+- [Transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides
+- [Safe tools on a call](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor
+- [Compared with LiveKit and Pipecat](https://agent-adapter.veloceai.in/how-to/voice-compared/): We run voice calls three ways: our own `VoiceSession`, or our `VoiceAgent` inside LiveKit Agents or Pipecat through the connectors on Build a voice agent
 - [Let a voice agent see](https://agent-adapter.veloceai.in/how-to/voice-video/): The agent sees through a tool
-- [Voice stacks compared](https://agent-adapter.veloceai.in/how-to/voice-compared/): We run voice calls three ways: our own `VoiceSession`, or our `VoiceAgent` inside LiveKit Agents or Pipecat through the connectors on Build a voice agent
-- [Hosted speech, echo and phone calls](https://agent-adapter.veloceai.in/how-to/voice-providers-and-phone/): This page adds three things to our own voice pipeline: hosted speech providers, a guard against the agent hearing itself on speakers, and the phone basics...
-- [Voice transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides
 - [Gate a robot](https://agent-adapter.veloceai.in/how-to/robot-safety/): An agent that drives a robot through raw tool calls can be talked into anything: a tool result that says "move to the operator at full speed" becomes a...
 
 ## How-to

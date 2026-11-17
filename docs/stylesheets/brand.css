@@ -96,7 +96,7 @@
 .aa-logos a { color: inherit; }
 .aa-heroband .aa-logos li { color: #fff; }
 .aa-skill .aa-logos { margin: 0 auto 1.4em; max-width: 48em; }
-.aa-heroband .aa-live { margin: .2em auto 1.6em; max-width: 46em; }
+.aa-card .aa-logos { justify-content: flex-start; margin: 1em 0 0; font-size: .9em; }
 .md-typeset .aa-logolist ul { list-style: none; display: flex; flex-wrap: wrap; gap: .5em; margin: 1em 0; padding: 0; }
 .md-typeset .aa-logolist li { margin: 0; font-size: .72rem; }
 .md-typeset .aa-logolist .twemoji, .md-typeset .aa-gcard .twemoji { width: 1.15em; height: 1.15em; margin-right: .45em; flex: none; }

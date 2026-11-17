@@ -5,16 +5,6 @@
     <p class="aa-lede">Write a tool once, as a plain Python function. Run it in any agent framework,
       any backend or any language, and now on phone calls, live video and robots, with approvals,
       budgets, cost and traces built in.</p>
-    {% set live = [
-      ("Twilio", "twilio"), ("Telnyx", ""), ("Plivo", ""), ("Vonage", "vonage"), ("WebRTC", "webrtc"),
-      ("LiveKit", "livekit"), ("Pipecat", ""), ("OpenAI Realtime", "openai"), ("Deepgram", "deepgram"),
-      ("ElevenLabs", "elevenlabs"), ("ROS 2", "ros"), ("MuJoCo", ""),
-    ] %}
-    <ul class="aa-logos aa-live" aria-label="Phone, video and robot platforms">
-      {% for name, icon in live %}
-        <li>{% if icon %}<span class="aa-logo" aria-hidden="true">{% include ".icons/brand/" ~ icon ~ ".svg" %}</span>{% else %}<span class="aa-logo aa-logo--dot" aria-hidden="true"></span>{% endif %}{{ name }}</li>
-      {% endfor %}
-    </ul>
     <div class="aa-installs">
       <button class="aa-install" type="button" data-aa-copy="pip install agent-adapter" title="Copy">
         <span class="aa-dollar">$</span> pip install agent-adapter <span class="aa-copyicon" aria-hidden="true"></span>
