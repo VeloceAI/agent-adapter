@@ -208,6 +208,7 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
                 ".ambience",
                 ".voicemail",
                 ".denoise",
+                ".quality",
                 ".local",
                 ".audio_socket",
                 ".socket",

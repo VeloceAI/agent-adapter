@@ -6,6 +6,7 @@ import asyncio
 import contextlib
 import logging
 from collections import OrderedDict, deque
+from collections.abc import Callable, Sequence
 
 from agent_adapter.core.errors import log_failure
 from agent_adapter.voice.media import TTS
@@ -31,13 +32,23 @@ class Player:
     After `stop()`, `heard_of_cut` holds the words of the cut line that played (estimated
     from the share of its audio that played), so the history keeps only what was heard.
     The last `cache_lines` short lines are kept as audio, so a repeated line ("One
-    moment.") plays at once; 0 turns that off.
+    moment.") plays at once; 0 turns that off. `text_hooks` rewrite each line just before
+    synthesis (a `SpokenForm` from `agent_adapter.voice.quality`); `heard_of_cut` stays in
+    the original words.
     """
 
-    def __init__(self, tts: TTS, buffer: PlayoutBuffer, *, cache_lines: int = 64) -> None:
+    def __init__(
+        self,
+        tts: TTS,
+        buffer: PlayoutBuffer,
+        *,
+        cache_lines: int = 64,
+        text_hooks: Sequence[Callable[[str], str]] = (),
+    ) -> None:
         self.tts = tts
         self.buffer = buffer
         self.cache_lines = cache_lines
+        self.text_hooks = list(text_hooks)
         self.heard_of_cut = ""
         self._cache: OrderedDict[str, list[bytes]] = OrderedDict()
         self._ready: deque[_Synth] = deque()
@@ -52,11 +63,11 @@ class Player:
 
     def prepare(self, text: str) -> None:
         """Start synthesising `text` now; `say(text)` will use it."""
-        self._ready.append(self._start(text))
+        self._ready.append(self._start(self._spoken(text)))
 
     async def say(self, text: str) -> None:
         """Speak `text`; return when it has played, or was cut."""
-        synth = self._take(text)
+        synth = self._take(self._spoken(text))
         segment = self.buffer.open()
         self._current = (text, segment)
         try:
@@ -95,6 +106,14 @@ class Player:
                 with contextlib.suppress(asyncio.CancelledError):
                     await synth.task
 
+    def _spoken(self, text: str) -> str:
+        for hook in self.text_hooks:
+            try:
+                text = hook(text)
+            except Exception as exc:  # a broken rewrite must not silence the line
+                log_failure(logger, logging.WARNING, exc, "player text hook failed")
+        return text
+
     def _take(self, text: str) -> _Synth:
         for synth in self._ready:
             if synth.text == text:
@@ -110,7 +129,7 @@ class Player:
     async def warm(self, lines: list[str]) -> None:
         """Synthesise `lines` into the cache now, so they play at once later."""
         for text in lines:
-            synth = self._start(text)
+            synth = self._start(self._spoken(text))
             if synth.task is not None:
                 await synth.task
 
