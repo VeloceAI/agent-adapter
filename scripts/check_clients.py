@@ -24,14 +24,16 @@ def languages() -> list[str]:
 def main() -> int:
     chosen = sys.argv[1:] or languages()
     project = "aa-clients-" + "-".join(chosen) if sys.argv[1:] else "agent-adapter-clients"
-    up = compose("up", "-d", "--build", "--wait", "server", project=project)
-    if up.returncode:
-        print(up.stdout, up.stderr)
-        return 1
+    # One build up front: `run --build` per client races on compose's metadata file on Windows.
+    for step in (("build", "server", *chosen), ("up", "-d", "--wait", "server")):
+        done = compose(*step, project=project)
+        if done.returncode:
+            print(done.stdout[-3000:], done.stderr[-3000:])
+            return 1
     failed = []
     try:
         for lang in chosen:
-            run = compose("run", "--rm", "--build", lang, project=project)
+            run = compose("run", "--rm", lang, project=project)
             lines = run.stdout.splitlines()
             ok = run.returncode == 0 and all(line in lines for line in EXPECTED)
             print(f"{'PASS' if ok else 'FAIL'}  {lang}")
