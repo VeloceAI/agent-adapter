@@ -53,6 +53,9 @@ flowchart TD
 | sync code (Flask, Celery, scripts) | [Sync code and backends](how-to/sync-backends.md) |
 | a queue, a Lambda or a pipeline | [Queues](backends/queues.md), [Serverless](backends/serverless.md), [Pipelines](backends/pipelines.md) |
 | see what ran: flow graph, timeline, approvals (any framework) | [See your runs](how-to/see-your-runs.md) |
+| a voice or phone agent | [A voice call with no framework](how-to/voice-pipeline.md), [Build a voice agent](how-to/voice-agents.md) |
+| an agent that sees a camera or screen | [Let a voice agent see](how-to/voice-video.md) |
+| a robot | [Gate a robot](how-to/robot-safety.md) |
 
 ## Always on
 

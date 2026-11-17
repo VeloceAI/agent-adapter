@@ -266,6 +266,7 @@ install: the [run viewer demo](https://agent-adapter.veloceai.in/assets/demo/sam
 | Evals | `run_eval` on any agent with graders (exact, regex, JSON schema, tools, cost, latency, LLM judge); JUnit, Markdown and JSON reports; `agent-adapter eval`; a pytest plugin; an Evals tab in the viewer |
 | Evals from production and cost advisor | recorded runs become eval cases ([Evals from production](docs/how-to/evals-from-production.md)); a cheaper model per flow node or stage that keeps the score ([Cut model costs per step](docs/how-to/cut-model-costs.md)) |
 | Optimiser | offline Propose → Probe → Compose loop over your eval cases that writes a reviewable diff |
+| Voice, video, robots (next release) | `VoiceSession` calls with no media server (mic, WebSocket, browser WebRTC, Twilio, Telnyx, Plivo, Vonage), tools that finish once when the caller cuts in, spoken approvals, LiveKit and Pipecat connectors ([Voice](docs/how-to/voice-pipeline.md)); a `look` tool for a camera or screen ([Video](docs/how-to/voice-video.md)); `RobotGate` limits and an emergency stop, tested in MuJoCo and ROS 2 simulation ([Robots](docs/how-to/robot-safety.md)) |
 
 The full list, with a guide for each feature: [Features](docs/features.md). Next: the [Roadmap](docs/roadmap.md).
 

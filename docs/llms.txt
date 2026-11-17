@@ -21,6 +21,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [For AI coding agents](https://agent-adapter.veloceai.in/get-started/for-ai-agents/): One file teaches an AI coding agent (Claude Code, Cursor, Copilot) the SDK: what to install, which function does each job, the safety rules and the common...
 - [Which feature do I need?](https://agent-adapter.veloceai.in/choose/): Answer the questions top to bottom
 - [Features](https://agent-adapter.veloceai.in/features/): What Agent Adapter does, grouped by area, with a link to each guide
+- [Features: voice, video, robots](https://agent-adapter.veloceai.in/features-voice/): These come in the next release; the rest is on Features
 - [Use cases](https://agent-adapter.veloceai.in/use-cases/): Each use case names the problem, the features that solve it and an example that runs in this repository with no API keys
 - [Watch the reel](https://agent-adapter.veloceai.in/reel/): Write a tool once, as a plain Python function
 - [Troubleshooting](https://agent-adapter.veloceai.in/troubleshooting/): Find your symptom, read the cause, apply the fix

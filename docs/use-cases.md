@@ -1,5 +1,5 @@
 ---
-description: Six ways teams put Agent Adapter to work, each with code you can run.
+description: Eight ways teams put Agent Adapter to work, each with code you can run.
 ---
 
 # Use cases
@@ -68,6 +68,26 @@ repository with no API keys. These are example scenarios, not customer stories.
 
     **Uses:** `executor.run`, `run_sync`, the HTTP tool server, MCP.
     **Run:** `examples/backend_fastapi.py`, `examples/backend_celery.py` · [Sync code and backends](how-to/sync-backends.md)
+
+-   :material-phone-in-talk:{ .lg .middle } **Phone and voice agents that charge once**
+
+    ---
+
+    A caller books or pays by voice and talks over the agent. The started payment finishes
+    once, a refund waits for a spoken yes, and the agent can look at a shared screen.
+
+    **Uses:** `VoiceSession`, `VoiceAgent`, call features, `look_tool`.
+    **Run:** `examples/voice_agent.py` · [A voice call with no framework](how-to/voice-pipeline.md)
+
+-   :material-robot-industrial:{ .lg .middle } **Robots that cannot cross a limit**
+
+    ---
+
+    An agent moves an arm by chat or voice. Every move is checked against the workspace,
+    speed and force before it runs, and an emergency stop latches until a person resets it.
+
+    **Uses:** `RobotGate`, `ActionSpec`, a simulator shadow, the audit log.
+    **Run:** `examples/robot_gate.py` · [Gate a robot](how-to/robot-safety.md)
 
 </div>
 
