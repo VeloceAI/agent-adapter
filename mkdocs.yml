@@ -172,6 +172,7 @@ nav:
       - Wrap a framework for chat: how-to/chat-wrappers.md
       - Multi-agent: how-to/multi-agent.md
       - Template documents: how-to/template-documents.md
+      - Template citations and tokens: how-to/template-citations.md
       - Evaluate your agent: how-to/evaluate-your-agent.md
       - Evals from production: how-to/evals-from-production.md
       - See your evals: how-to/see-your-evals.md

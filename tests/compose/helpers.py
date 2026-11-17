@@ -15,7 +15,8 @@ class Script:
     """Replies per blank; records every request and how many ran at once."""
 
     def __init__(self, answers: Mapping[str, Answer], *, delay: float = 0.0) -> None:
-        self.answers = dict(answers)
+        quiet = {"aa_editor": parsed({"revisions": []}), "aa_verify": parsed({"issues": []})}
+        self.answers = {**quiet, **answers}
         self.delay = delay
         self.requests: list[aa.LLMRequest] = []
         self.running = 0

@@ -114,8 +114,20 @@ ALLOWED = {
         "exec",
     },
     "flow": {"base", "core", "runtime", "hooks", "approval", "tracing", "exec", "flow"},
-    # Template documents compile to a flow; blanks run models and loop agents on the executor.
-    "compose": {"base", "core", "runtime", "tracing", "exec", "flow", "compose"},
+    # Template documents compile to a flow; blanks run models and loop agents on the executor,
+    # cite retrieval documents, and meter spend (a ledger and the budget hook).
+    "compose": {
+        "base",
+        "core",
+        "runtime",
+        "cost",
+        "hooks",
+        "tracing",
+        "exec",
+        "flow",
+        "retrieval",
+        "compose",
+    },
     # Context compression: core (recall tool spec), cache (digests, envelopes), hooks (redact
     # before summarising), cost (ledger, model caps), tracing (events), embeddings (scorers).
     # Never exec, approval or models: the tool loop and model ports import it, not back.

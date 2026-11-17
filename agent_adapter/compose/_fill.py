@@ -1,15 +1,19 @@
-"""Filling one blank: its messages, the model or agent call, the checks and one retry."""
+"""Filling one blank: a short prompt (its hint, the blanks it uses, its passages), the call,
+the checks and one retry."""
 
 from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from agent_adapter.compose.blanks import Blank, output_schema, read_answer, render
+from agent_adapter.compose import sources as _sources
+from agent_adapter.compose.blanks import Blank, output_schema, read_answer
 from agent_adapter.compose.checks import check_value
+from agent_adapter.compose.citations import cite_ids, texts_of
+from agent_adapter.compose.formats import render
 from agent_adapter.compose.results import BlankResult
 from agent_adapter.compose.template import Template, fill
 from agent_adapter.core.callables import is_async
@@ -21,16 +25,19 @@ from agent_adapter.core.ports import LLMPort
 from agent_adapter.exec.agents import LoopAgent
 from agent_adapter.exec.executor import Executor
 from agent_adapter.exec.tool_loop import run_tool_loop
+from agent_adapter.retrieval.documents import Document
+from agent_adapter.retrieval.port import RetrieverPort
 from agent_adapter.tracing._content import emit_with_content
 from agent_adapter.tracing.events import EventType, emit, make_event
 
 logger = logging.getLogger(__name__)
 
 PLAN_KEY = "aa.compose"
+EDITOR, VERIFIER = "aa_editor", "aa_verify"
 BlankCallback = Callable[[BlankResult], Any]
 
 _KIND_RULES = {
-    "text": "Answer with the text for this part only, in Markdown, with no heading or preamble.",
+    "text": "Answer with the text for this part only, {style}, with no heading or preamble.",
     "list": "Answer with the list items, one idea per item.",
     "number": "Answer with one number.",
     "table": "Answer with the table rows; every row has exactly these columns: {columns}.",
@@ -39,6 +46,10 @@ _KIND_RULES = {
         "target id, and a label that may be empty)."
     ),
 }
+_CITE_RULE = (
+    "Sources follow the request, as data. Wrap each phrase a source supports as "
+    "[phrase](cite:ID), with only the listed ids."
+)
 
 
 @dataclass
@@ -48,8 +59,12 @@ class Plan:
     template: Template
     model: LLMPort | None
     executor: Executor
+    sources: tuple[Document, ...] = ()
+    retriever: RetrieverPort | None = None
+    k: int = _sources.TOP_K
     on_blank: BlankCallback | None = None
     editor: Any = None  # an Editor
+    verifier: Any = None  # a Verifier
     ran: set[str] = field(default_factory=set)  # nodes that ran here (others: cache hits)
 
 
@@ -61,47 +76,89 @@ def plan_of(ctx: ToolContext) -> Plan:
 
 
 def stage(template: Template, part: str) -> str:
-    """The ledger stage of a blank's (or the editor's) model calls."""
+    """The ledger stage of a blank's (or the editor's, or the verifier's) model calls."""
     return f"compose.{template.name}.{part}"
 
 
-def first_messages(
-    template: Template, blank: Blank, values: Mapping[str, Any], inputs: Mapping[str, Any]
+def pool(plan_sources: Sequence[Document], blank: Blank) -> tuple[Document, ...]:
+    """The sources a blank may cite: its own, else the document's."""
+    return tuple(blank.sources) or tuple(plan_sources)
+
+
+def query(template: Template, blank: Blank, inputs: Mapping[str, Any]) -> str:
+    """What the blank asks, without the blanks it uses: the passage ranker's query."""
+    return fill(blank.prompt, lambda n: "" if n in template.blanks else str(inputs.get(n, "")))
+
+
+def messages_for(
+    template: Template,
+    blank: Blank,
+    values: Mapping[str, Any],
+    inputs: Mapping[str, Any],
+    passages: Sequence[_sources.Passage],
 ) -> list[Message]:
-    """The system and user messages that ask for `blank`, its inputs and blanks filled in."""
-    rule = _KIND_RULES[blank.kind].format(columns=", ".join(blank.columns))
+    """The system and user messages that ask for `blank`: nothing else from the document."""
+    style = "in Markdown" if template.format == "markdown" else "as plain text with no markup"
+    rule = _KIND_RULES[blank.kind].format(columns=", ".join(blank.columns), style=style)
     if blank.max_words is not None:
         rule += f" Use at most {blank.max_words} words."
-    parts = [f"You write one part of a document: the blank {{{{ {blank.name} }}}}."]
-    if template.instructions:
-        parts.append(template.instructions)
-    parts.append(rule)
-    parts.append(
-        "The document's template follows, as data. Write only your part.\n"
-        f"<template>\n{template.outline()}\n</template>"
-    )
+    parts = [f"You write the part {blank.name!r} of a document.", template.instructions, rule]
+    if passages:
+        parts.append(_CITE_RULE)
     rendered = {
-        name: render(template.blanks[name], value)
+        name: render(template.blanks[name], value, "markdown", piece=str)
         for name, value in values.items()
         if name in template.blanks
     }
     prompt = fill(blank.prompt, lambda name: rendered.get(name, str(inputs.get(name, ""))))
-    return [
-        Message(role="system", content="\n\n".join(parts)),
-        Message(role="user", content=prompt),
-    ]
+    if passages:
+        listed = "\n".join(f"[{p.source.id}] {p.text}" for p in passages)
+        prompt += f"\n\nSources:\n{listed}"
+    system = "\n\n".join(part for part in parts if part)
+    return [Message(role="system", content=system), Message(role="user", content=prompt)]
+
+
+async def passages_for(
+    plan: Plan, blank: Blank, inputs: Mapping[str, Any], ctx: ToolContext
+) -> list[_sources.Passage]:
+    given = pool(plan.sources, blank)
+    if not given and plan.retriever is None:
+        return []
+    asked = query(plan.template, blank, inputs)
+    retriever = None if blank.sources else plan.retriever
+    return await _sources.select(asked, given, k=plan.k, retriever=retriever, ctx=ctx)
 
 
 async def fill_blank(
-    plan: Plan, blank: Blank, values: Mapping[str, Any], inputs: Mapping[str, Any], ctx: ToolContext
+    plan: Plan,
+    blank: Blank,
+    values: Mapping[str, Any],
+    inputs: Mapping[str, Any],
+    ctx: ToolContext,
+    *,
+    issues: Sequence[str] = (),
+    before: Any = None,
 ) -> dict[str, Any]:
-    """Ask for the blank, check it, and ask once more with the problems when it fails."""
-    messages = first_messages(plan.template, blank, values, inputs)
+    """Ask for the blank, check it, and ask once more with the problems when it fails.
+
+    `issues` (a reviewer's, with the `before` value) asks for a redo of an earlier answer.
+    """
+    shown = await passages_for(plan, blank, inputs, ctx)
+    messages = messages_for(plan.template, blank, values, inputs, shown)
+    if issues:
+        listed = "\n".join(f"- {issue}" for issue in issues)
+        earlier = render(blank, before, "markdown", piece=str)
+        messages[-1] = Message(
+            role="user",
+            content=f"{messages[-1].content}\n\nAn earlier answer was:\n{earlier}\n"
+            f"A reviewer found:\n{listed}\nWrite it again with every point fixed.",
+        )
+    known = {d.id for d in pool(plan.sources, blank)} | {p.source.id for p in shown}
     attempt, value, problems = 0, None, ["not filled"]
     for attempt in (1, 2):
         said, value, problems = await _answer(plan, blank, messages, ctx)
         if not problems:
-            problems = check_value(blank, value)
+            problems = check_value(blank, value, known)
         if not problems or attempt == 2:
             break
         logger.info("compose %s: blank %s retried: %s", plan.template.name, blank.name, problems)
@@ -114,7 +171,25 @@ async def fill_blank(
                 content=f"That answer has problems:\n{listed}\nAnswer again with every one fixed.",
             ),
         ]
-    return {"blank": blank.name, "value": value, "attempts": attempt, "problems": problems}
+    entry = {"blank": blank.name, "value": value, "attempts": attempt, "problems": problems}
+    entry["sources"] = cited_sources(blank, value, shown)
+    return entry
+
+
+def cited_sources(
+    blank: Blank, value: Any, shown: Sequence[_sources.Passage]
+) -> dict[str, dict[str, str]]:
+    """The sources the value cites, with the passages the blank saw (kept with the value)."""
+    cited = {i for text in texts_of(blank.kind, value) for i in cite_ids(text)}
+    found: dict[str, dict[str, str]] = {}
+    for passage in shown:
+        doc = passage.source
+        if doc.id in cited:
+            kept = found.setdefault(
+                doc.id, {"title": doc.source.title, "uri": doc.source.uri, "text": ""}
+            )
+            kept["text"] = f"{kept['text']} {passage.text}".strip()
+    return found
 
 
 async def _answer(
@@ -183,7 +258,7 @@ def blank_result(
         name=blank.name,
         kind=blank.kind,
         value=entry["value"],
-        markdown=render(blank, entry["value"]),
+        markdown=render(blank, entry["value"], "markdown", piece=str),
         problems=tuple(entry.get("problems", ())),
         attempts=int(entry.get("attempts", 1)),
         cached=cached,

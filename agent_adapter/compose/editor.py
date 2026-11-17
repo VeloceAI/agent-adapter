@@ -1,16 +1,17 @@
-"""The editor: one model reads the whole draft and revises blanks so the wording fits together."""
+"""The editor: one call reads the text blanks (only them) and rewords the ones that clash."""
 
 from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from agent_adapter.compose import _fill
-from agent_adapter.compose.blanks import Blank, agent_identity, render
-from agent_adapter.compose.checks import check_value, from_markdown
+from agent_adapter.compose.blanks import agent_identity, word_count
+from agent_adapter.compose.checks import check_value
+from agent_adapter.compose.citations import cite_ids, plain_words
 from agent_adapter.compose.results import Revision
 from agent_adapter.core.context import ToolContext
 from agent_adapter.core.errors import ModelOutputInvalid
@@ -25,11 +26,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _RULES = (
-    "You edit a document that several writers filled in part by part. Make the parts read as "
-    "one text: one tone, the same terms for the same things, no repeats, similar lengths. "
-    "Keep every fact and number. Keep table columns and rows, and keep diagram nodes and edges "
-    "(you may reword their labels). Return revisions only for parts that should change; each "
-    "gives the part's name, its full new Markdown in the same format, and a short reason."
+    "You edit parts of one document that different writers wrote. The parts come as JSON, "
+    "part id to text. Make them read as one text: one tone, the same terms for the same "
+    "things, no repeats. Keep every fact and number, and keep each [words](cite:ID) marker "
+    "(you may change its words). Return only the parts you change, each with its full new "
+    "text and a short reason."
 )
 _SCHEMA = OutputSchema(
     name="revisions",
@@ -42,10 +43,10 @@ _SCHEMA = OutputSchema(
                     "type": "object",
                     "properties": {
                         "blank": {"type": "string"},
-                        "markdown": {"type": "string"},
+                        "text": {"type": "string"},
                         "reason": {"type": "string"},
                     },
-                    "required": ["blank", "markdown", "reason"],
+                    "required": ["blank", "text", "reason"],
                     "additionalProperties": False,
                 },
             }
@@ -58,21 +59,39 @@ _SCHEMA = OutputSchema(
 
 @dataclass(frozen=True)
 class Editor:
-    """Revises the filled blanks for one voice; a revision that fails the checks is dropped.
+    """Rewords text blanks so they read as one voice; tables, lists and diagrams stay as filled.
 
-    `style` says how the document should read ("formal, short sentences"). Tables and
-    diagrams keep their shape: a revision must keep the columns and rows, or the nodes and
-    edges, and pass the blank's checks again.
+    `style` says how the document should read ("formal, short sentences"). The editor sees
+    only the text blanks, returns only the ones it changes, and is skipped when there are
+    fewer than two text blanks or under `min_words` words in all. A revision that changes
+    which sources a blank cites, or fails the blank's checks, is rejected and recorded.
     """
 
     model: LLMPort
     style: str = ""
     instructions: str = ""
+    min_words: int = 150
 
     def identity(self) -> dict[str, Any]:
         """What changes the editor's answer (for the cache key)."""
         model = agent_identity(self.model)
         return {"model": model, "style": self.style, "instructions": self.instructions}
+
+    def texts(self, plan: _fill.Plan, entries: Mapping[str, Mapping[str, Any]]) -> dict[str, str]:
+        """The text blanks it would read, or nothing when editing is not worth a call."""
+        found = {
+            name: str(entry["value"])
+            for name, entry in entries.items()
+            if plan.template.blanks[name].kind == "text" and entry["value"] is not None
+        }
+        words = sum(word_count(plain_words(text)) for text in found.values())
+        return found if len(found) >= 2 and words >= self.min_words else {}
+
+    def messages(self, texts: Mapping[str, str]) -> list[Message]:
+        style = f"Style: {self.style}." if self.style else ""
+        system = "\n\n".join(part for part in (_RULES, style, self.instructions) if part)
+        data = json.dumps(dict(texts), ensure_ascii=False)
+        return [Message(role="system", content=system), Message(role="user", content=data)]
 
     async def revise(
         self, plan: _fill.Plan, state: ComposeState, ctx: ToolContext
@@ -80,19 +99,13 @@ class Editor:
         """The changed blank entries and every revision (accepted or not), as plain data."""
         template = plan.template
         entries = {entry["blank"]: entry for entry in state.values}
-        current = {name: render(template.blanks[name], e["value"]) for name, e in entries.items()}
-        system = "\n\n".join(part for part in (_RULES, self._style()) if part)
-        draft = template.render(
-            {name: f'<part name="{name}">\n{text}\n</part>' for name, text in current.items()},
-            state.inputs,
-        )
+        texts = self.texts(plan, entries)
+        if not texts:
+            return [], []
         request = LLMRequest(
-            messages=(
-                Message(role="system", content=system),
-                Message(role="user", content=f"The draft, as data:\n<draft>\n{draft}\n</draft>"),
-            ),
+            messages=tuple(self.messages(texts)),
             output_schema=_SCHEMA,
-            stage=_fill.stage(template, "editor"),
+            stage=_fill.stage(template, _fill.EDITOR),
         )
         try:
             response = await plan.executor.model(self.model).bind(ctx).generate(request)
@@ -103,27 +116,32 @@ class Editor:
         changed: list[dict[str, Any]] = []
         revisions: list[Revision] = []
         for proposal in proposals:
-            name = proposal["blank"]
-            if name not in template.blanks or name not in entries:
-                revisions.append(_rejected(name, "", proposal, "there is no such part"))
+            name, after = proposal["blank"], proposal["text"]
+            if name not in texts:
+                revisions.append(_rejected(name, "", proposal, "there is no such text part"))
                 continue
-            before = current[name]
-            if proposal["markdown"].strip() == before.strip():
+            before = texts[name]
+            if after.strip() == before.strip():
                 continue
-            blank = template.blanks[name]
-            value, problems = _checked(blank, entries[name]["value"], proposal["markdown"])
+            problems = _locked(before, after)
+            problems += check_value(template.blanks[name], after, set(cite_ids(before)))
             if problems:
                 revisions.append(_rejected(name, before, proposal, *problems))
                 continue
-            changed.append({**entries[name], "value": value, "problems": []})
-            after = render(blank, value)
+            changed.append({**entries[name], "value": after, "problems": []})
             revisions.append(Revision(name, before, after, proposal["reason"]))
         _edited(ctx, template.name, revisions)
         return changed, [revision.to_dict() for revision in revisions]
 
-    def _style(self) -> str:
-        style = f"Style: {self.style}." if self.style else ""
-        return "\n".join(part for part in (style, self.instructions) if part)
+
+def _locked(before: str, after: str) -> list[str]:
+    """A revision must cite the same sources as the text it replaces."""
+    old, new = set(cite_ids(before)), set(cite_ids(after))
+    if old == new:
+        return []
+    lost, added = sorted(old - new), sorted(new - old)
+    said = [f"drops citations {lost}" if lost else "", f"adds citations {added}" if added else ""]
+    return ["the revision " + " and ".join(part for part in said if part)]
 
 
 def _proposals(response: LLMResponse) -> list[dict[str, str]]:
@@ -138,47 +156,20 @@ def _proposals(response: LLMResponse) -> list[dict[str, str]]:
     if not isinstance(items, list):
         logger.warning("compose editor: the answer has no revisions list")
         return []
-    found = []
-    for item in items:
-        if isinstance(item, Mapping) and isinstance(item.get("markdown"), str):
-            fields = ("blank", "markdown", "reason")
-            found.append({key: str(item.get(key) or "") for key in fields})
-    return found
-
-
-def _checked(blank: Blank, old: Any, markdown: str) -> tuple[Any, list[str]]:
-    """The revised value, or why it cannot replace the old one."""
-    value, problems = from_markdown(blank, markdown)
-    if problems:
-        return None, problems
-    problems = check_value(blank, value)
-    if old is None:  # the blank never filled: any revision that passes the checks will do
-        return value, problems
-    if blank.kind == "table" and len(value) != len(old):
-        problems.append(f"the revision has {len(value)} rows, not {len(old)}")
-    if blank.kind == "diagram":
-        shape = (len(old["nodes"]), [(e["source"], e["target"]) for e in _renumbered(old)])
-        if (len(value["nodes"]), [(e["source"], e["target"]) for e in value["edges"]]) != shape:
-            problems.append("the revision changed the diagram's nodes or edges")
-    return value, problems
-
-
-def _renumbered(diagram: Mapping[str, Any]) -> list[dict[str, str]]:
-    """Edges with node ids as drawn (`n1`, `n2`, ...), as a revision reads them back."""
-    ids = {node["id"]: f"n{index}" for index, node in enumerate(diagram["nodes"], 1)}
+    fields = ("blank", "text", "reason")
     return [
-        {**edge, "source": ids[edge["source"]], "target": ids[edge["target"]]}
-        for edge in diagram["edges"]
-        if edge["source"] in ids and edge["target"] in ids
+        {key: str(item.get(key) or "") for key in fields}
+        for item in items
+        if isinstance(item, Mapping) and isinstance(item.get("text"), str)
     ]
 
 
 def _rejected(name: str, before: str, proposal: Mapping[str, str], *problems: str) -> Revision:
-    after, reason = proposal["markdown"], proposal["reason"]
+    after, reason = proposal["text"], proposal["reason"]
     return Revision(name, before, after, reason, accepted=False, problems=tuple(problems))
 
 
-def _edited(ctx: ToolContext, document: str, revisions: list[Revision]) -> None:
+def _edited(ctx: ToolContext, document: str, revisions: Sequence[Revision]) -> None:
     accepted = sum(revision.accepted for revision in revisions)
     event = make_event(
         EventType.COMPOSE_EDITED,

@@ -270,8 +270,8 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
     ),
     "compose": (
         "Template documents",
-        "A Markdown template with typed blanks, filled by models or agents as a flow, checked, "
-        "cached per blank and revised by one editor. "
+        "A Markdown, HTML, XML or text template with typed blanks, filled by models or agents "
+        "as a flow, cited, checked, cached per blank, edited and verified. "
         "Guide: [Template documents](../how-to/template-documents.md).",
         ("agent_adapter.compose",),
     ),

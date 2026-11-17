@@ -1200,17 +1200,22 @@ The chat agent contract, shared by the chat page (`agent_adapter.viewer`) and ev
 
 ### `agent_adapter.compose`
 
-Template documents: Markdown with `{{ name }}` blanks, each filled by a model or an agent.
+Template documents: Markdown, HTML, XML or text with blanks, each filled by a model or agent.
 
-- `Blank(name: str, prompt: str, kind: Kind = 'text', *, agent: LLMPort | LoopAgent | None = None, max_words: int | None = None, required: bool = True, columns: Sequence[str] = (), direction: Literal['TD', 'LR'] = 'TD') -> None`: One `{{ name }}` of a template: the prompt that fills it and the shape of its answer.
+- `Blank(name: str, prompt: str, kind: Kind = 'text', *, agent: LLMPort | LoopAgent | None = None, max_words: int | None = None, required: bool = True, columns: Sequence[str] = (), direction: Literal['TD', 'LR'] = 'TD', sources: Sequence[Document] = ()) -> None`: One `{{ name }}` of a template: the prompt that fills it and the shape of its answer.
 - `BlankResult(name: str, kind: Kind, value: Any, markdown: str, problems: tuple[str, ...] = (), attempts: int = 1, cached: bool = False, edited: bool = False, cost_usd: float = 0.0) -> None`: One filled blank: its value, its Markdown and how the checks went.
-- `ComposeResult(markdown: str, blanks: Mapping[str, BlankResult], revisions: tuple[Revision, ...] = (), cost: float = 0.0, run_id: str = '', problems: Mapping[str, tuple[str, ...]] = <factory>) -> None`: The finished document: `.markdown`, `.blanks`, `.revisions` and `.cost` (USD).
-- `Editor(model: LLMPort, style: str = '', instructions: str = '') -> None`: Revises the filled blanks for one voice; a revision that fails the checks is dropped.
+- `Citation(number: int, source: Document, blank: str, text: str) -> None`: One cited phrase: its number, its source, the blank it is in and the words it backs.
+- `Citations(style: Style = 'numeric', cite: CiteFn | None = None, references: bool | ReferencesFn | None = None) -> None`: How cited words appear: a built-in `style`, or your own `cite(words, source, number)`.
+- `ComposeResult(text: str, blanks: Mapping[str, BlankResult], revisions: tuple[Revision, ...] = (), cost: float = 0.0, run_id: str = '', format: str = 'markdown', citations: tuple[Citation, ...] = (), issues: Mapping[str, tuple[str, ...]] = <factory>, usage: Mapping[str, StageUsage] = <factory>) -> None`: The finished document (`.text`, in the template's format) and how it was made.
+- `Editor(model: LLMPort, style: str = '', instructions: str = '', min_words: int = 150) -> None`: Rewords text blanks so they read as one voice; tables, lists and diagrams stay as filled.
 - `Kind = Literal['text', 'list', 'number', 'table', 'diagram']`
 - `Revision(blank: str, before: str, after: str, reason: str = '', accepted: bool = True, problems: tuple[str, ...] = ()) -> None`: One change the editor proposed: before, after, and whether the checks let it in.
-- `Template(text: str, blanks: Sequence[Blank], *, name: str = 'document', instructions: str = '') -> None`: A Markdown document with blanks; any other `{{ name }}` is an input given to `compose`.
-- `check_value(blank: Blank, value: Any) -> list[str]`: Every problem with a blank's value: required, word limit, columns, diagram links.
-- `async compose(template: Template, *, model: LLMPort | None = None, inputs: Mapping[str, Any] | None = None, editor: Editor | None = None, executor: Executor | None = None, runner: FlowRunner | None = None, ctx: ToolContext | None = None, thread_id: str = '', concurrency: int | None = 4, on_blank: BlankCallback | None = None, cache_scope: CacheScope | None = 'thread', cache_ttl: float | None = None) -> ComposeResult`: Fill every blank (independent ones in parallel), let `editor` revise, return the document.
+- `StageUsage(calls: int = 0, input_tokens: int = 0, output_tokens: int = 0, cost_usd: float = 0.0) -> None`: Model calls, tokens and USD for one stage: "blanks", "editor" or "verifier".
+- `Template(text: str, blanks: Sequence[Blank] = (), *, name: str = 'document', instructions: str = '', format: Format | None = None) -> None`: A document (Markdown, HTML, XML or text) with blanks.
+- `Verifier(model: LLMPort | None = None, rules: Sequence[str] = (), window: int = 300) -> None`: Checks the finished document; on by default.
+- `check_value(blank: Blank, value: Any, known: Collection[str] | None = None) -> list[str]`: Every problem with a blank's value; `known` are the source ids it may cite.
+- `async compose(template: Template | str | Path, *, model: LLMPort | None = None, inputs: Mapping[str, Any] | None = None, sources: Sequence[Document | str | Mapping[str, Any]] = (), retriever: RetrieverPort | None = None, top_k: int = 4, citations: Citations | Style | CiteFn = 'numeric', editor: Editor | bool = True, verifier: Verifier | bool = True, max_usd: float | None = None, blanks: Sequence[Blank] = (), format: Format | None = None, executor: Executor | None = None, runner: FlowRunner | None = None, ctx: ToolContext | None = None, thread_id: str = '', concurrency: int | None = 4, on_blank: BlankCallback | None = None, cache_scope: CacheScope | None = 'thread', cache_ttl: float | None = None) -> ComposeResult`: Fill every blank (independent ones in parallel), edit, verify, and return the document.
+- `compose_sync(template: Template | str | Path, **options: Any) -> ComposeResult`: `compose()` from sync code (it runs the coroutine on a private loop if one is running).
 
 ### `agent_adapter.context`
 

@@ -8,18 +8,24 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Template documents (`agent_adapter.compose`): a Markdown template with `{{ name }}`
-  blanks, each a `Blank(name, prompt, kind=, agent=, max_words=, required=)` filled by a
-  model or a `LoopAgent` with tools. Kinds `text`, `list`, `number`, `table` (rows through
-  structured output; the code draws the pipe table) and `diagram` (nodes and edges; the
-  code writes Mermaid). Blanks used in other prompts fill first; the rest fill in
-  parallel, as a `Flow`. Each blank is checked (required, words, schema, columns, diagram
-  links) and retried once alone with its problems, and cached by its exact messages, so
-  changing one blank re-runs only it and the blanks that use it. `Editor(model, style=)`
-  revises blanks for one voice and cannot break a table or a diagram; every revision is
-  recorded. `ComposeResult` has `.markdown`, `.blanks`, `.revisions` and `.cost`. New
-  events `compose.blank_started`, `compose.blank_filled` and `compose.edited`, an
-  `on_blank` callback, and a Document panel in the run viewer. Guide: Template documents.
+- Template documents (`agent_adapter.compose`): a Markdown, HTML, XML or text template
+  whose blanks are filled by a model or a `LoopAgent` with tools, as a `Flow` (independent
+  blanks in parallel). One line runs it: `await compose("report.html", model=model,
+  sources=docs)`, or `compose_sync`. Hints such as `{{ summary | "two sentences" |
+  words(40) }}`, `table(A, B)`, `diagram(LR)`, `optional` and `uses(...)` make a blank
+  without a `Blank()`. Tables and diagrams come back as data and are drawn per format;
+  model text is escaped. Each blank is checked and retried once alone, and cached by what
+  it depends on. Citations: blanks wrap words as `[words](cite:id)`; the code numbers
+  sources in reading order and draws them `numeric`, `linked`, `footnote`, `html`,
+  `plain` or with your own function, with a References list or a `{{ references }}` slot.
+  `Editor` (on by default) rewords text blanks only and rejects a revision that changes
+  citations; `Verifier` (on by default) checks the document is well formed, and with a
+  model checks cited phrases against their sources and your rules, redoing a flagged blank
+  once. Few tokens: each blank sees only its hint, the blanks it uses and its best 4
+  passages (BM25, or `retriever=`); `max_usd=` caps spend. `ComposeResult` has `.text`,
+  `.blanks`, `.citations`, `.revisions`, `.issues`, `.usage` and `.cost`. New events
+  `compose.blank_started`, `compose.blank_filled` and `compose.edited`, an `on_blank`
+  callback, and a Document panel in the run viewer. Guide: Template documents.
 - Voice agents can see: `VideoFeed` keeps the latest frame from the caller's camera or
   screen (`WebRTCAudio(video=feed)`, with Camera and Share screen on `webrtc_page`), a local
   camera or screen, any FFmpeg input, or a robot camera (`feed.poll(render)`).

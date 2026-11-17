@@ -1,16 +1,15 @@
 import pytest
 
 from agent_adapter.compose import Blank, Template, check_value
-from agent_adapter.compose.blanks import render
-from agent_adapter.compose.checks import from_markdown
-from agent_adapter.compose.template import slots
+from agent_adapter.compose.formats import render
+from agent_adapter.compose.template import names, slots
 from agent_adapter.errors import FlowDefinitionError
 
 
 def test_slots_find_names_skip_escapes_and_report_bad_ones():
-    names, bad = slots("# {{ title }} and {{summary}} \\{{ literal }} {{ two words }}")
-    assert names == ["title", "summary"]
-    assert bad == ["{{ two words }}"]
+    text = "# {{ title }} and {{summary}} \\{{ literal }} {{ two words }}"
+    assert names(text) == ["title", "summary"]
+    assert slots(text)[1] == ["{{ two words }}"]
 
 
 def test_order_comes_from_blanks_used_in_prompts():
@@ -105,32 +104,3 @@ def test_checks():
         "edges": [{"source": "a", "target": "z", "label": ""}],
     }
     assert check_value(diagram, bad) == ["edge 1 links unknown nodes ['z']"]
-
-
-@pytest.mark.parametrize(
-    ("blank", "value"),
-    [
-        (Blank("t", "x", "table", columns=["A", "B"]), [{"A": "1 | 2", "B": "x"}]),
-        (Blank("l", "x", "list"), ["one", "two"]),
-        (Blank("n", "x", "number"), 2.5),
-        (
-            Blank("d", "x", "diagram"),
-            {
-                "nodes": [{"id": "n1", "label": 'a "b"'}, {"id": "n2", "label": "c"}],
-                "edges": [{"source": "n1", "target": "n2", "label": "go"}],
-            },
-        ),
-    ],
-)
-def test_markdown_reads_back_to_the_same_value(blank, value):
-    assert from_markdown(blank, render(blank, value)) == (value, [])
-
-
-def test_broken_markdown_is_not_read_back():
-    table = Blank("t", "x", "table", columns=["A", "B"])
-    assert from_markdown(table, "| A | C |\n| --- | --- |")[1] == [
-        "the revision changed the columns to ['A', 'C']"
-    ]
-    assert from_markdown(Blank("d", "x", "diagram"), "graph TD\nA-->B")[1]
-    assert from_markdown(Blank("l", "x", "list"), "just text")[1]
-    assert from_markdown(Blank("n", "x", "number"), "many")[1]

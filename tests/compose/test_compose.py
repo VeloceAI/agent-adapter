@@ -195,4 +195,4 @@ async def test_a_runner_with_checkpoints_saves_each_layer():
     result = await compose(report(), model=script.model, inputs={"title": "Q3"}, runner=runner)
     assert result.ok and "O." in result.markdown
     saved = await store.latest(result.run_id)
-    assert saved is not None and saved.step == 3
+    assert saved is not None and saved.step == 4  # begin, two layers, the editor

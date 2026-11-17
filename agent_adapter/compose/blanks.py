@@ -1,9 +1,8 @@
-"""Blanks: what each part of a template asks for, its output schema, and its Markdown."""
+"""Blanks: what each part of a template asks for, and the schema of its answer."""
 
 from __future__ import annotations
 
 import json
-import math
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import KW_ONLY, dataclass
@@ -12,12 +11,11 @@ from typing import Any, Literal
 from agent_adapter.core.messages import LLMResponse, OutputSchema
 from agent_adapter.core.ports import LLMPort
 from agent_adapter.exec.agents import LoopAgent
-from agent_adapter.flow.diagram import _quote
+from agent_adapter.retrieval.documents import Document, as_document
 
 Kind = Literal["text", "list", "number", "table", "diagram"]
 KINDS: tuple[Kind, ...] = ("text", "list", "number", "table", "diagram")
 NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
-_SPACE = re.compile(r"\s+")
 
 
 @dataclass(frozen=True)
@@ -26,7 +24,7 @@ class Blank:
 
     `kind` is "text", "list", "number", "table" (rows with `columns`) or "diagram" (nodes
     and edges, drawn as Mermaid). `agent` fills it instead of the document's model: a model
-    port, or a `LoopAgent` with tools.
+    port, or a `LoopAgent` with tools. `sources` replaces the document's sources for it.
     """
 
     name: str
@@ -38,9 +36,11 @@ class Blank:
     required: bool = True
     columns: Sequence[str] = ()
     direction: Literal["TD", "LR"] = "TD"
+    sources: Sequence[Document] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "columns", tuple(self.columns))
+        object.__setattr__(self, "sources", tuple(as_document(s) for s in self.sources))
 
     def problems(self) -> list[str]:
         """What is wrong with this blank's definition (empty when it is fine)."""
@@ -192,57 +192,6 @@ def _unfenced(text: str) -> str:
     if stripped.startswith("```"):
         stripped = stripped.split("\n", 1)[-1].rsplit("```", 1)[0]
     return stripped
-
-
-def render(blank: Blank, value: Any) -> str:
-    """The value as Markdown; tables and diagrams are always drawn by this code."""
-    if value is None:
-        return ""
-    if blank.kind == "text":
-        return str(value)
-    if blank.kind == "number":
-        return _number(value)
-    if blank.kind == "list":
-        return "\n".join(f"- {item}" for item in value)
-    if blank.kind == "table":
-        return _table(blank.columns, value)
-    return _mermaid(blank.direction, value)
-
-
-def _number(value: float) -> str:
-    if isinstance(value, float) and math.isfinite(value) and value.is_integer():
-        return str(int(value))
-    return str(value)
-
-
-def _table(columns: Sequence[str], rows: Sequence[Mapping[str, str]]) -> str:
-    def line(cells: Sequence[str]) -> str:
-        return "| " + " | ".join(_table_cell(cell) for cell in cells) + " |"
-
-    lines = [line(columns), "| " + " | ".join("---" for _ in columns) + " |"]
-    lines.extend(line([row.get(column, "") for column in columns]) for row in rows)
-    return "\n".join(lines)
-
-
-def _table_cell(text: str) -> str:
-    return _SPACE.sub(" ", text).replace("|", "\\|").strip()
-
-
-def _mermaid(direction: str, value: Mapping[str, Any]) -> str:
-    ids = {node["id"]: f"n{index}" for index, node in enumerate(value["nodes"], 1)}
-    lines = ["```mermaid", f"flowchart {direction}"]
-    for node in value["nodes"]:
-        label = _SPACE.sub(" ", node["label"] or node["id"]).strip()
-        lines.append(f"  {ids[node['id']]}[{_quote(label)}]")
-    for edge in value["edges"]:
-        source, target = ids.get(edge["source"]), ids.get(edge["target"])
-        if source is None or target is None:
-            continue
-        label = _SPACE.sub(" ", edge["label"]).strip()
-        arrow = f" -->|{_quote(label)}| " if label else " --> "
-        lines.append(f"  {source}{arrow}{target}")
-    lines.append("```")
-    return "\n".join(lines)
 
 
 def word_count(text: str) -> int:
