@@ -27,7 +27,7 @@ class ToolResultCache:
         self, tool: str, args: Mapping[str, Any], *, scope: CacheScope, ctx: ToolContext
     ) -> Envelope | None:
         """The cached envelope, or None on a miss, an uncacheable call or a backend error."""
-        key = self._key(tool, args, scope, ctx)
+        key = self.key(tool, args, scope=scope, ctx=ctx)
         if not key:
             return None
         try:
@@ -58,7 +58,7 @@ class ToolResultCache:
         ctx: ToolContext,
     ) -> bool:
         """Store `value`; False when it cannot be cached or the backend fails."""
-        key = self._key(tool, args, scope, ctx)
+        key = self.key(tool, args, scope=scope, ctx=ctx)
         if not key:
             return False
         try:
@@ -80,7 +80,10 @@ class ToolResultCache:
             return False
         return True
 
-    def _key(self, tool: str, args: Mapping[str, Any], scope: CacheScope, ctx: ToolContext) -> str:
+    def key(
+        self, tool: str, args: Mapping[str, Any], *, scope: CacheScope, ctx: ToolContext
+    ) -> str:
+        """The cache key of a call; "" when it cannot be cached."""
         try:
             return tool_key(
                 self.namespace,

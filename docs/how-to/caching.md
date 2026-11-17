@@ -70,7 +70,23 @@ A context can carry its own cache (`ctx.cache`); it wins over the executor's.
 | Not stored | error replies, replies that are already hits, streams |
 | Hit | `LLMResponse(cached=True, latency_ms=0)`, an `llm.cached` event, a ledger entry at $0 |
 
-## Output
+## Same call at the same moment
+
+When agents running in parallel make the same cached call before the first one is stored,
+one real call runs; the others wait for it and get its result. Nothing to turn on.
+
+| Rule | Detail |
+|---|---|
+| Applies to | tools with `cache_ttl`, and model calls through the response cache; never streams |
+| Shared by | the same callers as the cache (same key and scope, same cache), within one process |
+| Waiter's result | as a hit: `cached=True`, `tool.cached` or `llm.cached`, $0 in the ledger, plus `inflight.shared` (`kind`, `name`, `waited_ms`) |
+| Leader fails | every waiter gets the same error (the tool's retries already ran); each model waiter still runs its own `on_llm_error` hooks |
+| Leader cancelled | one waiter runs the call instead; a cancelled waiter does not affect the others |
+| Not shared | tool results the cache would not store (not JSON-encodable, or from an `on_tool_error` hook): each waiter runs the call |
+
+Side-effect tools should not be cached (below); their repeats are handled by
+`Executor(dedupe_window_s=...)`.
+
 
 ```text
 False True 0 1

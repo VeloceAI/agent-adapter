@@ -6,6 +6,7 @@ import logging
 from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
+from agent_adapter.cache._inflight import share
 from agent_adapter.cache.llm_cache import LLMResponseCache
 from agent_adapter.core.context import ToolContext
 from agent_adapter.core.control import control_flow_member
@@ -24,6 +25,7 @@ from agent_adapter.models._llm_call import (
 )
 from agent_adapter.models._port import closing, replay
 from agent_adapter.runtime.current import resolve_context
+from agent_adapter.tracing.events import EventType
 
 logger = logging.getLogger(__name__)
 
@@ -160,22 +162,47 @@ class InstrumentedModel:
     async def _cached_or_called(self, call: LLMCall) -> tuple[LLMResponse, Source]:
         responses = self._responses if not call.request.stream else None
         fields = call.settings.fields
+        key = ""
         if responses is not None:
             hit = await responses.get(
                 call.request, provider=self.provider, model=call.model, fields=fields
             )
             if hit is not None:
                 return hit, "cache"
+            key = responses.key(
+                call.request, provider=self.provider, model=call.model, fields=fields
+            )
+
+        def follow(reply: LLMResponse, waited_ms: float) -> tuple[LLMResponse, Source]:
+            call.emit(EventType.INFLIGHT_SHARED, kind="llm", name=call.model, waited_ms=waited_ms)
+            return reply.model_copy(update={"cached": True, "latency_ms": 0.0}), "cache"
+
         try:
-            with call.running_port():
-                reply = await self.wrapped.generate(call.request)
+            # Same request at the same moment: one provider call, the others await its reply.
+            return await share(
+                self.cache,
+                key,
+                lambda: self._called(call, responses),
+                handout=lambda done: done[0],
+                follow=follow,
+            )
         except Exception as exc:
             return await self._recover(call, exc), "hook"
+
+    async def _called(
+        self, call: LLMCall, responses: LLMResponseCache | None
+    ) -> tuple[LLMResponse, Source]:
+        with call.running_port():
+            reply = await self.wrapped.generate(call.request)
         call.reply = reply
         if responses is not None:
             # The provider's reply is stored, so after_llm hooks see the same input on a hit.
             await responses.set(
-                call.request, reply, provider=self.provider, model=call.model, fields=fields
+                call.request,
+                reply,
+                provider=self.provider,
+                model=call.model,
+                fields=call.settings.fields,
             )
         return reply, "model"
 

@@ -93,8 +93,11 @@ async def _execute(
     run = _Call(settings, call, ctx, call_id, single=single)
 
     async def body() -> ToolResult:
-        with use_context(run.ctx):
-            done = await run.execute(spec, registry)
+        try:
+            with use_context(run.ctx):
+                done = await run.execute(spec, registry)
+        finally:
+            run.land()
         if slot is not None and journal is not None:
             await journal.settle(slot, done)
         return done
@@ -266,11 +269,7 @@ class _Call(CallSteps):
             result = self._ok(short.value)
         else:
             self.settings.runs.commit(state, identity, **self._guards(spec))
-            cached = await self._lookup(spec, inv)
-            if cached is not NOT_STORED:
-                result = self._ok(cached, cached=True)
-            else:
-                result, stored = await self._run(spec, state, validated, inv)
+            result, stored = await self._cached_or_run(spec, state, validated, inv)
         replaced = await run_after(hooks, "after_tool", inv, result)
         if not isinstance(replaced, ToolResult):
             raise ToolUsageError(

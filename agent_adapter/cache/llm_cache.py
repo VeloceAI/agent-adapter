@@ -29,7 +29,7 @@ class LLMResponseCache:
         self, request: LLMRequest, *, provider: str, model: str, fields: Mapping[str, Any]
     ) -> LLMResponse | None:
         """The cached response with `cached=True` and `latency_ms=0`, or None."""
-        key = self._key(request, provider, model, fields)
+        key = self.key(request, provider=provider, model=model, fields=fields)
         if not key:
             return None
         try:
@@ -65,7 +65,7 @@ class LLMResponseCache:
         if response.finish_reason == "error" or response.cached:
             logger.debug("llm response from %s:%s not stored (error or hit)", provider, model)
             return False
-        key = self._key(request, provider, model, fields)
+        key = self.key(request, provider=provider, model=model, fields=fields)
         if not key:
             return False
         try:
@@ -82,9 +82,10 @@ class LLMResponseCache:
             return False
         return True
 
-    def _key(
-        self, request: LLMRequest, provider: str, model: str, fields: Mapping[str, Any]
+    def key(
+        self, request: LLMRequest, *, provider: str, model: str, fields: Mapping[str, Any]
     ) -> str:
+        """The cache key of a request; "" when it opted out or cannot be cached."""
         if not request.response_cache:
             logger.debug("request opted out of the llm response cache")
             return ""

@@ -8,6 +8,12 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Parallel agents no longer repeat a call that is already running: when they make the
+  same cached call at the same moment, one real call runs and the others await its result.
+  It covers tools with `cache_ttl` (run, thread and global scopes stay apart) and model
+  calls through the response cache; streams are not shared. A waiter's result counts as a
+  cache hit and emits the new `inflight.shared` event. If the first call fails, its waiters
+  get the same error; if it is cancelled, one waiter runs the call. Guide: Caching.
 - Voice agents can see: `VideoFeed` keeps the latest frame from the caller's camera or
   screen (`WebRTCAudio(video=feed)`, with Camera and Share screen on `webrtc_page`), a local
   camera or screen, any FFmpeg input, or a robot camera (`feed.poll(render)`).
