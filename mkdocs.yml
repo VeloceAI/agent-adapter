@@ -140,6 +140,7 @@ nav:
           - Our own voice framework: how-to/voice-pipeline.md
           - Call features: how-to/voice-call-features.md
           - Phone calls and hosted voices: how-to/voice-providers-and-phone.md
+          - Fast hosted voices: how-to/voxcat-providers.md
           - Transports and realtime models: how-to/voice-transports.md
           - Safe tools on a call: how-to/voice-agents.md
           - Compared with LiveKit and Pipecat: how-to/voice-compared.md

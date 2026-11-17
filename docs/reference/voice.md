@@ -24,6 +24,12 @@ Also exported here, documented under the canonical path: [`TurnTiming`](#agent_a
 
 Also exported here, documented under the canonical path: [`AudioTransport`](#agent_adapter.voice.AudioTransport), [`CallableSTT`](#agent_adapter.voice.CallableSTT), [`CallableTTS`](#agent_adapter.voice.CallableTTS), [`STT`](#agent_adapter.voice.STT), [`TTS`](#agent_adapter.voice.TTS).
 
+## `agent_adapter.voice.ports`
+
+::: agent_adapter.voice.ports
+    options:
+      members: [StreamingTTS, TTSStream, TurnEvent, TurnSignal, TurnSignals, WordTime]
+
 ## `agent_adapter.voice.player`
 
 `agent_adapter.voice.player` re-exports, documented under the canonical path: [`Player`](#agent_adapter.voice.Player).

@@ -22,7 +22,7 @@ EXTRA_OF_MODULE = {
     "autogen_core": "autogen", "autogen_agentchat": "autogen", "semantic_kernel": "semantic-kernel",
     "camel": "camel", "ag2": "ag2", "a2a": "a2a", "ag_ui": "ag-ui", "sqlalchemy": "sqlalchemy",
     "aioboto3": "dynamodb", "temporalio": "temporal", "dbos": "dbos", "starlette": "server",
-    "uvicorn": "server", "a2wsgi": "server-wsgi",
+    "uvicorn": "server", "a2wsgi": "server-wsgi", "msgpack": "voice-cloud",
 }  # fmt: skip
 # Modules that need an extra and a package: the `otel` extra installs only the API.
 BOTH_OF_MODULE = {

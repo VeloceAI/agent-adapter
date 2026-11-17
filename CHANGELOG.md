@@ -8,6 +8,19 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Fast hosted voices for our voice pipeline (VoxCat), all over WebSocket:
+  `DeepgramFluxSTT` (early end of turn), `AssemblyAISTT`, `SonioxSTT`, `CartesiaInkSTT`
+  and `ElevenLabsScribeSTT` for speech-to-text; `CartesiaLiveTTS`, `ElevenLabsLiveTTS`,
+  `FishAudioTTS` and `RimeTTS` for text-to-speech. Two optional ports in
+  `agent_adapter.voice.ports`: `TurnSignals` (a stream reports `TurnSignal` `eager_end`,
+  `resumed` and `end`, so a reply can start before the turn ends) and `StreamingTTS`
+  (`open()` returns a `TTSStream` that takes text while the model writes it, with
+  `WordTime` word timings). Shared sockets with a context per reply (Cartesia, Rime) and
+  `warm()` sockets opened ahead (ElevenLabs, Fish Audio). Format-tested against local fakes
+  of each provider's documented messages, not called live. The `voice-cloud` extra adds
+  `msgpack` (Apache-2.0) for Fish Audio; the `websockets` handshake debug log now shows
+  API-key headers as `[redacted]`. Guide: Fast hosted voices.
+
 - Parallel agents no longer repeat a call that is already running: when they make the
   same cached call at the same moment, one real call runs and the others await its result.
   It covers tools with `cache_ttl` (run, thread and global scopes stay apart) and model

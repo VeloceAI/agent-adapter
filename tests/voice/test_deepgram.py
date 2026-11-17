@@ -200,6 +200,6 @@ async def test_a_missing_websockets_names_the_extra(monkeypatch):
 
 
 def test_deeply_nested_json_is_ignored_not_raised():
-    from agent_adapter.voice.deepgram import _parse
+    from agent_adapter.voice._ws import parse
 
-    assert _parse("[" * 100_000 + "]" * 100_000) == {}
+    assert parse("[" * 100_000 + "]" * 100_000) == {}
