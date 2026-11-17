@@ -84,6 +84,8 @@ class FlowCheckpoint:
     _journal: Mapping[str, JournalData] = field(default_factory=dict, repr=False)
     # where each paused SubFlow node's child run stopped (unsealed: this checkpoint's MAC covers it)
     _children: Mapping[str, FlowCheckpoint] = field(default_factory=dict, repr=False)
+    # the run's shared board entries (plain JSON rows), put back when the run goes on
+    _board: tuple[Mapping[str, Any], ...] = field(default=(), repr=False)
     _graph: str = field(default="", repr=False)  # digest of the graph it paused in
     _mac: str = field(default="", repr=False)  # HMAC-SHA256 of everything above (runner key)
 

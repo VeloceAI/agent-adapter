@@ -29,7 +29,9 @@ def test_context_carries_the_executor_ports():
     assert ctx.run_id.startswith("run_") and ctx.call_id == "" and ctx.thread_id == "t"
     assert (ctx.sink, ctx.ledger, ctx.cache) == (ex.sink, ledger, cache)
     assert ex.sink.sinks == (sink,)  # the executor's hub, so sinks added later reach ctx
+    board = ctx.extras.pop("aa.board")  # every run carries its shared board
     assert ctx.state == {"user": "u"} and ctx.extras == {"k": 1}
+    assert board.scope == f"run:{ctx.run_id}" and board.store is ex.board.store
     assert ex.context(run_id="mine").run_id == "mine"
     assert ex.context(user_id="ann").user_id == "ann" and ctx.user_id == ""
 

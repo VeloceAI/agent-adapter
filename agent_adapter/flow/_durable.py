@@ -8,6 +8,7 @@ import logging
 from collections.abc import Mapping
 from typing import Any
 
+from agent_adapter.board.context import snapshot
 from agent_adapter.core.context import ToolContext
 from agent_adapter.core.errors import (
     CheckpointConflict,
@@ -86,6 +87,7 @@ class DurableRun:
         """
         if body is None:
             if checkpoint is None:
+                cursor.board = await snapshot(self.ctx)
                 checkpoint = self.sealed(cursor)
             validated_state(type(checkpoint.state), dict(checkpoint.state), what="checkpoint state")
             body = dump_json(self.sealer, checkpoint)
@@ -178,6 +180,7 @@ class DurableRun:
             _items=frozen({n: frozen(dict(v)) for n, v in cursor.items.items()}),
             _journal=frozen(cursor.journal),
             _children=frozen(cursor.children),
+            _board=cursor.board,
             _graph=self.digest,
         )
         try:

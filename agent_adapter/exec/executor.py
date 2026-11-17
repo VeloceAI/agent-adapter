@@ -17,6 +17,8 @@ from collections.abc import (
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Any
 
+from agent_adapter.board.context import BOARD_KEY, BoardSettings, board_settings
+from agent_adapter.board.store import BoardStore
 from agent_adapter.core._default import default_registry
 from agent_adapter.core.context import ToolContext
 from agent_adapter.core.errors import ApprovalNotFound, ToolUsageError
@@ -73,6 +75,7 @@ class Executor(Batches, SyncTwins):
         max_tracked_runs: int = 10_000,
         policy: ToolPolicy | None = None,
         dedupe_window_s: float | None = None,
+        board: BoardStore | BoardSettings | None = None,
     ) -> None:
         check_options(registry, approval)
         if policy is not None and not isinstance(policy, ToolPolicy):
@@ -103,6 +106,8 @@ class Executor(Batches, SyncTwins):
             "max_tracked_runs": max_tracked_runs,
             "policy": policy,
             "dedupe_window_s": dedupe_window_s,
+            # Normalised here, so executors made by replace() share one in-memory store.
+            "board": board_settings(board),
         }
         bad_hooks = [h for h in self._options["hooks"] if not isinstance(h, Hook)]
         if bad_hooks:
@@ -127,6 +132,7 @@ class Executor(Batches, SyncTwins):
             runs=_RunTracker(max_tracked_runs),
             policy=policy,
             repeats=_repeats(dedupe_window_s, clock),
+            board=self._options["board"],
         )
 
     def __reduce__(self) -> tuple[Any, ...]:
@@ -188,6 +194,11 @@ class Executor(Batches, SyncTwins):
         """Seconds a repeat of a finished or running effectful call returns the first result."""
         return self._options["dedupe_window_s"]  # type: ignore[no-any-return]
 
+    @property
+    def board(self) -> BoardSettings:
+        """How each run's shared board is made (`ctx.extras["aa.board"]`)."""
+        return self._options["board"]  # type: ignore[no-any-return]
+
     def replace(self, **changes: Any) -> Executor:
         """A new Executor with some constructor arguments replaced; `self` is unchanged.
 
@@ -246,11 +257,16 @@ class Executor(Batches, SyncTwins):
         state: Mapping[str, Any] | None = None,
         extras: Mapping[str, Any] | None = None,
     ) -> ToolContext:
-        """A context for a new (or given) run, carrying this executor's ledger, cache and sink."""
+        """A context for a new (or given) run, carrying this executor's ledger, cache, sink
+        and the run's board."""
+        run_id = run_id or new_id("run_")
+        extras = dict(extras or {})
+        if BOARD_KEY not in extras:
+            extras[BOARD_KEY] = self.board.board(run_id=run_id, thread_id=thread_id, sink=self.sink)
         return ToolContext(
-            run_id=run_id or new_id("run_"),
+            run_id=run_id,
             state=state if state is not None else {},
-            extras=dict(extras or {}),
+            extras=extras,
             thread_id=thread_id,
             user_id=user_id,  # the authenticated end user: memory and retrieval scope by it
             ledger=self.ledger,

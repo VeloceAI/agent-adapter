@@ -5,7 +5,7 @@
   const AA = window.AA;
   const POLL_MS = 1000;
   const THEMES = ["auto", "light", "dark"];
-  const TABS = ["timeline", "tools", "events", "state", "compare", "approvals"];
+  const TABS = ["timeline", "tools", "events", "state", "compare", "parallel", "approvals"];
   const state = { runs: [], key: null, run: null, loaded: null, filter: null, span: null, node: null, tab: "timeline", flow: null, approvalIds: null, locked: false, tags: {}, search: null, again: false };
   const busy = { runs: false, run: false, approvals: false }; // one request of each kind at a time
   const timers = [];
@@ -126,6 +126,7 @@
     else if (state.tab === "events") views.events.update(run);
     else if (state.tab === "state") views.state.update(run);
     else if (state.tab === "compare") views.compare.update(run, state.runs);
+    else if (state.tab === "parallel") AA.renderParallel($("tab-parallel"), run ? run.parallel : null);
   }
 
   function renderDetail() {

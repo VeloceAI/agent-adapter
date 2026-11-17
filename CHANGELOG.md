@@ -14,6 +14,29 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   calls through the response cache; streams are not shared. A waiter's result counts as a
   cache hit and emits the new `inflight.shared` event. If the first call fails, its waiters
   get the same error; if it is cancelled, one waiter runs the call. Guide: Caching.
+- Shared board (`agent_adapter.board`): every run has one board in `ctx.extras["aa.board"]`
+  (`board_of(ctx)`), shared by nested calls, agent tools, tool loops and flow nodes. Agents
+  `post` statuses, findings and handoffs, `claim` work (the first caller wins), `read`,
+  `watch` and `summary` (fenced prompt text, marked as data). `MemoryBoardStore` (default),
+  `SQLiteBoardStore` and `RedisBoardStore`; `Executor(board=...)` with
+  `BoardSettings(scope="thread")` and caps. `board_tools()` gives the model read, post and
+  claim (short output: the 10 newest entries, filters `kind`, `by`, `since`, one entry in
+  full with `entry=`). `LoopAgent(board="auto")` and `run_tool_loop(board="auto")` send each
+  model call only what the other agents posted since its last turn, at most `board_chars`
+  (600) characters, and nothing when nothing changed; summaries leave out the agent's own
+  entries, keep each agent's latest status and cut long texts with a pointer. Agent tools
+  and flow nodes post their status on their own; flow and durable tool-loop checkpoints
+  keep the board, so a resume in a fresh process sees it. New events `board.posted` and
+  `board.claimed`. `agent_tool(..., parallel_safe=True)` lets agent tools of one run run
+  side by side.
+- `analyse_run(events)` (`agent_adapter.viewer`): how a run's parallel work went, for tests
+  and CI: each branch's wait at a join, the slowest branch, repeated calls, calls saved by
+  the cache or an identical call in flight, contested claims, and calls, tokens and cost
+  per agent, with the tokens the cache and shared calls saved (`llm.cached` events now
+  carry the cached reply's `usage`). The run viewer shows board points on the timeline and
+  a new Parallel tab. Guides: Share a board between agents, See how parallel agents went;
+  examples: `examples/parallel_research.py`, `examples/board_handoff.py`.
+
 - Voice agents can see: `VideoFeed` keeps the latest frame from the caller's camera or
   screen (`WebRTCAudio(video=feed)`, with Camera and Share screen on `webrtc_page`), a local
   camera or screen, any FFmpeg input, or a robot camera (`feed.poll(render)`).

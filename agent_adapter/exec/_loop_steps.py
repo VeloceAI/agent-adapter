@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 LoopFinish = Literal["stop", "max_steps", "length", "content_filter", "pending"]
 TextCallback = Callable[[str], Awaitable[None] | None]
+NoteFn = Callable[[ToolContext, Sequence[Message]], Awaitable[Message | None]]
 EventCallback = Callable[[StreamEvent], Awaitable[None] | None]
 
 
@@ -71,8 +72,10 @@ class _Loop:
         on_text: TextCallback | None = None,
         durable: LoopCheckpoints | None = None,
         on_event: EventCallback | None = None,
+        note: NoteFn | None = None,
     ) -> None:
         self.durable = durable
+        self.note = note
         self.llm = llm
         self.compression = compression
         self.on_text = on_text
@@ -148,7 +151,11 @@ class _Loop:
         return await self._call()
 
     async def _call(self) -> LLMResponse:
-        request = LLMRequest(messages=tuple(self.history), tools=self.tools, **self.request)
+        note = await self.note(self.ctx, self.history) if self.note is not None else None
+        if note is not None:  # kept, so the next note only needs what is new
+            self.history.append(note)
+        messages = tuple(self.history)
+        request = LLMRequest(messages=messages, tools=self.tools, **self.request)
         # The loop compressed and retries itself: a CompressingModel inside must not again.
         request = marked(request) if self.compression else request
         if self.on_text is None and self.on_event is None:

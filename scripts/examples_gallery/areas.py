@@ -66,6 +66,8 @@ AREA_OF = {
     "langgraph_flow": "frameworks",
     "multi_agent": "flows",
     "openapi_gateway": "serving",
+    "parallel_research": "flows",
+    "board_handoff": "flows",
     "openapi_import": "serving",
     "optimiser_demo": "optimiser",
     "serve_tools": "serving",

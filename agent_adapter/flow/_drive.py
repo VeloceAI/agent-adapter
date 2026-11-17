@@ -8,6 +8,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from agent_adapter.board.context import restore
 from agent_adapter.core.context import ToolContext
 from agent_adapter.core.control import is_control_flow
 from agent_adapter.core.errors import CheckpointConflict, CheckpointStoreCorrupt
@@ -73,6 +74,7 @@ async def drive(runner: FlowRunner, run: Run, cursor: Cursor) -> FlowResult[Any]
     traced: dict[str, Any] = {"trace_state": True} if run.env.trace_state else {}
     start = make_event(EventType.FLOW_STARTED, run.ctx, flow=run.graph.name, **traced)
     emit_with_content(run.ctx.sink, start, lambda: {"input": safe_value(cursor.state)})
+    await restore(run.ctx, cursor.board)  # a resumed or recovered run gets its board back
     try:
         result = await _result(runner, run, cursor)
     except asyncio.CancelledError:

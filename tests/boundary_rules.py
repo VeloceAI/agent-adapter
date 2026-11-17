@@ -50,6 +50,7 @@ SUBPACKAGES = {
     "viewer",
     "voice",
     "robotics",
+    "board",
 }
 # `handlers` (queues, serverless), `cli` (the command), `viewer` (run recorder and local
 # page), `audit` (the audit sink) and `robotics` (the robot gate) are leaf entry points: no
@@ -87,6 +88,8 @@ ALLOWED = {
     # hooks only for `is_secret_field` (approval memory never names secret fields).
     "approval": {"base", "runtime", "tracing", "hooks", "approval"},
     "hooks": {"base", "core", "runtime", "tracing", "hooks"},
+    # The shared board sits below exec and flow: they post statuses and seal its entries.
+    "board": {"base", "core", "runtime", "tracing", "board"},
     # models and exec import context lazily: ports honour LLMRequest.compression, and
     # run_tool_loop(compression=) compresses its history.
     "models": {
@@ -110,9 +113,10 @@ ALLOWED = {
         "tracing",
         "models",
         "context",
+        "board",
         "exec",
     },
-    "flow": {"base", "core", "runtime", "hooks", "approval", "tracing", "exec", "flow"},
+    "flow": {"base", "core", "runtime", "hooks", "approval", "tracing", "exec", "board", "flow"},
     # Context compression: core (recall tool spec), cache (digests, envelopes), hooks (redact
     # before summarising), cost (ledger, model caps), tracing (events), embeddings (scorers).
     # Never exec, approval or models: the tool loop and model ports import it, not back.

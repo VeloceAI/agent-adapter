@@ -15,6 +15,7 @@ from typing import Any
 from agent_adapter.core.errors import ConfigError
 from agent_adapter.viewer._files import RunFile, group_runs, list_segments, parse_name
 from agent_adapter.viewer._fold import Fold, summarise, valid_event
+from agent_adapter.viewer._overlap import analyse_run
 from agent_adapter.viewer._search import SearchFold
 from agent_adapter.viewer.lanes import build_spans
 from agent_adapter.viewer.layout import layout
@@ -184,6 +185,7 @@ class RunFolder:
             "graphs": graphs,
             "tools": tools,
             "spans": _cap_spans(spans),
+            "parallel": analyse_run(detail.events),
             "spans_total": len(spans),
             "truncated": any(_is(r, "truncated") for r in records),
         }

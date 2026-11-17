@@ -6,7 +6,7 @@ Record runs to a folder and browse them on 127.0.0.1 (`agent-adapter ui`), or ch
 
 ::: agent_adapter.viewer
     options:
-      members: [ApprovalDesk, DEFAULT_FOLDER, LOOPBACK, Recorder, RunFolder, ViewerServer, assign_lanes, build_spans, check_host, export, import_otlp, layout, make_server, record, serve]
+      members: [ApprovalDesk, DEFAULT_FOLDER, LOOPBACK, Recorder, RunFolder, ViewerServer, analyse_run, assign_lanes, build_spans, check_host, export, import_otlp, layout, make_server, record, serve]
 
 Also exported here, documented under the canonical path: [`Attachment`](chat.md#agent_adapter.chat.Attachment), [`ChatAgent`](chat.md#agent_adapter.chat.ChatAgent), [`ChatMessage`](chat.md#agent_adapter.chat.ChatMessage), [`ChatSession`](chat.md#agent_adapter.chat.ChatSession).
 

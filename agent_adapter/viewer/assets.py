@@ -23,6 +23,7 @@ SCRIPTS = (
     "statepanel.js",
     "compare.js",
     "panels.js",
+    "parallel.js",
     "views.js",
     "runsearch.js",
     "app.js",

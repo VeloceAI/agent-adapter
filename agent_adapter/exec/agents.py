@@ -10,9 +10,11 @@ from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Iterable, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from agent_adapter.approval.builtin import ConfirmRule, evaluate_confirm
+from agent_adapter.board._author import posting_as
+from agent_adapter.board.context import NOTE_CHARS, post_status
 from agent_adapter.core.callables import is_async
 from agent_adapter.core.context import ToolContext
 from agent_adapter.core.errors import (
@@ -36,6 +38,7 @@ TaskAgent = Callable[[str, ToolContext], str | Awaitable[str]]
 AGENT_KIND = "agent"
 DEFAULT_MAX_DEPTH = 3
 MAX_PARKED = 256  # paused sub-agent histories kept for a resume, oldest dropped first
+STATUS_TASK_CHARS = 160  # characters of the task an agent's automatic status shows
 PARK_TTL_S = 3600.0  # a paused history older than this is dropped (it may hold PII)
 
 # How many agent tools are running around the current task; child tasks and threads inherit it.
@@ -61,6 +64,8 @@ class LoopAgent:
     instructions: str = ""
     max_steps: int = 8
     request_options: Mapping[str, Any] | None = None
+    board: Literal["auto", "off"] = "off"  # "auto": the others' new board entries each turn
+    board_chars: int = NOTE_CHARS
 
     def first_messages(self, task: str) -> list[Message]:
         """The history a fresh run starts from: the instructions, then the task."""
@@ -83,8 +88,13 @@ def agent_tool(
     timeout: float | None = None,
     confirm: ConfirmRule = False,
     tags: Iterable[str] = (),
+    parallel_safe: bool = False,
 ) -> ToolSpec:
-    """A tool (kind "agent") that runs `agent` on the model's `task` inside the calling run."""
+    """A tool (kind "agent") that runs `agent` on the model's `task` inside the calling run.
+
+    Agent tools of one run take turns; with `parallel_safe=True` several run side by side
+    (fan-out), and so do the tool calls inside them.
+    """
     if isinstance(agent, LoopAgent):
         if executor is None:
             raise ConfigError(
@@ -122,6 +132,7 @@ def agent_tool(
         tags=frozenset(tags),
         timeout=timeout,
         confirm=confirm if confirm is False else confirm_unless_resumed,
+        parallel_safe=parallel_safe,
     )
 
 
@@ -163,24 +174,36 @@ class _AgentRunner:
             raise AgentDepthExceeded(self.name, self.max_depth, run_id=ctx.run_id)
         token = _DEPTH.set(depth + 1)
         ctx.emit("agent.started", agent=self.name, depth=depth + 1)
+        await post_status(ctx, f"started: {task[:STATUS_TASK_CHARS]}", by=self.name)
         status = "error"
         try:
-            if isinstance(self.agent, LoopAgent):
-                answer = await self._loop(self.agent, task, ctx)
-            else:
-                answer = await _call_task(self.agent, task, ctx)
-            if not isinstance(answer, str):
-                raise ToolUsageError(
-                    f"agent {self.name!r} must answer with a str, got {type(answer).__name__}"
-                )
+            with posting_as(self.name):
+                answer = await self._answer(task, ctx)
             status = "ok"
         except ApprovalPending:
             status = "pending"
             raise
+        except asyncio.CancelledError:
+            status = "cancelled"
+            raise
         finally:
             _DEPTH.reset(token)
-            ctx.emit("agent.finished", agent=self.name, depth=depth + 1, status=status)
+            emitted = "error" if status == "cancelled" else status
+            ctx.emit("agent.finished", agent=self.name, depth=depth + 1, status=emitted)
+            if status != "cancelled":  # a cancelled task must not wait on a store
+                await post_status(ctx, f"finished ({status})", by=self.name)
         logger.info("agent %s answered (run %s, call %s)", self.name, ctx.run_id, ctx.call_id)
+        return answer
+
+    async def _answer(self, task: str, ctx: ToolContext) -> str:
+        if isinstance(self.agent, LoopAgent):
+            answer = await self._loop(self.agent, task, ctx)
+        else:
+            answer = await _call_task(self.agent, task, ctx)
+        if not isinstance(answer, str):
+            raise ToolUsageError(
+                f"agent {self.name!r} must answer with a str, got {type(answer).__name__}"
+            )
         return answer
 
     async def _loop(self, agent: LoopAgent, task: str, ctx: ToolContext) -> str:
@@ -198,6 +221,8 @@ class _AgentRunner:
             ctx=ctx,
             stage=f"agent.{self.name}",
             request_options=agent.request_options,
+            board=agent.board,
+            board_chars=agent.board_chars,
         )
         if result.finish == "pending":
             self._park(key, task, result)

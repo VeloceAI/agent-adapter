@@ -3,7 +3,7 @@
 
 (function () {
   const AA = (window.AA = window.AA || {});
-  const FAMILIES = ["flow", "node", "tool", "llm", "context", "embedding", "memory"];
+  const FAMILIES = ["flow", "node", "tool", "llm", "context", "embedding", "memory", "board"];
 
   function matches(span, filter) {
     if (!filter) return true;

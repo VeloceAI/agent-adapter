@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from agent_adapter.board.context import BoardSettings
 from agent_adapter.core.ports import ApprovalPort, CachePort, EventSink, LedgerPort
 from agent_adapter.core.tool import ToolSpec
 from agent_adapter.exec._commit import RepeatWindow
@@ -53,3 +54,4 @@ class _Settings:
     runs: _RunTracker
     policy: ToolPolicy | None = None
     repeats: RepeatWindow | None = None
+    board: BoardSettings | None = None  # how Executor.context() makes each run's board

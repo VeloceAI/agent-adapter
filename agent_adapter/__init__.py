@@ -181,6 +181,7 @@ _SUBPACKAGES = frozenset(
     {
         "approval",
         "audit",
+        "board",
         "cache",
         "chat",
         "cli",

@@ -13,6 +13,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from agent_adapter.board.context import entries_of
 from agent_adapter.core.errors import FlowError, ToolUsageError, log_failure
 from agent_adapter.core.types import ApprovalDecision, ApprovalRequest
 from agent_adapter.exec._canon import (
@@ -120,6 +121,10 @@ def payload(checkpoint: FlowCheckpoint, encoder: Encoder | None) -> dict[str, An
     }
     if checkpoint._children:  # absent when empty, so checkpoints without sub-flows seal as before
         data["children"] = {n: payload(c, encoder) for n, c in checkpoint._children.items()}
+    if checkpoint._board:  # absent when empty too
+        board = [dict(row) for row in checkpoint._board]
+        check_plain(board, "board")
+        data["board"] = board
     return data
 
 
@@ -199,7 +204,7 @@ def _check_loadable(checkpoint: FlowCheckpoint, data: Mapping[str, Any]) -> None
         _check_loadable(child, data["children"][node])
     allowed = allowed_classes(type(checkpoint.state))
     # replays check their own classes; sub-flow runs were checked above with their own model
-    parts = {k: v for k, v in data.items() if k not in ("journal", "children")}
+    parts = {k: v for k, v in data.items() if k not in ("journal", "children", "board")}
     missing = sorted(tagged_classes(list(parts.values())) - allowed.keys())
     if missing:
         logger.warning(
@@ -288,6 +293,7 @@ def _build(sealer: Sealer, graph: FlowGraph, data: dict[str, Any], given: str) -
         _items=frozen({n: frozen(v) for n, v in load("items").items()}),
         _journal=frozen(data["journal"]),
         _children=frozen(children),
+        _board=entries_of(data.get("board", ())),
         _graph=data["graph"],
         _mac=given,
     )

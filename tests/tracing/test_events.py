@@ -116,6 +116,8 @@ CATALOGUE = {
         "summary_cost_usd",
     },
     "context.compress_failed": {"provider", "model", "trigger", "latency_ms", "error_kind"},
+    "board.posted": {"entry_id", "kind", "key", "by", "seq"},
+    "board.claimed": {"key", "by", "holder", "won"},
 }
 
 
