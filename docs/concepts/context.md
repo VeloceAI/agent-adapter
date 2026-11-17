@@ -68,6 +68,7 @@ Every event is an `Event(type, run_id, call_id, parent_id, ts, data)`. Types out
 | Context compression | `context.compressed`, `context.compress_failed` ([counts only](context-compression.md#errors-events-and-cost)) |
 | Flow | `flow.started`, `flow.finished`, `node.started`, `node.finished`, `node.failed`, `node.paused`, `node.cached`; durable runs: `checkpoint.saved`, `run.recovered` |
 | Budget | `budget.warning`, `budget.reserved`, `budget.exceeded` |
+| Template documents | `compose.blank_started`, `compose.blank_filled`, `compose.edited` ([Markdown only with `capture_content`](../how-to/template-documents.md#live-preview-and-events)) |
 
 `make_event(type, ctx, *, call_id=None, **data)` builds one and rejects an unknown type
 or missing keys (`ToolUsageError`). Given an explicit `call_id`, the context's own call

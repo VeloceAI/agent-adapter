@@ -70,6 +70,7 @@ AREA_OF = {
     "board_handoff": "flows",
     "openapi_import": "serving",
     "optimiser_demo": "optimiser",
+    "report_template": "flows",
     "serve_tools": "serving",
     "template_adk": "frameworks",
     "template_agno": "frameworks",

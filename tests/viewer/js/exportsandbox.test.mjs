@@ -13,7 +13,7 @@ const demo = readFileSync(join(ROOT, "docs", "assets", "demo", "sample-run.html"
 const data = /<script type="application\/json" id="aa-data">([\s\S]*?)<\/script>/.exec(demo)[1];
 const page = readFileSync(join(STATIC, "index.html"), "utf8");
 const body = page.slice(page.indexOf("<body>") + "<body>".length, page.indexOf("<!-- AA_DATA -->"));
-const scripts = Array.from(page.matchAll(/<script src="static\/([\w.]+)"><\/script>/g), (m) => m[1]).filter((name) => !name.startsWith("chat") && !["markdown.js", "inspector.js"].includes(name));
+const scripts = Array.from(page.matchAll(/<script src="static\/([\w.]+)"><\/script>/g), (m) => m[1]).filter((name) => !name.startsWith("chat") && name !== "inspector.js");
 
 const denied = () => { throw Object.assign(new Error("The document is sandboxed and lacks the 'allow-same-origin' flag."), { name: "SecurityError" }); };
 const document = installDom({ hash: "#run=run_" + "0".repeat(31) + "1", html: '<meta name="aa-chat" content="">' + body }); // the iframe opens the flow run

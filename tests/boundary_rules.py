@@ -51,6 +51,7 @@ SUBPACKAGES = {
     "voice",
     "robotics",
     "board",
+    "compose",
 }
 # `handlers` (queues, serverless), `cli` (the command), `viewer` (run recorder and local
 # page), `audit` (the audit sink) and `robotics` (the robot gate) are leaf entry points: no
@@ -117,6 +118,20 @@ ALLOWED = {
         "exec",
     },
     "flow": {"base", "core", "runtime", "hooks", "approval", "tracing", "exec", "board", "flow"},
+    # Template documents compile to a flow; blanks run models and loop agents on the executor,
+    # cite retrieval documents, and meter spend (a ledger and the budget hook).
+    "compose": {
+        "base",
+        "core",
+        "runtime",
+        "cost",
+        "hooks",
+        "tracing",
+        "exec",
+        "flow",
+        "retrieval",
+        "compose",
+    },
     # Context compression: core (recall tool spec), cache (digests, envelopes), hooks (redact
     # before summarising), cost (ledger, model caps), tracing (events), embeddings (scorers).
     # Never exec, approval or models: the tool loop and model ports import it, not back.

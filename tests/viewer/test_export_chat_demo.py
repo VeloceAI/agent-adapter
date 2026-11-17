@@ -19,7 +19,7 @@ from agent_adapter.viewer.assets import (
 )
 from tests.viewer.test_export import EXTERNAL, FETCHED
 
-ORDER = ("chatapi.js", "chatdemo.js", "markdown.js", "chat.js")
+ORDER = ("chatapi.js", "chatdemo.js", "chatcards.js", "chat.js")
 CHAT = {"info": {"enabled": True, "mode": "demo"}, "live": "python app.py", "chats": []}
 
 

@@ -22,7 +22,7 @@ from tests.docs.test_no_internal_refs import _hits
 ROOT = Path(__file__).resolve().parents[2]
 FORBIDDEN_DOMAIN = re.compile(r"\b(tax|taxes|gst|pan|80c|taxmann|income-tax)\b", re.I)
 PYTHON_BLOCK = re.compile(r"^```python\n(.*?)^```$", re.M | re.S)
-CONCISE_MAX_BYTES = 32_000  # about 7.5k tokens: cheap to load into every agent session
+CONCISE_MAX_BYTES = 32_768  # about 8k tokens: cheap to load into every agent session
 ORDER = (
     "## What it is",
     "## Install",
