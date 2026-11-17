@@ -4,6 +4,9 @@ The browser sends an SDP offer to any HTTP route you own; `accept(offer)` return
 answer. Audio is Opus at 48 kHz both ways. The browser's own echo cancellation keeps the
 agent's voice out of the microphone, so speakers work, not only headphones.
 
+With `video=VideoFeed(...)`, the browser's camera or screen share feeds it (see
+`agent_adapter.voice.video`); without one, incoming video is declined.
+
 Our answer never asks the browser for DTX: with DTX, the browser sends nothing in quiet,
 and the first syllable after a pause (a "Wait") arrives clipped.
 """
@@ -17,10 +20,13 @@ import logging
 import re
 import time
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from agent_adapter.core.errors import MissingDependency
 from agent_adapter.voice.playout import PlayoutBuffer
+
+if TYPE_CHECKING:
+    from agent_adapter.voice.video import VideoFeed
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +56,13 @@ class WebRTCAudio:
 
     out_rate = OUT_RATE
 
-    def __init__(self, *, in_rate: int = 16_000, ice_servers: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        in_rate: int = 16_000,
+        ice_servers: list[str] | None = None,
+        video: VideoFeed | None = None,
+    ) -> None:
         aiortc, av = _aiortc()
         self.in_rate = in_rate
         # aiortc falls back to a public STUN server; with no `ice_servers` we contact none
@@ -61,6 +73,8 @@ class WebRTCAudio:
         self._out = _agent_track(aiortc, av)()
         self._frames: asyncio.Queue[bytes | None] = asyncio.Queue()
         self._reader: asyncio.Task[None] | None = None
+        self._video = video
+        self._video_reader: asyncio.Task[None] | None = None
         self.pc.on("track", self._on_track)
         self.pc.on("connectionstatechange", self._on_state)
 
@@ -70,6 +84,10 @@ class WebRTCAudio:
         await self.pc.setRemoteDescription(
             aiortc.RTCSessionDescription(sdp=offer["sdp"], type=offer["type"])
         )
+        if self._video is None:
+            for transceiver in self.pc.getTransceivers():
+                if transceiver.kind == "video":
+                    transceiver.direction = "inactive"
         self.pc.addTrack(self._out)
         await self.pc.setLocalDescription(await self.pc.createAnswer())
         local = self.pc.localDescription
@@ -83,16 +101,19 @@ class WebRTCAudio:
             yield frame
 
     async def close(self) -> None:
-        reader, self._reader = self._reader, None
-        if reader is not None:
-            reader.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await reader
+        for reader in (self._reader, self._video_reader):
+            if reader is not None:
+                reader.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await reader
+        self._reader = self._video_reader = None
         await self.pc.close()
 
     def _on_track(self, track: Any) -> None:
         if track.kind == "audio" and self._reader is None:
             self._reader = asyncio.ensure_future(self._read(track))
+        elif track.kind == "video" and self._video is not None and self._video_reader is None:
+            self._video_reader = self._video.follow(track)
 
     def _on_state(self) -> None:
         if self.pc.connectionState in _ENDED:

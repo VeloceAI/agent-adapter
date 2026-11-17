@@ -213,6 +213,7 @@ ODM_ROOTS: dict[str, set[str]] = {
     "voice/local.py": {"sounddevice"},
     "voice/moonshine.py": {"moonshine_voice"},
     "voice/webrtc.py": {"aiortc", "av"},
+    "voice/video.py": {"aiortc", "av"},
     "voice/_http.py": {"httpx"},
     "voice/deepgram.py": {"websockets"},
     "robotics/mujoco_sim.py": {"mujoco"},
