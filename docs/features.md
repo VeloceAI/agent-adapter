@@ -37,16 +37,16 @@ No agent framework is needed: a FastAPI service calling an LLM gets all of this 
 
 | Feature | Guide |
 |---|---|
-| `run`, `run_many(concurrency=)`, `parallel(*coros)`, `as_completed` | [Batches](concepts/executor.md#batches), [Parallel retrieval](how-to/parallel-retrieval.md) |
+| `run`, `run_many(concurrency=)`, `parallel(*coros)`, `as_completed`; `on_error="collect"` / `"fail_fast"`, `ToolResult` | [Batches](concepts/executor.md#batches), [Parallel retrieval](how-to/parallel-retrieval.md) |
 | `run_plan(steps)`: `depends_on` waves, cycle check | [Plans](concepts/executor.md#plans) |
-| `on_error="collect"` / `"fail_fast"`, `ToolResult` | [Batches](concepts/executor.md#batches) |
 | Retry with backoff and jitter; timeout; never retry control flow | [Retry](concepts/executor-policies.md#retry-timeout-and-control-flow) |
 | Run guards: `once_per_run`, max calls per run, concurrency per `kind` | [Runs and guards](concepts/executor-policies.md#runs-and-guards) |
 | `Hook` base class and dispatch (`before_*` / `after_*` / `on_*_error`, short-circuit), run by the executor | [Runtime](concepts/runtime.md#hooks), [One call](concepts/executor.md#one-call) |
 | `GuardrailHook`, `RateLimitHook`, `BudgetHook(max_usd)`; **1.1** team budgets per user, team or all, per day or month, shared across processes (SQLite, Redis, SQL) | [Hooks](concepts/hooks.md#guardrailhook), [Budgets](how-to/budgets.md), [Team budgets](how-to/team-budgets.md) |
 | **1.1** Guardrails: PII and secret checks with no model (`PIIGuard`), any guard service (`CallableGuard`), Presidio, NeMo Guardrails; block, redact or approve | [Guardrails](concepts/guardrails.md) |
 | **1.1** Policy file: access, approvals, guards, budgets and limits per tool, team and environment, for every surface; `agent-adapter policy check` | [Policy file](concepts/policy.md) |
-| **1.1** Multi-agent: agents as tools (`agent_tool`, `LoopAgent`), handoffs (`handoff`, `HandoffModel`), flow routing, depth guard | [Multi-agent](how-to/multi-agent.md) |
+| **1.1** Multi-agent: agents as tools (`agent_tool`, `LoopAgent`), handoffs (`handoff`, `HandoffModel`), flow routing, depth guard; **Next** a shared board (status, findings, handoffs, claims, only what is new) and `analyse_run` with the viewer's Parallel tab | [Multi-agent](how-to/multi-agent.md), [Share a board](how-to/shared-board.md), [Parallel runs](how-to/parallel-runs.md) |
+| **Next** Template documents: Markdown, HTML, XML or text templates with blanks filled in parallel by models or agents, code checks, an editor for style, a verifier, inline citations in any style, few tokens | [Template documents](how-to/template-documents.md), [Citations and tokens](how-to/template-citations.md) |
 | `Flow` builder, `Map` / `Join` / `Route` / `max_loops`, `pause`, keyed merges, local runner; **1.1** sub-flows (`SubFlow`) and a per-node cache (`NodeCache`); **1.1** crash-safe runs (a checkpoint per superstep, `recover`, no repeated side effects) and Temporal or DBOS as the engine | [Flows](concepts/flows.md), [Pause and resume](concepts/flow-resume.md), [Sub-flows and the node cache](concepts/flow-subflows.md), [Durable runs](concepts/durable-runs.md), [Temporal or DBOS](how-to/durable-engines.md) |
 | `Executor()` uses the default registry; `run` takes the tool function; `run_sync` / `resume_sync` twins; `configure`, `call`, `acall` | [Executor](concepts/executor.md), [Quickstart](get-started/quickstart.md) |
 | `LoopRunner`: one warm event loop for sync code in long-lived processes (`agent_adapter.runtime`) | [Runtime](concepts/runtime.md#looprunner-one-warm-loop-for-a-long-lived-process) |
@@ -77,7 +77,7 @@ No agent framework is needed: a FastAPI service calling an LLM gets all of this 
 | Sinks: memory, callback, JSON lines; `ledger.summary(run_id)` | [Cost](concepts/cost.md#ledger) |
 | `CachePort`, `MemoryCache`, `RedisCache` (extra) | [Cache](concepts/cache.md#backends) |
 | Cache keys, versioned JSON envelopes, `ToolResultCache` | [Runtime](concepts/runtime.md#cache-keys) |
-| Tool-result cache used by the executor (`cache_scope`: run / thread / global) | [Executor](concepts/executor-policies.md#cache-ledger-and-events), [Caching](how-to/caching.md) |
+| Tool-result cache used by the executor (`cache_scope`: run / thread / global); **Next** identical cached calls in flight at once run once | [Executor](concepts/executor-policies.md#cache-ledger-and-events), [Caching](how-to/caching.md) |
 | LLM response cache | [Cache](concepts/cache.md#llm-response-cache) |
 | `PromptLayout(static=, dynamic=)` | [Cache](concepts/cache.md#prompt-layout) |
 | Provider prefix-cache plug-ins (OpenAI, Gemini, Anthropic) | [Cache](concepts/cache.md#provider-plug-ins) |

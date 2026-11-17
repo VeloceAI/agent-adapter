@@ -1,5 +1,5 @@
 ---
-description: Eight ways teams put Agent Adapter to work, each with code you can run.
+description: Ten ways teams put Agent Adapter to work, each with code you can run.
 ---
 
 # Use cases
@@ -88,6 +88,26 @@ repository with no API keys. These are example scenarios, not customer stories.
 
     **Uses:** `RobotGate`, `ActionSpec`, a simulator shadow, the audit log.
     **Run:** `examples/robot_gate.py` · [Gate a robot](how-to/robot-safety.md)
+
+-   :material-account-group:{ .lg .middle } **Research agents that share their work**
+
+    ---
+
+    Several agents research in parallel, then a writer sums up. They post findings to one
+    board, claim topics so nobody searches twice, and you see who waited and what it cost.
+
+    **Uses:** the shared board, `analyse_run`, the viewer's Parallel tab.
+    **Run:** `examples/parallel_research.py` · [Share a board](how-to/shared-board.md)
+
+-   :material-file-document-edit:{ .lg .middle } **Reports with sources you can check**
+
+    ---
+
+    A quarterly report from a template: each section, table and diagram is filled by a model,
+    an editor evens the style, and every claim links to the document it came from.
+
+    **Uses:** `compose()`, inline citations, the verifier.
+    **Run:** `examples/report_template.py` · [Template documents](how-to/template-documents.md)
 
 </div>
 

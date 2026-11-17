@@ -78,4 +78,33 @@ DATA: tuple[Recipe, ...] = (
         ),
         full_only=True,
     ),
+    Recipe(
+        "let parallel or sequential agents see what the others are doing and found",
+        "`board_of(ctx)`, `board_tools()` and `LoopAgent(board=\"auto\")` "
+        "(`agent_adapter.board`)",
+        (
+            "from agent_adapter.board import board_of, board_tools",
+            "from agent_adapter.exec import LoopAgent",
+            "",
+            "registry.add_many(board_tools())  # board_read, board_post, board_claim",
+            'scout = LoopAgent(model, registry, board="auto")  # sees only what is new',
+            "ctx = executor.context()  # one board per run, shared by every agent in it",
+            'await board_of(ctx).post("finding", "Oslo museums open 10-17", by="planner")',
+            "print(await board_of(ctx).summary())",
+        ),
+    ),
+    Recipe(
+        "fill a document template (Markdown, HTML, XML, text) from many model calls, "
+        "with citations",
+        "`compose()` / `compose_sync()` (`agent_adapter.compose`)",
+        (
+            "from agent_adapter.compose import compose",
+            "",
+            "page = '# Weather\\n\\n{{ summary | \"one sentence on Oslo\" }}'",
+            'docs = [{"id": "met", "text": "Oslo: sunny, 21 C", "source": {"title": "Met"}}]',
+            "result = await compose(page, model=model, sources=docs)  # editor and checks on",
+            "print(result.markdown, result.usage)  # citations: numeric, linked, footnote...",
+        ),
+        full_only=True,
+    ),
 )

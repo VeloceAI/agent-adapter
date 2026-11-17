@@ -249,7 +249,7 @@ install: the [run viewer demo](https://agent-adapter.veloceai.in/assets/demo/sam
 | Tools | `@registry.tool`, `registry.wrap()`; shaping (`fixed=`, `hide=`, `rename=`); portable-schema check; typed errors under `AdapterError` |
 | Schemas | OpenAI (Chat, Responses, strict), Gemini and Anthropic renderers; strict-mode `null` means "use the default" |
 | Execution | `run`, `run_many`, `run_plan` waves, `parallel`, `as_completed`; retry, timeout, hooks, run guards |
-| Multi-agent | agents as tools (`agent_tool`, `LoopAgent`) and handoffs (`handoff`, `HandoffModel`) in one run, with a depth guard |
+| Multi-agent | agents as tools (`agent_tool`, `LoopAgent`) and handoffs (`handoff`, `HandoffModel`) in one run, with a depth guard; next release: a shared board for parallel and sequential agents with a Parallel view ([Board](docs/how-to/shared-board.md)), and documents in Markdown, HTML, XML or text filled from many model calls with an editor, a verifier and inline citations ([Templates](docs/how-to/template-documents.md)) |
 | Guardrails | `PIIGuard` (emails, phones, cards, IBANs, secrets; no model), `CallableGuard`, Presidio, NeMo; block, redact or approve |
 | Policy file | access, approvals, guards, budgets and limits per tool, team and environment in one YAML, TOML or JSON file; `agent-adapter policy check` ([Policy file](docs/concepts/policy.md)) |
 | Audit log | a signed, hash-chained log of approvals, guard blocks, budget stops and memory erases; `agent-adapter audit verify` and export to CSV ([Audit log](docs/concepts/audit.md)) |

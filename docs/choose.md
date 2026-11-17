@@ -56,6 +56,8 @@ flowchart TD
 | a voice or phone agent | [A voice call with no framework](how-to/voice-pipeline.md), [Build a voice agent](how-to/voice-agents.md) |
 | an agent that sees a camera or screen | [Let a voice agent see](how-to/voice-video.md) |
 | a robot | [Gate a robot](how-to/robot-safety.md) |
+| parallel or sequential agents that see each other's work | [Share a board](how-to/shared-board.md), [Parallel runs](how-to/parallel-runs.md) |
+| a report or page filled from many model calls, with citations | [Template documents](how-to/template-documents.md), [Citations and tokens](how-to/template-citations.md) |
 
 ## Always on
 
