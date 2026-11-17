@@ -126,6 +126,7 @@
 
 /* Cards */
 .aa-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1em; margin-top: 2.2em; text-align: left; }
+.aa-cards--2 { grid-template-columns: repeat(2, 1fr); }
 .aa-card b { display: block; font-size: 1.08em; margin-bottom: .45em; letter-spacing: -.01em; }
 .aa-card p { margin: 0; color: var(--aa-dim); font-size: .93em; }
 .aa-feat, .aa-case, .aa-ent { transition: transform .2s, border-color .2s; }

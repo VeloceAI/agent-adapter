@@ -131,16 +131,11 @@ nav:
       - For AI coding agents: get-started/for-ai-agents.md
       - Which feature do I need?: choose.md
       - Features: features.md
-      - "Features: voice, video, robots": features-voice.md
       - Use cases: use-cases.md
       - Watch the reel: reel.md
       - Troubleshooting: troubleshooting.md
-  - How-to:
-      - Attach anywhere: how-to/attach-anywhere.md
-      - Wrap a legacy class: how-to/wrap-legacy-code.md
-      - Parallel retrieval: how-to/parallel-retrieval.md
-      - Human in the loop: how-to/human-in-the-loop.md
-      - Run flows on Temporal or DBOS: how-to/durable-engines.md
+  - Voice & robots:
+      - Overview: voice.md
       - Build a voice agent: how-to/voice-agents.md
       - A voice call with no framework: how-to/voice-pipeline.md
       - Voice call features: how-to/voice-call-features.md
@@ -149,6 +144,12 @@ nav:
       - Hosted speech, echo and phone calls: how-to/voice-providers-and-phone.md
       - Voice transports and realtime models: how-to/voice-transports.md
       - Gate a robot: how-to/robot-safety.md
+  - How-to:
+      - Attach anywhere: how-to/attach-anywhere.md
+      - Wrap a legacy class: how-to/wrap-legacy-code.md
+      - Parallel retrieval: how-to/parallel-retrieval.md
+      - Human in the loop: how-to/human-in-the-loop.md
+      - Run flows on Temporal or DBOS: how-to/durable-engines.md
       - Budgets: how-to/budgets.md
       - Team budgets: how-to/team-budgets.md
       - Caching: how-to/caching.md

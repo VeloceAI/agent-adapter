@@ -1,0 +1,26 @@
+{% set live_cards = [
+  ("Our own", "Our own voice framework", "We built <code>VoiceSession</code>: phone, browser and laptop calls with no extra media server. It listens, knows when the caller has finished, answers, and stops when interrupted. A payment the caller talks over still happens only once, and approvals are a spoken \"yes\".", "how-to/voice-pipeline/"),
+  ("Connectors", "Or inside LiveKit and Pipecat", "Already use LiveKit Agents or Pipecat? Plug the same agent and the same safety rules into them. Use them for rooms with many people, SIP trunks and mobile apps.", "how-to/voice-agents/"),
+  ("Video", "Agents that can see", "The caller turns on a camera or shares a screen, or a robot sends its camera. When the agent needs to, it takes one look and answers what it sees.", "how-to/voice-video/"),
+  ("Robotics", "Robots that stay safe", "Every robot move is checked against safe limits before it runs, with an emergency stop and an audit log. Tested in the MuJoCo and ROS 2 simulators.", "how-to/robot-safety/"),
+] %}
+<section class="aa-band aa-light">
+  <div class="aa-inner">
+    <h2>Talk, see and move, <span class="aa-hl2">safely</span></h2>
+    <p class="aa-sub">Voice calls, live video and robots, with the same approvals, budgets and traces as every other tool.</p>
+    <div class="aa-cards aa-cards--2">
+      {% for tag, title, body, href in live_cards %}
+        <a class="aa-card aa-case aa-reveal" href="{{ href | url }}">
+          <span class="aa-tag">{{ tag }}</span>
+          <b>{{ title }}</b>
+          <p>{{ body | safe }}</p>
+          <span class="aa-more">Learn more &rarr;</span>
+        </a>
+      {% endfor %}
+    </div>
+    <div class="aa-ctas">
+      <a class="aa-btn aa-btn--primary" href="{{ 'voice/' | url }}">Explore voice, video and robots</a>
+      <a class="aa-btn" href="{{ 'how-to/voice-compared/' | url }}">Compare with LiveKit and Pipecat</a>
+    </div>
+  </div>
+</section>

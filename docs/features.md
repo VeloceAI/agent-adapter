@@ -7,7 +7,7 @@ description: "What Agent Adapter does for AI agent tools: human-in-the-loop appr
 
 What Agent Adapter does, grouped by area, with a link to each guide. Everything is available
 since **1.0**; rows marked **1.1** are new in 1.1. Voice, video and robots (next release) are on
-[their own page](features-voice.md). Runnable code: the [Examples gallery](examples.md). Not sure
+[their own page](voice.md). Runnable code: the [Examples gallery](examples.md). Not sure
 where to start? See [Which feature do I need?](choose.md). Planned work: the [Roadmap](roadmap.md).
 No agent framework is needed: a FastAPI service calling an LLM gets all of this directly.
 

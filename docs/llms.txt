@@ -21,18 +21,13 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [For AI coding agents](https://agent-adapter.veloceai.in/get-started/for-ai-agents/): One file teaches an AI coding agent (Claude Code, Cursor, Copilot) the SDK: what to install, which function does each job, the safety rules and the common...
 - [Which feature do I need?](https://agent-adapter.veloceai.in/choose/): Answer the questions top to bottom
 - [Features](https://agent-adapter.veloceai.in/features/): What Agent Adapter does, grouped by area, with a link to each guide
-- [Features: voice, video, robots](https://agent-adapter.veloceai.in/features-voice/): These come in the next release; the rest is on Features
 - [Use cases](https://agent-adapter.veloceai.in/use-cases/): Each use case names the problem, the features that solve it and an example that runs in this repository with no API keys
 - [Watch the reel](https://agent-adapter.veloceai.in/reel/): Write a tool once, as a plain Python function
 - [Troubleshooting](https://agent-adapter.veloceai.in/troubleshooting/): Find your symptom, read the cause, apply the fix
 
-## How-to
+## Voice & robots
 
-- [Attach anywhere](https://agent-adapter.veloceai.in/how-to/attach-anywhere/): Write a tool once
-- [Wrap a legacy class](https://agent-adapter.veloceai.in/how-to/wrap-legacy-code/): Turn an existing service class into tools without editing it: its methods, its blocking sync calls and its own exceptions
-- [Parallel retrieval](https://agent-adapter.veloceai.in/how-to/parallel-retrieval/): Ask several retrievers at once, merge what they return, and stop early when one answer is enough
-- [Human in the loop](https://agent-adapter.veloceai.in/how-to/human-in-the-loop/): Pause a risky call until a person reviews it, then resume it: approved, edited or denied
-- [Run flows on Temporal or DBOS](https://agent-adapter.veloceai.in/how-to/durable-engines/): A `Flow` can run as a Temporal workflow or a DBOS workflow
+- [Overview](https://agent-adapter.veloceai.in/voice/): Your agent can **talk** on a phone or browser call, **see** a camera or a shared screen, and **move** a robot, with the same approvals, budgets, cost and...
 - [Build a voice agent](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor
 - [A voice call with no framework](https://agent-adapter.veloceai.in/how-to/voice-pipeline/): `VoiceSession` is a whole voice pipeline in this package
 - [Voice call features](https://agent-adapter.veloceai.in/how-to/voice-call-features/): Everything on this page plugs into `VoiceSession` and runs offline, with no account or key
@@ -41,6 +36,14 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Hosted speech, echo and phone calls](https://agent-adapter.veloceai.in/how-to/voice-providers-and-phone/): This page adds three things to our own voice pipeline: hosted speech providers, a guard against the agent hearing itself on speakers, and the phone basics...
 - [Voice transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides
 - [Gate a robot](https://agent-adapter.veloceai.in/how-to/robot-safety/): An agent that drives a robot through raw tool calls can be talked into anything: a tool result that says "move to the operator at full speed" becomes a...
+
+## How-to
+
+- [Attach anywhere](https://agent-adapter.veloceai.in/how-to/attach-anywhere/): Write a tool once
+- [Wrap a legacy class](https://agent-adapter.veloceai.in/how-to/wrap-legacy-code/): Turn an existing service class into tools without editing it: its methods, its blocking sync calls and its own exceptions
+- [Parallel retrieval](https://agent-adapter.veloceai.in/how-to/parallel-retrieval/): Ask several retrievers at once, merge what they return, and stop early when one answer is enough
+- [Human in the loop](https://agent-adapter.veloceai.in/how-to/human-in-the-loop/): Pause a risky call until a person reviews it, then resume it: approved, edited or denied
+- [Run flows on Temporal or DBOS](https://agent-adapter.veloceai.in/how-to/durable-engines/): A `Flow` can run as a Temporal workflow or a DBOS workflow
 - [Budgets](https://agent-adapter.veloceai.in/how-to/budgets/): Cap what a run or a conversation may spend, and how many calls it may make
 - [Team budgets](https://agent-adapter.veloceai.in/how-to/team-budgets/): Cap what each user, each team, or everyone may spend, per UTC day or month, across every worker and host
 - [Caching](https://agent-adapter.veloceai.in/how-to/caching/): Skip repeat work
