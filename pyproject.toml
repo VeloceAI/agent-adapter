@@ -68,8 +68,9 @@ pipecat = ["pipecat-ai>=1.13,<2"]
 vad = ["onnxruntime>=1.20,<2", "numpy>=1.26,<3"]
 # Our own voice pipeline on a laptop: Moonshine speech models (MIT) and the sound card.
 voice-local = ["moonshine-voice>=0.1.6,<0.2", "sounddevice>=0.5,<1"]
-# Hosted speech for our voice pipeline: Deepgram, OpenAI, ElevenLabs, Cartesia; Twilio REST.
-voice-cloud = ["httpx>=0.27,<1", "websockets>=13,<18"]
+# Hosted speech for our voice pipeline: Deepgram, OpenAI, ElevenLabs, Cartesia, Fish Audio,
+# AssemblyAI, Soniox, Rime; Twilio REST. msgpack (Apache-2.0) frames Fish Audio live TTS.
+voice-cloud = ["httpx>=0.27,<1", "websockets>=13,<18", "msgpack>=1.0,<2"]
 # Browser calls over WebRTC with no media server (aiortc, BSD-3-Clause).
 webrtc = ["aiortc>=1.14,<2"]
 # Robot shadow simulation on physics (MuJoCo, Apache-2.0).
@@ -308,6 +309,8 @@ module = [
     "websockets.*",
     "moonshine_voice",
     "moonshine_voice.*",
+    "msgpack",
+    "msgpack.*",
     "mujoco",
     "mujoco.*",
     "rclpy",

@@ -1,57 +1,43 @@
-"""`DeepgramSTT`: Deepgram speech-to-text that hears each turn as it is spoken.
+"""Deepgram speech-to-text that hears each turn as it is spoken: `DeepgramSTT` (Nova) and
+`DeepgramFluxSTT` (Flux, which also says when the turn ends, early).
 
-`open()` streams the turn over Deepgram's live WebSocket while the caller talks; at the
-end of the turn we send `Finalize` and `CloseStream`, so only the last moment is left to
-transcribe. `transcribe()` sends a finished turn in one HTTP request. The key comes from
-`api_key=` or `DEEPGRAM_API_KEY` and travels only in the `Authorization` header.
+`DeepgramSTT.open()` streams the turn over the live WebSocket; at its end we send
+`Finalize` and `CloseStream`, so only the last moment is left to transcribe.
+`transcribe()` sends a finished turn in one HTTP request. The key comes from `api_key=`
+or `DEEPGRAM_API_KEY` and travels only in the `Authorization` header.
 """
 
 from __future__ import annotations
 
-import asyncio
-import contextlib
-import json
-from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import Any, Protocol
+from typing import Any
 from urllib.parse import urlencode
 
-from agent_adapter.core.errors import AdapterError, MissingDependency, ModelError
-from agent_adapter.models.errors import class_for_status
-from agent_adapter.voice._http import HttpClient, api_key, post, wav
+from agent_adapter.voice._http import HttpClient, post, wav
+from agent_adapter.voice._ws import (
+    Connect,
+    Frame,
+    LiveSocket,
+    LiveSTT,
+    LiveSTTStream,
+    dumps,
+    parse,
+)
 
 
-class LiveSocket(Protocol):
-    """The part of a WebSocket client connection the live stream uses."""
+class _Deepgram(LiveSTT):
+    provider = "deepgram"
+    env = "DEEPGRAM_API_KEY"
 
-    async def send(self, message: str | bytes) -> None: ...
-
-    def __aiter__(self) -> AsyncIterator[str | bytes]: ...
-
-    async def close(self) -> None: ...
+    def _headers(self) -> dict[str, str]:
+        return {"Authorization": f"Token {self._key()}"}
 
 
-Connect = Callable[[str, dict[str, str]], Awaitable[LiveSocket]]
-
-
-async def _websocket(url: str, headers: dict[str, str]) -> LiveSocket:
-    try:
-        from websockets.asyncio.client import connect
-    except ImportError as exc:
-        raise MissingDependency(
-            'Deepgram streaming needs websockets: pip install "agent-adapter[voice-cloud]"'
-        ) from exc
-    socket: LiveSocket = await connect(url, additional_headers=headers)
-    return socket
-
-
-class DeepgramSTT:
+class DeepgramSTT(_Deepgram):
     """A `StreamingSTT` on Deepgram (`model` such as `nova-3`).
 
     `finish_timeout_s` bounds the wait for the final words after the turn ends; past it
     the session falls back to `transcribe()` on the whole turn.
     """
-
-    provider = "deepgram"
 
     def __init__(
         self,
@@ -66,17 +52,14 @@ class DeepgramSTT:
         connect: Connect | None = None,
         timeout: float = 30,
     ) -> None:
-        self.model = model
+        url = f"wss://{host}/v1/listen"
+        super().__init__(
+            model, api_key=api_key, url=url, connect=connect, finish_timeout_s=finish_timeout_s
+        )
         self.language = language
         self.smart_format = smart_format
         self.host = host
-        self.finish_timeout_s = finish_timeout_s
-        self._api_key = api_key
         self._http = HttpClient(client, timeout)
-        self._connect = connect or _websocket
-
-    def _headers(self) -> dict[str, str]:
-        return {"Authorization": f"Token {api_key(self._api_key, 'DEEPGRAM_API_KEY', 'Deepgram')}"}
 
     def _query(self, **extra: str | int) -> str:
         params: dict[str, str | int] = {"model": self.model, "language": self.language}
@@ -96,99 +79,124 @@ class DeepgramSTT:
         channels = (response.json().get("results") or {}).get("channels") or [{}]
         return _transcript(channels[0])
 
-    def open(self, sample_rate: int) -> _DeepgramStream:
+    def open(self, sample_rate: int) -> _NovaStream:
         query = self._query(encoding="linear16", sample_rate=sample_rate, channels=1)
-        return _DeepgramStream(self, f"wss://{self.host}/v1/listen?{query}")
+        return _NovaStream(self, f"{self.url}?{query}")
 
     async def aclose(self) -> None:
         """Close the HTTP client this object made (one you passed in stays open)."""
         await self._http.aclose()
 
 
-class _DeepgramStream:
-    """One turn on the live socket: audio goes out as it comes; final results come back."""
-
-    def __init__(self, stt: DeepgramSTT, url: str) -> None:
-        self._stt = stt
-        self._url = url
-        self._audio: asyncio.Queue[bytes | None] = asyncio.Queue()
+class _NovaStream(LiveSTTStream):
+    def __init__(self, stt: LiveSTT, url: str) -> None:
         self._finals: list[str] = []
-        self._task = asyncio.ensure_future(self._run())
+        super().__init__(stt, url)
 
-    def feed(self, pcm: bytes) -> None:
-        if pcm:
-            self._audio.put_nowait(pcm)
+    def _closing(self) -> list[Frame]:
+        return [dumps({"type": "Finalize"}), dumps({"type": "CloseStream"})]
 
-    async def finish(self) -> str:
-        self._audio.put_nowait(None)
-        return await asyncio.wait_for(self._task, self._stt.finish_timeout_s)
+    def _handle(self, raw: Frame) -> bool:
+        message = parse(raw) if isinstance(raw, str) else {}
+        kind = message.get("type")
+        if kind == "Results":
+            if message.get("is_final") and (text := _transcript(message.get("channel"))):
+                self._finals.append(text)
+            return bool(message.get("from_finalize"))
+        if kind == "Error":
+            raise self._fail(message.get("description") or message.get("message"))
+        return kind == "Metadata"
 
-    async def cancel(self) -> None:
-        self._task.cancel()
-        with contextlib.suppress(asyncio.CancelledError, Exception):
-            await self._task
-
-    async def _run(self) -> str:
-        socket = await self._open()
-        reader = asyncio.ensure_future(self._read(socket))
-        try:
-            while (chunk := await self._audio.get()) is not None:
-                await socket.send(chunk)
-            await socket.send(json.dumps({"type": "Finalize"}))
-            await socket.send(json.dumps({"type": "CloseStream"}))
-            await reader
-            return " ".join(self._finals)
-        finally:
-            reader.cancel()
-            with contextlib.suppress(asyncio.CancelledError, Exception):
-                await reader
-            with contextlib.suppress(Exception):
-                await socket.close()
-
-    async def _open(self) -> LiveSocket:
-        stt = self._stt
-        headers = stt._headers()
-        try:
-            return await stt._connect(self._url, headers)
-        except AdapterError:
-            raise
-        except Exception as exc:  # websockets raises InvalidStatus with the HTTP response
-            status = getattr(getattr(exc, "response", None), "status_code", None)
-            raise class_for_status(status)(
-                f"Deepgram live connection failed ({type(exc).__name__})",
-                provider=stt.provider,
-                model=stt.model,
-                status_code=status,
-            ) from exc
-
-    async def _read(self, socket: LiveSocket) -> None:
-        async for raw in socket:
-            message = _parse(raw)
-            kind = message.get("type")
-            if kind == "Results":
-                if message.get("is_final"):
-                    text = _transcript(message.get("channel"))
-                    if text:
-                        self._finals.append(text)
-                if message.get("from_finalize"):
-                    return
-            elif kind == "Metadata":
-                return
-            elif kind == "Error":
-                detail = str(message.get("description") or message.get("message") or "")[:300]
-                raise ModelError(
-                    f"Deepgram error: {detail}", provider="deepgram", model=self._stt.model
-                )
+    def _result(self) -> str:
+        return " ".join(self._finals)
 
 
-def _parse(raw: Any) -> dict[str, Any]:
-    if not isinstance(raw, str):
-        return {}
-    try:
-        message = json.loads(raw)
-    except (ValueError, RecursionError):  # RecursionError: JSON nested too deep
-        return {}
-    return message if isinstance(message, dict) else {}
+class DeepgramFluxSTT(_Deepgram):
+    """A `StreamingSTT` on Deepgram Flux (`flux-general-en`) whose streams send `TurnSignal`s.
+
+    Flux decides the end of the turn itself. `eot_threshold` is how sure it must be to
+    send `EndOfTurn`; with `eager_eot_threshold` set (lower, such as 0.5) it first sends
+    `EagerEndOfTurn` (our `eager_end`), so a reply can start early, and `TurnResumed`
+    (`resumed`) if the caller goes on. Once `EndOfTurn` is in, `finish()` returns at once;
+    before that it sends `ForceEndTurn`, so Flux closes the turn without waiting for silence.
+    """
+
+    def __init__(
+        self,
+        model: str = "flux-general-en",
+        *,
+        eot_threshold: float | None = 0.7,
+        eager_eot_threshold: float | None = 0.5,
+        eot_timeout_ms: int | None = None,
+        keyterms: tuple[str, ...] = (),
+        api_key: str | None = None,
+        url: str = "wss://api.deepgram.com/v2/listen",
+        finish_timeout_s: float = 5.0,
+        connect: Connect | None = None,
+    ) -> None:
+        super().__init__(
+            model, api_key=api_key, url=url, connect=connect, finish_timeout_s=finish_timeout_s
+        )
+        self.eot_threshold = eot_threshold
+        self.eager_eot_threshold = eager_eot_threshold
+        self.eot_timeout_ms = eot_timeout_ms
+        self.keyterms = keyterms
+
+    def open(self, sample_rate: int) -> _FluxStream:
+        params: list[tuple[str, str | int | float]] = [
+            ("model", self.model),
+            ("encoding", "linear16"),
+            ("sample_rate", sample_rate),
+        ]
+        for name in ("eot_threshold", "eager_eot_threshold", "eot_timeout_ms"):
+            if (value := getattr(self, name)) is not None:
+                params.append((name, value))
+        params += [("keyterm", term) for term in self.keyterms]
+        return _FluxStream(self, f"{self.url}?{urlencode(params)}")
+
+
+class _FluxStream(LiveSTTStream):
+    def __init__(self, stt: LiveSTT, url: str) -> None:
+        self._turns: list[str] = []
+        self._current = ""
+        self._ended = self._finishing = False
+        super().__init__(stt, url)
+
+    def _closing(self) -> list[Frame]:
+        self._finishing = True  # ForceEndTurn makes Flux send EndOfTurn now
+        return [dumps({"type": "ForceEndTurn"}), dumps({"type": "CloseStream"})]
+
+    def _settled(self) -> bool:
+        return self._ended
+
+    def _handle(self, raw: Frame) -> bool:
+        message = parse(raw) if isinstance(raw, str) else {}
+        kind = message.get("type")
+        if kind in ("Error", "FatalError"):
+            raise self._fail(message.get("description") or message.get("code"))
+        if kind != "TurnInfo":
+            return False
+        event = message.get("event")
+        text = str(message.get("transcript") or "").strip()
+        confidence = message.get("end_of_turn_confidence")
+        confidence = float(confidence) if isinstance(confidence, int | float) else None
+        if event == "EndOfTurn":
+            if text:
+                self._turns.append(text)
+            self._current, self._ended = "", True
+            self._emit("end", self._result(), confidence)
+            return self._finishing
+        self._ended = False
+        if text or event == "StartOfTurn":
+            self._current = text
+        if event == "EagerEndOfTurn":
+            self._emit("eager_end", self._result(), confidence)
+        elif event == "TurnResumed":
+            self._emit("resumed", self._result(), confidence)
+        return False
+
+    def _result(self) -> str:
+        return " ".join(t for t in (*self._turns, self._current) if t)
 
 
 def _transcript(channel: Any) -> str:
@@ -199,4 +207,4 @@ def _transcript(channel: Any) -> str:
     return str(first.get("transcript", "")).strip() if isinstance(first, dict) else ""
 
 
-__all__ = ["Connect", "DeepgramSTT", "LiveSocket"]
+__all__ = ["Connect", "DeepgramFluxSTT", "DeepgramSTT", "LiveSocket"]

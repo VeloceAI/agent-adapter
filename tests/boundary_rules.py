@@ -235,7 +235,8 @@ ODM_ROOTS: dict[str, set[str]] = {
     "voice/webrtc.py": {"aiortc", "av"},
     "voice/video.py": {"aiortc", "av"},
     "voice/_http.py": {"httpx"},
-    "voice/deepgram.py": {"websockets"},
+    "voice/_ws.py": {"websockets"},
+    "voice/fish.py": {"msgpack"},
     "robotics/mujoco_sim.py": {"mujoco"},
     "robotics/ros2.py": {"rclpy", "geometry_msgs", "turtlesim"},
     **{

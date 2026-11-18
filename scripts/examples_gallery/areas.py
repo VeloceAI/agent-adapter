@@ -91,6 +91,7 @@ AREA_OF = {
     "voice_agent": "approval",
     "voxcat_speed": "cost-cache",
     "voxcat_quality": "approval",
+    "voxcat_providers_offline": "approval",
 }
 PREFIX_AREAS = (
     ("a2a_", "serving"),

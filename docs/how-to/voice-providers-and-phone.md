@@ -39,6 +39,10 @@ session = VoiceSession(
 | `ElevenLabsTTS` | `ELEVENLABS_API_KEY` | `POST /v1/text-to-speech/{voice}/stream`, `output_format=pcm_<rate>` |
 | `CartesiaTTS` | `CARTESIA_API_KEY` | `POST /tts/bytes`, raw `pcm_s16le` |
 
+For the WebSocket speed features (Deepgram Flux early end of turn, text streamed into
+Cartesia, ElevenLabs, Fish Audio or Rime, and AssemblyAI, Soniox, Cartesia Ink or Scribe
+speech-to-text), see [Fast hosted voices](voxcat-providers.md).
+
 - Pass `api_key=` to skip the environment. The key travels only in a request header; it
   never reaches a log or an error message.
 - Failures raise the same typed errors as the model ports: `ModelAuthError`,

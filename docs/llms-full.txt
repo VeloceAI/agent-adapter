@@ -59,7 +59,7 @@ the newest release inside each pinned range is tested. An extra marked
 | Pipecat pipelines: tools and a `VoiceAgent` (preview) | `pip install "agent-adapter[pipecat]"` | `pipecat-ai>=1.13,<2`; own environment (audio and model clients) |
 | turn detection: `SileroTurns`, `SmartTurn` | `pip install "agent-adapter[vad]"` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` |
 | local voice: Moonshine and the sound card | `pip install "agent-adapter[voice-local]"` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` |
-| hosted STT and TTS, Twilio calls | `pip install "agent-adapter[voice-cloud]"` | `httpx>=0.27,<1`, `websockets>=13,<18` |
+| hosted STT and TTS, Twilio calls | `pip install "agent-adapter[voice-cloud]"` | `httpx>=0.27,<1`, `websockets>=13,<18`, `msgpack>=1.0,<2` |
 | browser calls over WebRTC (`WebRTCAudio`) | `pip install "agent-adapter[webrtc]"` | `aiortc>=1.14,<2` |
 | MuJoCo robot sim (`MujocoSim`) | `pip install "agent-adapter[mujoco]"` | `mujoco>=3.3,<5` |
 | SQLAlchemy approval store (Postgres, SQLite) | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |

@@ -108,10 +108,46 @@ Also exported here, documented under the canonical path: [`VideoFeed`](voice.md#
 
 ::: agent_adapter.voice.deepgram
     options:
-      members: [Connect, DeepgramSTT, LiveSocket]
+      members: [Connect, DeepgramFluxSTT, DeepgramSTT, LiveSocket]
 
 ## `agent_adapter.voice.cloud`
 
 ::: agent_adapter.voice.cloud
     options:
       members: [CartesiaTTS, ElevenLabsTTS, OpenAISTT, OpenAITTS]
+
+## `agent_adapter.voice.cartesia`
+
+::: agent_adapter.voice.cartesia
+    options:
+      members: [CartesiaInkSTT, CartesiaLiveTTS]
+
+## `agent_adapter.voice.elevenlabs`
+
+::: agent_adapter.voice.elevenlabs
+    options:
+      members: [ElevenLabsLiveTTS, ElevenLabsScribeSTT]
+
+## `agent_adapter.voice.fish`
+
+::: agent_adapter.voice.fish
+    options:
+      members: [FishAudioTTS]
+
+## `agent_adapter.voice.rime`
+
+::: agent_adapter.voice.rime
+    options:
+      members: [RimeTTS]
+
+## `agent_adapter.voice.assemblyai`
+
+::: agent_adapter.voice.assemblyai
+    options:
+      members: [AssemblyAISTT]
+
+## `agent_adapter.voice.soniox`
+
+::: agent_adapter.voice.soniox
+    options:
+      members: [SonioxSTT]
