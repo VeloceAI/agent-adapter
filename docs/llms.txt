@@ -30,6 +30,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Overview](https://agent-adapter.veloceai.in/voice/): Your agent can **talk** on a phone or browser call, **see** a camera or a shared screen, and **move** a robot, with the same approvals, budgets, cost and...
 - [Our own voice framework](https://agent-adapter.veloceai.in/how-to/voice-pipeline/): `VoiceSession` is a whole voice pipeline in this package
 - [Call features](https://agent-adapter.veloceai.in/how-to/voice-call-features/): Everything on this page plugs into `VoiceSession` and runs offline, with no account or key
+- [Quality checks](https://agent-adapter.veloceai.in/how-to/voxcat-quality/): VoxCat, the voice pipeline in `agent_adapter.voice`, ships five quality checks in `agent_adapter.voice.quality`
 - [Phone calls and hosted voices](https://agent-adapter.veloceai.in/how-to/voice-providers-and-phone/): This page adds three things to our own voice pipeline: hosted speech providers, a guard against the agent hearing itself on speakers, and the phone basics...
 - [Transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides
 - [Safe tools on a call](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor

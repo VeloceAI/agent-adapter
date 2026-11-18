@@ -90,6 +90,7 @@ AREA_OF = {
     "viewer_fan_out": "parallel",
     "voice_agent": "approval",
     "voxcat_speed": "cost-cache",
+    "voxcat_quality": "approval",
 }
 PREFIX_AREAS = (
     ("a2a_", "serving"),

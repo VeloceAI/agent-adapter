@@ -10,7 +10,7 @@ import time
 from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
-from agent_adapter.core.errors import ConfigError
+from agent_adapter.core.errors import ConfigError, log_failure
 from agent_adapter.core.types import ApprovalDecision, ApprovalRequest
 
 logger = logging.getLogger(__name__)
@@ -35,6 +35,7 @@ def is_yes(text: str, words: frozenset[str] = YES_WORDS) -> bool:
 
 Say = Callable[[str], Awaitable[None]]
 Prompt = Callable[[ApprovalRequest], str]
+ReadBack = Callable[[ApprovalRequest], str | None]
 
 
 def default_prompt(request: ApprovalRequest) -> str:
@@ -107,7 +108,10 @@ class VoiceApproval:
 
     Only text passed to `answer` (the caller's transcript) can approve; model text and tool
     output never reach it. Silence until `timeout_s`, or any answer that is not a clear yes,
-    denies. `prompts` maps a tool name to its own prompt function.
+    denies. `prompts` maps a tool name to its own prompt function. `readback` may put a line
+    before the prompt, such as "Did you say 4,500?" for words the caller's speech-to-text
+    was unsure of (`UnsureWords.readback` in `agent_adapter.voice.quality`); the one yes
+    then answers both.
     """
 
     def __init__(
@@ -117,8 +121,10 @@ class VoiceApproval:
         prompt: Prompt = default_prompt,
         yes_words: frozenset[str] = YES_WORDS,
         prompts: Mapping[str, Prompt] | None = None,
+        readback: ReadBack | None = None,
     ) -> None:
         self.timeout_s = timeout_s
+        self.readback = readback
         self.prompt = prompt
         self.prompts = dict(prompts or {})
         self.yes_words = yes_words
@@ -196,7 +202,7 @@ class VoiceApproval:
         future: asyncio.Future[str] | None = None
         line.asking = True
         try:
-            await line.say(self.prompts.get(request.tool, self.prompt)(request))
+            await line.say(self._prompt(request))
             if line.closed:
                 return _deny("the call ended")
             future = asyncio.get_running_loop().create_future()
@@ -217,6 +223,17 @@ class VoiceApproval:
         if is_yes(heard, self.yes_words):
             return ApprovalDecision(approved=True, decided_by="voice", decided_at=time.time())
         return _deny("not a clear yes")
+
+    def _prompt(self, request: ApprovalRequest) -> str:
+        prompt = self.prompts.get(request.tool, self.prompt)(request)
+        if self.readback is None:
+            return prompt
+        try:
+            check = self.readback(request)
+        except Exception as exc:  # the plain question is still asked
+            log_failure(logger, logging.WARNING, exc, "voice approval: read-back failed")
+            return prompt
+        return f"{check} {prompt}" if check else prompt
 
     @staticmethod
     def _close(line: _Line) -> None:

@@ -25,6 +25,18 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the `custom.voice_turn` event carries them as `stages_ms`. `scripts/voxcat_speed.py` measures
   it all on a virtual clock. Guide: Answer sooner on a voice call; example:
   `examples/voxcat_speed.py`.
+- VoxCat quality checks (`agent_adapter.voice.quality`): fast, model-free guards for a
+  voice call, each under a millisecond a frame or a sentence (a timing test holds them to
+  it). `InputCheck` gates hiss and, after a turn with clipping, dropouts, a voice too quiet
+  or a noisy line, asks the caller to repeat. `UnsureWords` reads back low-confidence
+  numbers, dates and names before a `confirm=True` tool ("Did you say 4,500?") through the
+  new `VoiceApproval(readback=...)`. `KnownNames` fixes misheard names; `check_stt` runs it
+  and notes word confidence (`last_words`) around any STT. `SpokenForm` turns money
+  (rupees with lakh and crore, dollars, euros, pounds), numbers, dates, times, phone
+  numbers, units and short forms into spoken words, with a pronunciation dictionary, through
+  the new `Player(text_hooks=...)`. `OutputCheck` counts clicks, clipping and dead air in the
+  agent's own voice. Both audio checks send a `custom.voice_quality` event at the end of a
+  call. Guide: Quality checks; example: `examples/voxcat_quality.py`.
 - Parallel agents no longer repeat a call that is already running: when they make the
   same cached call at the same moment, one real call runs and the others await its result.
   It covers tools with `cache_ttl` (run, thread and global scopes stay apart) and model

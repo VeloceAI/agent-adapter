@@ -139,6 +139,7 @@ nav:
       - Voice:
           - Our own voice framework: how-to/voice-pipeline.md
           - Call features: how-to/voice-call-features.md
+          - Quality checks: how-to/voxcat-quality.md
           - Phone calls and hosted voices: how-to/voice-providers-and-phone.md
           - Transports and realtime models: how-to/voice-transports.md
           - Safe tools on a call: how-to/voice-agents.md
