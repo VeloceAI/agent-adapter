@@ -235,6 +235,12 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
             for suffix in (
                 "",
                 ".session",
+                ".timing",
+                ".speed",
+                ".speculate",
+                ".ack",
+                ".answers",
+                ".warm",
                 ".media",
                 ".player",
                 ".playout",

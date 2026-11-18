@@ -59,6 +59,7 @@ it comes in the next release; the rest of the SDK is on [Features](features.md).
 | use hosted voices (OpenAI, Deepgram, ElevenLabs, Cartesia) or a realtime model | [Hosted speech](how-to/voice-providers-and-phone.md#use-a-hosted-speech-provider), [Realtime models](how-to/voice-transports.md#openai-realtime-and-gemini-live) |
 | add idle prompts, recording, voicemail detection or a noise filter | [Voice call features](how-to/voice-call-features.md) |
 | keep payments and bookings safe when the caller interrupts | [Build a voice agent](how-to/voice-agents.md) |
+| answer sooner: speculative replies, early read-only tools, acknowledgements, cached answers | [Answer sooner](how-to/voxcat-speed.md) |
 | choose between our stack, LiveKit and Pipecat | [Voice stacks compared](how-to/voice-compared.md) |
 | let the agent see a camera or a screen | [Let a voice agent see](how-to/voice-video.md) |
 | drive a robot or a simulator safely | [Gate a robot](how-to/robot-safety.md) |
@@ -82,6 +83,7 @@ All on one laptop, offline, with no account or key:
 | Interruption-safe tools: a started payment or booking finishes once when the caller cuts in; a repeat window; spoken yes/no approvals bound to the call | [Build a voice agent](how-to/voice-agents.md) |
 | `VoiceSession`: our own call pipeline with no media server; mic and speakers, WebSocket, browser WebRTC, Twilio, Telnyx, Plivo and Vonage; Silero VAD and Smart Turn; an echo guard | [A voice call with no framework](how-to/voice-pipeline.md), [Phone calls](how-to/voice-providers-and-phone.md), [Transports](how-to/voice-transports.md) |
 | Speech: Moonshine offline, OpenAI, Deepgram, ElevenLabs, Cartesia, any provider via `CallableSTT` / `CallableTTS`; OpenAI Realtime and Gemini Live | [Hosted speech](how-to/voice-providers-and-phone.md#use-a-hosted-speech-provider), [Realtime models](how-to/voice-transports.md#openai-realtime-and-gemini-live) |
+| Speed tricks: a speculative reply on the early transcript, opted-in read-only tools run early (gated in the executor), pre-rendered acknowledgements for slow replies, an answer cache with audio, warm-up at call start, per-stage turn timings | [Answer sooner](how-to/voxcat-speed.md) |
 | Call features: idle prompt and hang-up, lines the caller cannot cut, mute while tools run, an end-call tool, typed input, recording, a thinking sound, voicemail detection, a noise filter | [Voice call features](how-to/voice-call-features.md) |
 | LiveKit Agents and Pipecat connectors (preview): the same agent and safety rules inside their rooms and pipelines | [LiveKit](integrations/livekit.md), [Pipecat](integrations/pipecat.md), [Voice stacks compared](how-to/voice-compared.md) |
 | Video: `VideoFeed` keeps the latest frame from a browser camera or screen share, a local camera, the screen or a robot camera; the read-only `look_tool` hands it to the model | [Let a voice agent see](how-to/voice-video.md) |

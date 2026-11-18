@@ -8,6 +8,23 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Voice speed tricks (`agent_adapter.voice.speed.Speed`, `VoiceAgent(speed=...)`). A
+  speculative reply starts on the early transcript and plays only if the final transcript
+  has the same words and nothing was said since; if the caller goes on it is dropped.
+  `SpeculativeTools` lets it run opted-in tools before the turn is final, only if declared
+  `effects="read_only"` with no `confirm`. A gate checks this inside the executor, before
+  guards and approval, on every call. Early calls have their own ledger item
+  (`voxcat:speculative_tool`), a `custom.voice.speculative_tool` event, per-turn and
+  per-minute limits, and reuse the tool cache and in-flight sharing. Speculative model calls
+  bill under the stage `voice_speculation`. `Acknowledgements` plays a short pre-rendered line
+  when the reply is expected to be slow, at the end of the turn, and never before a fast
+  reply. `AnswerCache` replays replies to repeated questions word for word, per tenant, for a
+  short TTL, with their audio (`answers.voice(tts)`). `Warmup` connects providers, renders
+  lines and prefetches read-only tools as the call starts (`VoiceAgent.warm_up`, run by
+  `VoiceSession`). `TurnTiming` (now in `agent_adapter.voice.timing`) records each stage and
+  the `custom.voice_turn` event carries them as `stages_ms`. `scripts/voxcat_speed.py` measures
+  it all on a virtual clock. Guide: Answer sooner on a voice call; example:
+  `examples/voxcat_speed.py`.
 - Parallel agents no longer repeat a call that is already running: when they make the
   same cached call at the same moment, one real call runs and the others await its result.
   It covers tools with `cache_ttl` (run, thread and global scopes stay apart) and model

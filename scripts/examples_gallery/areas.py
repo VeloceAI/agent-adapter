@@ -89,6 +89,7 @@ AREA_OF = {
     "tutorial_research": "parallel",
     "viewer_fan_out": "parallel",
     "voice_agent": "approval",
+    "voxcat_speed": "cost-cache",
 }
 PREFIX_AREAS = (
     ("a2a_", "serving"),

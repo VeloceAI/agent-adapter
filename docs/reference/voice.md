@@ -16,6 +16,44 @@ Turns, safe interruptions and spoken approval around the executor, our own audio
 
 Also exported here, documented under the canonical path: [`TurnTiming`](#agent_adapter.voice.TurnTiming), [`VoiceSession`](#agent_adapter.voice.VoiceSession).
 
+## `agent_adapter.voice.timing`
+
+::: agent_adapter.voice.timing
+    options:
+      members: [STAGES, event_data]
+
+Also exported here, documented under the canonical path: [`TurnTiming`](#agent_adapter.voice.TurnTiming).
+
+## `agent_adapter.voice.speed`
+
+::: agent_adapter.voice.speed
+    options:
+      members: [FastPath, Speed]
+
+## `agent_adapter.voice.speculate`
+
+::: agent_adapter.voice.speculate
+    options:
+      members: [ReplyOut, SPECULATIVE_STAGE, Speculation, SpeculationGate, SpeculativeTools, TOOL_ITEM, can_speculate, current, same_words]
+
+## `agent_adapter.voice.ack`
+
+::: agent_adapter.voice.ack
+    options:
+      members: [Acknowledgements]
+
+## `agent_adapter.voice.answers`
+
+::: agent_adapter.voice.answers
+    options:
+      members: [Answer, AnswerCache]
+
+## `agent_adapter.voice.warm`
+
+::: agent_adapter.voice.warm
+    options:
+      members: [WarmReport, Warmup, warm_up]
+
 ## `agent_adapter.voice.media`
 
 ::: agent_adapter.voice.media

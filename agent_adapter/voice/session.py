@@ -35,6 +35,7 @@ from agent_adapter.voice.pcm import Resampler, rms
 from agent_adapter.voice.player import Player
 from agent_adapter.voice.playout import PlayoutBuffer, Segment, fire
 from agent_adapter.voice.pump import EventPump
+from agent_adapter.voice.timing import TurnTiming, event_data
 from agent_adapter.voice.turns import EchoGuard, TurnDetector, TurnTimer
 
 if TYPE_CHECKING:
@@ -47,30 +48,6 @@ BACKCHANNELS = frozenset(
     {"uh", "huh", "uh-huh", "mhm", "mm", "hmm", "mm-hmm", "mmhmm", "hm", "yeah", "yep", "yes"}
     | {"ok", "okay", "right", "sure", "got", "it", "i", "see"}
 )
-
-
-@dataclass
-class TurnTiming:
-    """When each step of one caller turn happened, in seconds on the monotonic clock."""
-
-    started: float  # the detector heard speech start (playback paused here)
-    confirmed: float | None = None  # the cut went to the agent
-    ended: float | None = None  # the detector called the turn finished
-    speech_end: float | None = None  # the last speech (ended minus the detector's quiet time)
-    transcribed: float | None = None
-    first_audio: float | None = None  # the agent's next audio started playing
-    text: str = ""
-    resumed: bool = False  # a false start: playback went on where it paused
-
-    @property
-    def voice_to_voice_ms(self) -> float | None:
-        if self.first_audio is None or self.speech_end is None:
-            return None
-        return (self.first_audio - self.speech_end) * 1000
-
-    @property
-    def cut_ms(self) -> float | None:
-        return None if self.confirmed is None else (self.confirmed - self.started) * 1000
 
 
 @dataclass
@@ -89,7 +66,9 @@ class VoiceSession:
 
     Transcription starts early: a `StreamingSTT` hears the turn as it is spoken, and the
     final pass starts after `early_ms` of quiet, while the detector is still deciding
-    whether the turn is over. If the caller goes on, that pass is dropped.
+    whether the turn is over. If the caller goes on, that pass is dropped. With an agent
+    `Speed`, the early transcript also starts the reply (`VoiceAgent.speculate`), and the
+    agent's warm-up runs as the call starts.
 
     Keypad digits from a transport with `on_digit` (`TwilioStream`) reach the agent as
     `keypad_text`, once `keypad_wait_ms` passes with no new digit, at once on `#`, or
@@ -207,6 +186,7 @@ class VoiceSession:
             on_digit.append(self._digit)
         for observer in self.observers:
             observer.started(self)
+        warming = asyncio.ensure_future(agent.warm_up((self.stt, self.speaker.tts)))
         try:
             await self.transport.start(self.buffer)
             self._reader = asyncio.create_task(self._read(resampler))
@@ -217,6 +197,7 @@ class VoiceSession:
                 await self._pump.idle()
         finally:
             worker.cancel()
+            warming.cancel()
             ending = self._ending
             if ending is not None and ending is not asyncio.current_task():
                 ending.cancel()
@@ -282,6 +263,8 @@ class VoiceSession:
         elif not speech and self._early is None and self._timer.quiet_ms >= self.early_ms:
             self._early_stream = self._stream
             self._early = self._start_text()
+            timing.early = now
+            self._early.add_done_callback(self._early_text)
 
     def _started(self, now: float) -> None:
         self._timing = TurnTiming(started=now)
@@ -329,6 +312,9 @@ class VoiceSession:
         quiet = self._timer.quiet_ms if self._timer is not None else 0.0
         timing.speech_end = now - quiet / 1000
         self._texts.put_nowait(_Turn(timing, self._hushed, text, self._turn_question))
+        real = timing.confirmed is not None and not self._hushed and not self._question()[0]
+        if real and self._pump is not None:
+            self._pump.turn_ended()
 
     def _open_stream(self) -> None:
         if self._stream is not None:
@@ -344,11 +330,18 @@ class VoiceSession:
         self._stream = None
         return asyncio.ensure_future(self._text_of(audio, stream))
 
+    def _early_text(self, task: asyncio.Task[str]) -> None:
+        live = task is self._early and not task.cancelled() and task.exception() is None
+        if live and self._pump is not None:
+            self._pump.speculate(task.result())
+
     def _drop_early(self) -> None:
         early, stream = self._early, self._early_stream
         self._early = self._early_stream = None
         if early is not None:
             early.cancel()
+            if self._pump is not None:
+                self._pump.drop_speculation()
         if stream is not None:
             fire(stream.cancel())
 
@@ -412,7 +405,7 @@ class VoiceSession:
                 return
             self._pump.started_speaking()
         self._waiting_audio = timing
-        self._pump.said(text)
+        self._pump.said(text, timing)
 
     def _question(self) -> tuple[bool, int | None]:
         """Whether the agent's question is open, and its id once its prompt has played."""
@@ -433,6 +426,8 @@ class VoiceSession:
         timing.resumed = True
         if self._timing is None or self._guarded:  # no newer turn holds the pause
             self.speaker.resume()
+        if self._timing is None and self._pump is not None:
+            self._pump.drop_speculation()  # a false start: its reply is moot
 
     def _digit(self, digit: str) -> None:
         if self._pump is None:
@@ -461,7 +456,7 @@ class VoiceSession:
         timing.first_audio = segment.started_at
         agent = self._agent
         if agent is not None:
-            data = _event_data(timing)
+            data = event_data(timing)
             emit(agent.executor.sink, make_event("custom.voice_turn", agent.ctx, **data))
 
 
@@ -476,15 +471,6 @@ def _timer_of(turns: Any) -> TurnTimer | None:
         if isinstance(timer, TurnTimer):
             return timer
     return None
-
-
-def _event_data(timing: TurnTiming) -> dict[str, Any]:
-    """Timings only: the transcript is the caller's words and stays out of traces."""
-    return {
-        "voice_to_voice_ms": timing.voice_to_voice_ms,
-        "cut_ms": timing.cut_ms,
-        "resumed": timing.resumed,
-    }
 
 
 __all__ = ["BACKCHANNELS", "RATE", "TurnTiming", "VoiceSession"]

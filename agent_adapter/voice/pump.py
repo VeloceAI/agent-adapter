@@ -5,12 +5,16 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from agent_adapter.core.errors import log_failure
 
 if TYPE_CHECKING:
     from agent_adapter.voice.agent import VoiceAgent
+    from agent_adapter.voice.timing import TurnTiming
+
+_Kind = Literal["start", "said", "speculate", "drop", "ended"]
+_Event = tuple[_Kind, str, "TurnTiming | None"]
 
 logger = logging.getLogger(__name__)
 
@@ -25,17 +29,30 @@ class EventPump:
 
     def __init__(self, agent: VoiceAgent) -> None:
         self.agent = agent
-        self._queue: asyncio.Queue[str | None] = asyncio.Queue()
+        self._queue: asyncio.Queue[_Event] = asyncio.Queue()
         self._task: asyncio.Task[None] | None = None
 
     def started_speaking(self) -> None:
         """The caller started talking (VAD)."""
-        self._put(None)
+        self._put(("start", "", None))
 
-    def said(self, text: str) -> None:
+    def said(self, text: str, timing: TurnTiming | None = None) -> None:
         """A final transcript; blank text is ignored."""
         if text.strip():
-            self._put(text)
+            self._put(("said", text, timing))
+
+    def speculate(self, text: str) -> None:
+        """An early transcript: the agent may start its reply (`VoiceAgent.speculate`)."""
+        if text.strip():
+            self._put(("speculate", text, None))
+
+    def drop_speculation(self) -> None:
+        """The caller went on after the early transcript."""
+        self._put(("drop", "", None))
+
+    def turn_ended(self) -> None:
+        """The caller finished a turn of real speech (`VoiceAgent.turn_ended`)."""
+        self._put(("ended", "", None))
 
     async def idle(self) -> None:
         """Wait until every queued event has been handed over."""
@@ -49,19 +66,27 @@ class EventPump:
             with contextlib.suppress(asyncio.CancelledError):
                 await task
 
-    def _put(self, event: str | None) -> None:
+    def _put(self, event: _Event) -> None:
         if self._task is None:
             self._task = asyncio.ensure_future(self._drain())
         self._queue.put_nowait(event)
 
     async def _drain(self) -> None:
         while True:
-            event = await self._queue.get()
+            kind, text, timing = await self._queue.get()
             try:
-                if event is None:
+                if kind == "start":
                     await self.agent.user_started_speaking()
+                elif kind == "said" and timing is None:
+                    await self.agent.user_said(text)  # any agent with user_said(text)
+                elif kind == "said":
+                    await self.agent.user_said(text, timing=timing)
+                elif kind == "speculate":
+                    self.agent.speculate(text)
+                elif kind == "drop":
+                    self.agent.drop_speculation()
                 else:
-                    await self.agent.user_said(event)
+                    self.agent.turn_ended()
             except Exception as exc:
                 log_failure(logger, logging.WARNING, exc, "voice agent event failed")
             finally:
