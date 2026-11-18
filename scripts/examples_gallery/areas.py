@@ -92,6 +92,7 @@ AREA_OF = {
     "voxcat_speed": "cost-cache",
     "voxcat_quality": "approval",
     "voxcat_providers_offline": "approval",
+    "voxcat_open_models": "basics",
 }
 PREFIX_AREAS = (
     ("a2a_", "serving"),

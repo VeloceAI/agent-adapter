@@ -50,6 +50,20 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `msgpack` (Apache-2.0) for Fish Audio; the `websockets` handshake debug log now shows
   API-key headers as `[redacted]`. Guide: Fast hosted voices.
 
+- Open speech models for our voice pipeline (VoxCat), each a new module under
+  `agent_adapter.voice` with its own extra: `FasterWhisperSTT` (`voice-whisper`),
+  `ParakeetSTT` on NeMo (`voice-parakeet`), `KyutaiSTT` and `KyutaiTTS` that stream frame
+  by frame (`voice-kyutai`), `ChatterboxTTS` with Turbo and multilingual models
+  (`voice-chatterbox`) and `OrpheusTTS` on vLLM (`voice-orpheus`). Each library is
+  imported only when its adapter is built (`MissingDependency` names the extra). A model
+  loads once per process in a worker thread and is shared by adapters with the same
+  settings; `warm()` loads it and runs one tiny inference before the first caller.
+  Chatterbox lines play sentence by sentence. A new talker port
+  (`agent_adapter.voice.talker`: `Talker`, `TalkerStream`, `Cue`, `backchannel`) runs a
+  full-duplex model next to the agent for instant backchannels, with `HaruTalker`
+  (Haru-4B, a research release) and `MoshiTalker` (research only, per its model card).
+  Licences are listed per model. Guide: Open speech models; example:
+  `examples/voxcat_open_models.py`.
 - Parallel agents no longer repeat a call that is already running: when they make the
   same cached call at the same moment, one real call runs and the others await its result.
   It covers tools with `cache_ttl` (run, thread and global scopes stay apart) and model

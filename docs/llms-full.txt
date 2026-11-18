@@ -73,7 +73,7 @@ the newest release inside each pinned range is tested. An extra marked
 | Mem0 memory backend (`Mem0Memory`) | `pip install "agent-adapter[mem0]"` | `mem0ai>=2.2,<3` |
 | Zep memory backend (`ZepMemory`) | `pip install "agent-adapter[zep]"` | `zep-cloud>=4.1,<5` |
 | Graphiti knowledge-graph memory (`GraphitiMemory`) | `pip install "agent-adapter[graphiti]"` | `graphiti-core>=0.31,<1` |
-| every extra that installs together | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `mujoco`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `vad`, `voice-local`, `webrtc`, `zep` |
+| every extra that installs together | `pip install "agent-adapter[all]"` | every extra above except `adk`, `camel`, `crewai`, `dbos`, `dspy`, `graphiti`, `livekit`, `mem0`, `mujoco`, `nemo`, `pipecat`, `presidio`, `semantic-kernel`, `strands`, `temporal`, `vad`, `voice-chatterbox`, `voice-kyutai`, `voice-local`, `voice-orpheus`, `voice-parakeet`, `voice-whisper`, `webrtc`, `zep` |
 | running this repository's tests and linters | `pip install -e ".[dev]"` (in a checkout) | `pytest>=8`, `pytest-asyncio>=0.24`, `pytest-cov>=5`, `pytest-xdist>=3.8,<4`, `pytest-testmon>=2.3,<3`, `ruff>=0.6`, `mypy>=1.11`, `nox>=2024.10`, `hatchling>=1.27`, `tzdata>=2024.1`, `fakeredis>=2.26`, `lupa>=2.2`, `sqlalchemy[asyncio]>=2.0.30,<3`, `aiosqlite>=0.20,<1`, `moto[dynamodb]>=5,<6`, `httpx>=0.27,<1`, `websockets>=13,<18` |
 | building this repository's docs site | `pip install -e ".[docs]"` (in a checkout) | `mkdocs-material>=9.5`, `mkdocstrings[python]>=0.26` |
 

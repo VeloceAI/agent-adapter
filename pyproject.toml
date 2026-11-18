@@ -71,6 +71,14 @@ voice-local = ["moonshine-voice>=0.1.6,<0.2", "sounddevice>=0.5,<1"]
 # Hosted speech for our voice pipeline: Deepgram, OpenAI, ElevenLabs, Cartesia, Fish Audio,
 # AssemblyAI, Soniox, Rime; Twilio REST. msgpack (Apache-2.0) frames Fish Audio live TTS.
 voice-cloud = ["httpx>=0.27,<1", "websockets>=13,<18", "msgpack>=1.0,<2"]
+# Open speech models for our voice pipeline, one extra per family; not in `all`. Each but
+# voice-whisper pulls PyTorch (voice-orpheus also vLLM, voice-parakeet Python 3.12+), so
+# give each its own environment. Models download on first use. Haru-4B is not on PyPI.
+voice-whisper = ["faster-whisper>=1.1,<2"]
+voice-parakeet = ["nemo-toolkit[asr]>=2.4,<3"]
+voice-chatterbox = ["chatterbox-tts>=0.1,<1"]
+voice-orpheus = ["orpheus-speech>=0.1,<1"]
+voice-kyutai = ["moshi>=0.2.11,<0.3"]
 # Browser calls over WebRTC with no media server (aiortc, BSD-3-Clause).
 webrtc = ["aiortc>=1.14,<2"]
 # Robot shadow simulation on physics (MuJoCo, Apache-2.0).
@@ -311,6 +319,19 @@ module = [
     "moonshine_voice.*",
     "msgpack",
     "msgpack.*",
+    "faster_whisper",
+    "faster_whisper.*",
+    "nemo.*",
+    "chatterbox",
+    "chatterbox.*",
+    "orpheus_tts",
+    "orpheus_tts.*",
+    "moshi",
+    "moshi.*",
+    "torch",
+    "torch.*",
+    "haru",
+    "haru.*",
     "mujoco",
     "mujoco.*",
     "rclpy",

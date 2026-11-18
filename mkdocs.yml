@@ -142,6 +142,7 @@ nav:
           - Quality checks: how-to/voxcat-quality.md
           - Phone calls and hosted voices: how-to/voice-providers-and-phone.md
           - Fast hosted voices: how-to/voxcat-providers.md
+          - Open speech models: how-to/voxcat-open-models.md
           - Transports and realtime models: how-to/voice-transports.md
           - Safe tools on a call: how-to/voice-agents.md
           - Answer sooner (speed tricks): how-to/voxcat-speed.md
@@ -366,6 +367,7 @@ nav:
       - Handlers: reference/handlers.md
       - Chat contract: reference/chat.md
       - Voice agents: reference/voice.md
+      - Open speech models: reference/voice-open.md
       - Voice calls and transports: reference/voice-calls.md
       - Robot safety: reference/robotics.md
       - Shared board: reference/board.md

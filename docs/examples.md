@@ -20,7 +20,7 @@ classes that other code imports. Its docs page shows how to start it.
 ## Index by area
 
 <div class="aa-gallery" markdown>
-[<b>Basics</b><span>Tools, the registry, schemas, the executor, models and guides.</span><small>49 examples</small>](examples/basics.md){ .aa-gcard }
+[<b>Basics</b><span>Tools, the registry, schemas, the executor, models and guides.</span><small>50 examples</small>](examples/basics.md){ .aa-gcard }
 [<b>No-framework backends</b><span>Web apps, workers, scripts, serverless, deploy.</span><small>20 examples</small>](examples/backends.md){ .aa-gcard }
 [<b>Agent frameworks</b><span>Registry tools inside each agent framework.</span><small>27 examples</small>](examples/frameworks.md){ .aa-gcard }
 [<b>Context compression</b><span>Shrink what each model call sends.</span><small>12 examples</small>](examples/compression.md){ .aa-gcard }

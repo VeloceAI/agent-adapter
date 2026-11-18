@@ -263,6 +263,25 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
             )
         ),
     ),
+    "voice-open": (
+        "Open speech models",
+        "Open speech-to-text and text-to-speech models for our voice pipeline, and the talker "
+        "port for full-duplex models next to the agent. "
+        "Guide: [Open speech models](../how-to/voxcat-open-models.md).",
+        tuple(
+            "agent_adapter.voice" + suffix
+            for suffix in (
+                ".whisper",
+                ".parakeet",
+                ".kyutai",
+                ".chatterbox_tts",
+                ".orpheus",
+                ".talker",
+                ".haru",
+                ".moshi_talker",
+            )
+        ),
+    ),
     "board": (
         "Shared board",
         "One board per run: agents post statuses, findings, claims and handoffs, and read "
