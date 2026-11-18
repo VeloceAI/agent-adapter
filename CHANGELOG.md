@@ -6,6 +6,8 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-18
+
 ### Added
 
 - VoxCat on its own: fast with any STT and TTS, no provider feature needed.
