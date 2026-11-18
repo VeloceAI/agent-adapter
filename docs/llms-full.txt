@@ -60,6 +60,11 @@ the newest release inside each pinned range is tested. An extra marked
 | turn detection: `SileroTurns`, `SmartTurn` | `pip install "agent-adapter[vad]"` | `onnxruntime>=1.20,<2`, `numpy>=1.26,<3` |
 | local voice: Moonshine and the sound card | `pip install "agent-adapter[voice-local]"` | `moonshine-voice>=0.1.6,<0.2`, `sounddevice>=0.5,<1` |
 | hosted STT and TTS, Twilio calls | `pip install "agent-adapter[voice-cloud]"` | `httpx>=0.27,<1`, `websockets>=13,<18`, `msgpack>=1.0,<2` |
+| open speech-to-text: faster-whisper (`FasterWhisperSTT`) | `pip install "agent-adapter[voice-whisper]"` | `faster-whisper>=1.1,<2` |
+| open speech-to-text: NVIDIA Parakeet on NeMo (`ParakeetSTT`) | `pip install "agent-adapter[voice-parakeet]"` | `nemo-toolkit[asr]>=2.4,<3` |
+| open text-to-speech: Chatterbox (`ChatterboxTTS`) | `pip install "agent-adapter[voice-chatterbox]"` | `chatterbox-tts>=0.1,<1` |
+| open text-to-speech: Orpheus on vLLM (`OrpheusTTS`) | `pip install "agent-adapter[voice-orpheus]"` | `orpheus-speech>=0.1,<1` |
+| Kyutai streaming STT and TTS, Moshi talker (`KyutaiSTT`, `MoshiTalker`) | `pip install "agent-adapter[voice-kyutai]"` | `moshi>=0.2.11,<0.3` |
 | browser calls over WebRTC (`WebRTCAudio`) | `pip install "agent-adapter[webrtc]"` | `aiortc>=1.14,<2` |
 | MuJoCo robot sim (`MujocoSim`) | `pip install "agent-adapter[mujoco]"` | `mujoco>=3.3,<5` |
 | SQLAlchemy approval store (Postgres, SQLite) | `pip install "agent-adapter[sqlalchemy]"` | `sqlalchemy[asyncio]>=2.0.30,<3` |
@@ -1741,7 +1746,7 @@ Voice agents: safe interruptions, spoken approval and one ledger, on any audio s
 - `TwilioStream(socket: TextSocket, *, calls: TwilioCalls | None = None, frame_ms: int = 20, lead_ms: int = 80) -> None`: An `AudioTransport` over a Twilio Media Streams WebSocket (any `TextSocket`).
 - `VideoFeed(*, fps: float = 2.0, max_side: int = 1024, quality: int = 80) -> None`: The latest frame of one video source, for `look_tool`.
 - `VoiceAgent(model: LLMPort, executor: Executor, speaker: Speaker, *, instructions: str = '', registry: Registry | None = None, max_steps: int = 8, run_id: str | None = None, dedupe_window_s: float | None = 120.0, minute_item: str | None = None, mute_during_tools: bool = False, speed: Speed | None = None) -> None`: A voice agent from a model, an executor and a speaker; works with any audio stack.
-- `VoiceApproval(*, timeout_s: float = 10.0, prompt: Prompt = default_prompt, yes_words: frozenset[str] = ..., prompts: Mapping[str, Prompt] | None = None) -> None`: Approval port for voice: asks the caller aloud, then waits for their own answer.
+- `VoiceApproval(*, timeout_s: float = 10.0, prompt: Prompt = default_prompt, yes_words: frozenset[str] = ..., prompts: Mapping[str, Prompt] | None = None, readback: ReadBack | None = None) -> None`: Approval port for voice: asks the caller aloud, then waits for their own answer.
 - `VoiceSession(transport: AudioTransport, *, stt: STT, tts: TTS, turns: TurnDetector, confirm_ms: float = 300, pre_roll_ms: float = 300, early_ms: float = 200, backchannels: frozenset[str] = ..., echo_guard: EchoGuard | None = None, keypad_wait_ms: float = 1500, keypad_text: str = '(keypad) {digits}', max_turn_s: float = 30.0, max_digits: int = 32, filters: Sequence[Callable[[bytes], bytes]] = (), observers: Sequence[CallObserver] = ()) -> None`: Runs a `VoiceAgent` on an `AudioTransport`; give the agent `session.speaker`.
 - `VoicemailDetector(*, message: str | None = None, on_detect: Callable[[VoiceSession, Reason], Awaitable[None] | None] | None = None, classify: Callable[[str], bool | Awaitable[bool]] | None = None, phrases: tuple[str, ...] = ..., window_s: float = 20.0, beep_ms: float = 160.0, beep_wait_s: float = 4.0, min_level: float = 0.02) -> None`: Listens to the first `window_s` of a call for a machine.
 - `VonageStream(socket: BinarySocket, *, rate: int = 16000, frame_ms: int = 20, lead_ms: int = 80) -> None`: An `AudioTransport` over a Vonage Voice API WebSocket (any `BinarySocket`).

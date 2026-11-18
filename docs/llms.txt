@@ -33,6 +33,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Quality checks](https://agent-adapter.veloceai.in/how-to/voxcat-quality/): VoxCat, the voice pipeline in `agent_adapter.voice`, ships five quality checks in `agent_adapter.voice.quality`
 - [Phone calls and hosted voices](https://agent-adapter.veloceai.in/how-to/voice-providers-and-phone/): This page adds three things to our own voice pipeline: hosted speech providers, a guard against the agent hearing itself on speakers, and the phone basics...
 - [Fast hosted voices](https://agent-adapter.veloceai.in/how-to/voxcat-providers/): VoxCat is our own voice pipeline (`agent_adapter.voice`)
+- [Open speech models](https://agent-adapter.veloceai.in/how-to/voxcat-open-models/): VoxCat, our own voice pipeline (`agent_adapter.voice`), runs on open models you host as well as on hosted APIs
 - [Transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides
 - [Safe tools on a call](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor
 - [Answer sooner (speed tricks)](https://agent-adapter.veloceai.in/how-to/voxcat-speed/): `Speed` makes a `VoiceAgent` answer sooner

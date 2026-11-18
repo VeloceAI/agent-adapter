@@ -369,6 +369,7 @@ nav:
       - Voice agents: reference/voice.md
       - Open speech models: reference/voice-open.md
       - Voice calls and transports: reference/voice-calls.md
+      - Hosted speech providers: reference/voice-hosted.md
       - Robot safety: reference/robotics.md
       - Shared board: reference/board.md
       - Run viewer: reference/viewer.md

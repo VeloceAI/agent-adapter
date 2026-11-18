@@ -80,8 +80,7 @@ DATA: tuple[Recipe, ...] = (
     ),
     Recipe(
         "let parallel or sequential agents see what the others are doing and found",
-        "`board_of(ctx)`, `board_tools()` and `LoopAgent(board=\"auto\")` "
-        "(`agent_adapter.board`)",
+        '`board_of(ctx)`, `board_tools()` and `LoopAgent(board="auto")` (`agent_adapter.board`)',
         (
             "from agent_adapter.board import board_of, board_tools",
             "from agent_adapter.exec import LoopAgent",

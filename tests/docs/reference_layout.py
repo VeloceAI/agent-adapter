@@ -221,6 +221,17 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
                 ".webrtc_page",
                 ".video",
                 ".moonshine",
+            )
+        ),
+    ),
+    "voice-hosted": (
+        "Hosted speech providers",
+        "Speech-to-text and text-to-speech services for our voice pipeline, each optional: "
+        "Deepgram, OpenAI, Cartesia, ElevenLabs, Fish Audio, Rime, AssemblyAI and Soniox. "
+        "Guide: [Fast hosted voices](../how-to/voxcat-providers.md).",
+        tuple(
+            "agent_adapter.voice" + suffix
+            for suffix in (
                 ".deepgram",
                 ".cloud",
                 ".cartesia",
@@ -254,6 +265,7 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
                 ".playout",
                 ".pcm",
                 ".turns",
+                ".endpoint",
                 ".silero",
                 ".smart_turn",
                 ".realtime",
