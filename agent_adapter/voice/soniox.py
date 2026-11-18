@@ -101,5 +101,10 @@ class _SonioxStream(LiveSTTStream):
     def _result(self) -> str:
         return (self._final + self._partial).strip()
 
+    @property
+    def partial(self) -> str:
+        """The words so far, final and not: an early reply may start on them."""
+        return self._result()
+
 
 __all__ = ["SonioxSTT"]

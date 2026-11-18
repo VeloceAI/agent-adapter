@@ -80,7 +80,9 @@ class DeepgramSTT(_Deepgram):
         return _transcript(channels[0])
 
     def open(self, sample_rate: int) -> _NovaStream:
-        query = self._query(encoding="linear16", sample_rate=sample_rate, channels=1)
+        query = self._query(
+            encoding="linear16", sample_rate=sample_rate, channels=1, interim_results="true"
+        )
         return _NovaStream(self, f"{self.url}?{query}")
 
     async def aclose(self) -> None:
@@ -91,7 +93,13 @@ class DeepgramSTT(_Deepgram):
 class _NovaStream(LiveSTTStream):
     def __init__(self, stt: LiveSTT, url: str) -> None:
         self._finals: list[str] = []
+        self._interim = ""
         super().__init__(stt, url)
+
+    @property
+    def partial(self) -> str:
+        """The words so far, final and interim: an early reply may start on them."""
+        return " ".join([*self._finals, self._interim]).strip()
 
     def _closing(self) -> list[Frame]:
         return [dumps({"type": "Finalize"}), dumps({"type": "CloseStream"})]
@@ -100,8 +108,12 @@ class _NovaStream(LiveSTTStream):
         message = parse(raw) if isinstance(raw, str) else {}
         kind = message.get("type")
         if kind == "Results":
-            if message.get("is_final") and (text := _transcript(message.get("channel"))):
-                self._finals.append(text)
+            text = _transcript(message.get("channel"))
+            if message.get("is_final"):
+                self._finals += [text] if text else []
+                self._interim = ""
+            else:
+                self._interim = text
             return bool(message.get("from_finalize"))
         if kind == "Error":
             raise self._fail(message.get("description") or message.get("message"))

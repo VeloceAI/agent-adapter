@@ -67,8 +67,9 @@ class VoiceSession:
     Transcription starts early: a `StreamingSTT` hears the turn as it is spoken, and the
     final pass starts after `early_ms` of quiet, while the detector is still deciding
     whether the turn is over. If the caller goes on, that pass is dropped. With an agent
-    `Speed`, the early transcript also starts the reply (`VoiceAgent.speculate`), and the
-    agent's warm-up runs as the call starts.
+    `Speed`, the early transcript also starts the reply (`VoiceAgent.speculate`), first on
+    the stream's interim words (a `partial` attribute) if it has them, and the agent's
+    warm-up runs as the call starts. With `EagerTurns`, those words also move the turn's end.
 
     Keypad digits from a transport with `on_digit` (`TwilioStream`) reach the agent as
     `keypad_text`, once `keypad_wait_ms` passes with no new digit, at once on `#`, or
@@ -261,10 +262,13 @@ class VoiceSession:
             self._drop_early()  # the caller went on: hear the whole turn again
             self._open_stream()
         elif not speech and self._early is None and self._timer.quiet_ms >= self.early_ms:
+            partial = getattr(self._stream, "partial", "")
             self._early_stream = self._stream
             self._early = self._start_text()
             timing.early = now
             self._early.add_done_callback(self._early_text)
+            if isinstance(partial, str) and partial.strip():
+                self._think(partial)  # the STT's interim words: no wait for the final ones
 
     def _started(self, now: float) -> None:
         self._timing = TurnTiming(started=now)
@@ -332,8 +336,16 @@ class VoiceSession:
 
     def _early_text(self, task: asyncio.Task[str]) -> None:
         live = task is self._early and not task.cancelled() and task.exception() is None
-        if live and self._pump is not None:
-            self._pump.speculate(task.result())
+        if live:
+            self._think(task.result())
+
+    def _think(self, text: str) -> None:
+        """Early words: start the reply on them, and let `EagerTurns` judge the turn's end."""
+        hint = getattr(self.turns, "hint", None)
+        if callable(hint):
+            hint(text)
+        if self._pump is not None:
+            self._pump.speculate(text)
 
     def _drop_early(self) -> None:
         early, stream = self._early, self._early_stream

@@ -106,4 +106,18 @@ DATA: tuple[Recipe, ...] = (
         ),
         full_only=True,
     ),
+    Recipe(
+        "run a fast voice call (VoxCat) from one config file, with any STT and TTS",
+        "`VoiceConfig` (`agent_adapter.voice.config`) or `agent-adapter voice serve FILE`",
+        (
+            "from agent_adapter.voice.config import VoiceConfig",
+            "",
+            'call = {"stt": "deepgram", "tts": "cartesia", "model": {"use": "openai"}}',
+            'config = VoiceConfig.load({**call, "turns": {"end_ms": 600, "eager": True}})',
+            'print("\\n".join(config.describe()))  # keys stay in the environment',
+            "# session, agent = config.build(transport); await session.run(agent)",
+            "# CLI: agent-adapter voice serve voxcat.yaml (the mic and speakers)",
+        ),
+        full_only=True,
+    ),
 )

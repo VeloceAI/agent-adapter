@@ -151,7 +151,17 @@ ALLOWED = {
     "optimiser": _ALL - {"integrations", "server", "root"},
     "evals": _ALL - {"integrations", "server", "optimiser", "root"},
     "handlers": {"base", "runtime", "approval", "exec", "handlers"},
-    "cli": {"base", "integrations", "viewer", "cli", "evals", "sandbox", "policy", "audit"},
+    "cli": {
+        "base",
+        "integrations",
+        "viewer",
+        "cli",
+        "evals",
+        "sandbox",
+        "policy",
+        "audit",
+        "voice",
+    },
     # Core packages plus evals (reports), memory (chat recall) and the chat contract: never a
     # framework, integration or server.
     "viewer": {
@@ -231,6 +241,7 @@ ODM_ROOTS: dict[str, set[str]] = {
     "voice/smart_turn.py": {"onnxruntime", "numpy"},
     "voice/denoise.py": {"numpy"},
     "voice/local.py": {"sounddevice"},
+    "voice/config.py": {"yaml"},
     "voice/moonshine.py": {"moonshine_voice"},
     "voice/whisper.py": {"faster_whisper", "numpy"},
     "voice/parakeet.py": {"nemo", "numpy"},
@@ -262,6 +273,7 @@ DYNAMIC_IMPORTERS = {
     "optimiser/__main__.py",
     "cli/doctor.py",  # importlib.metadata only: installed versions and extras
     "viewer/chat/targets.py",  # `agent-adapter ui --agent module:attr` names the host's code
+    "voice/config.py",  # a voice config names providers and the host's code as module:Name
 }
 
 Import = ast.Import | ast.ImportFrom

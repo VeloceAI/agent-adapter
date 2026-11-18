@@ -24,6 +24,7 @@ EXAMPLES: dict[str, str] = {
     "migrate": "agent-adapter migrate src/ --diff",
     "policy": "agent-adapter policy check policy.yaml --env prod",
     "audit": "agent-adapter audit verify .agent_adapter/audit",
+    "voice": "agent-adapter voice serve voxcat.yaml",
 }
 
 
@@ -62,6 +63,9 @@ def _parser() -> argparse.ArgumentParser:
     from agent_adapter.cli.audit import add_audit_parser
 
     add_audit_parser(commands)
+    from agent_adapter.cli.voice import add_voice_parser
+
+    add_voice_parser(commands)
     parser.epilog = _epilog(commands)
     return parser
 
@@ -147,6 +151,10 @@ def main(argv: Sequence[str] | None = None, out: TextIO | None = None) -> int:
             from agent_adapter.cli.audit import run_audit
 
             return run_audit(args, stream)
+        if args.command == "voice":
+            from agent_adapter.cli.voice import run_voice
+
+            return run_voice(args, stream)
         return run_doctor(stream)
     except (ConfigError, OSError) as exc:
         logger.debug("agent-adapter %s failed", args.command, exc_info=True)

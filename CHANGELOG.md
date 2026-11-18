@@ -8,6 +8,20 @@ project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- VoxCat on its own: fast with any STT and TTS, no provider feature needed.
+  `EagerTurns` (`agent_adapter.voice.endpoint`) wraps any turn detector and reads the early
+  transcript with `looks_done` (no model, microseconds). Finished-looking words end the
+  turn 250 ms after speech; words that trail off ("and", "the", a comma) hold it open. It
+  learns each caller's pauses and turns it cut too soon. The speculative reply now starts on
+  the STT's interim words (a stream's `partial`; `DeepgramSTT` asks for interim results,
+  `SonioxSTT` keeps them). `Speed(first_words=4)` speaks a reply's first clause, or a short
+  opener such as "Sure,", before the first sentence ends. `VoiceConfig`
+  (`agent_adapter.voice.config`) sets up a whole call from one YAML or JSON file, with short
+  provider names and keys kept in the environment; `agent-adapter voice check|serve FILE`
+  validates it or runs it on the mic and speakers. `scripts/voxcat_vs.py` runs VoxCat,
+  LiveKit Agents and Pipecat on the same fake STT, model and TTS in real time; the speed
+  benchmark's model now streams. Guides: VoxCat on its own, VoxCat benchmark; example:
+  `examples/voxcat_fast.py`.
 - Voice speed tricks (`agent_adapter.voice.speed.Speed`, `VoiceAgent(speed=...)`). A
   speculative reply starts on the early transcript and plays only if the final transcript
   has the same words and nothing was said since; if the caller goes on it is dropped.

@@ -11,15 +11,15 @@ it comes in the next release; the rest of the SDK is on [Features](features.md).
 
 <div class="grid cards" markdown>
 
--   :material-phone-in-talk:{ .lg .middle } **Our own voice framework**
+-   :material-phone-in-talk:{ .lg .middle } **VoxCat, our own voice pipeline**
 
     ---
 
-    We built `VoiceSession`: phone, browser and laptop calls with no extra media server. It
-    listens, knows when the caller has finished, answers, and stops when interrupted. A
-    payment the caller talks over still happens only once, and approvals are a spoken "yes".
+    VoxCat (`VoiceSession`) handles phone, browser and laptop calls with no extra media server.
+    It knows when the caller has finished on its own, starts answering before the turn is over,
+    and stops when interrupted. A payment the caller talks over still happens only once.
 
-    [A voice call with no framework](how-to/voice-pipeline.md) · [Call features](how-to/voice-call-features.md)
+    [A voice call with no framework](how-to/voice-pipeline.md) · [VoxCat on its own](how-to/voxcat-own.md) · [Benchmark](how-to/voxcat-benchmark.md)
 
 -   :material-connection:{ .lg .middle } **Or inside LiveKit and Pipecat**
 
@@ -61,6 +61,8 @@ it comes in the next release; the rest of the SDK is on [Features](features.md).
 | run on open models I host (Whisper, Parakeet, Kyutai, Chatterbox, Orpheus) or add a talker | [Open speech models](how-to/voxcat-open-models.md) |
 | keep payments and bookings safe when the caller interrupts | [Build a voice agent](how-to/voice-agents.md) |
 | answer sooner: speculative replies, early read-only tools, acknowledgements, cached answers | [Answer sooner](how-to/voxcat-speed.md) |
+| be fast with any STT and TTS, set a call up from one YAML file | [VoxCat on its own](how-to/voxcat-own.md) |
+| compare VoxCat with LiveKit and Pipecat | [VoxCat benchmark](how-to/voxcat-benchmark.md), [Voice stacks compared](how-to/voice-compared.md) |
 | choose between our stack, LiveKit and Pipecat | [Voice stacks compared](how-to/voice-compared.md) |
 | let the agent see a camera or a screen | [Let a voice agent see](how-to/voice-video.md) |
 | drive a robot or a simulator safely | [Gate a robot](how-to/robot-safety.md) |
@@ -83,6 +85,7 @@ All on one laptop, offline, with no account or key:
 |---|---|
 | Interruption-safe tools: a started payment or booking finishes once when the caller cuts in; a repeat window; spoken yes/no approvals bound to the call | [Build a voice agent](how-to/voice-agents.md) |
 | `VoiceSession`: our own call pipeline with no media server; mic and speakers, WebSocket, browser WebRTC, Twilio, Telnyx, Plivo and Vonage; Silero VAD and Smart Turn; an echo guard | [A voice call with no framework](how-to/voice-pipeline.md), [Phone calls](how-to/voice-providers-and-phone.md), [Transports](how-to/voice-transports.md) |
+| VoxCat on its own: `EagerTurns` (its own end of turn, no model), replies on the STT's interim words, first words before the sentence ends, `VoiceConfig` and `agent-adapter voice serve`; a head-to-head benchmark with LiveKit and Pipecat | [VoxCat on its own](how-to/voxcat-own.md), [Benchmark](how-to/voxcat-benchmark.md) |
 | Speed tricks: a speculative reply on the early transcript, opted-in read-only tools run early (gated in the executor), pre-rendered acknowledgements for slow replies, an answer cache with audio, warm-up at call start, per-stage turn timings | [Answer sooner](how-to/voxcat-speed.md) |
 | Speech: Moonshine offline, OpenAI, Deepgram (Nova, Flux), ElevenLabs, Cartesia, Fish Audio, AssemblyAI, Soniox, Rime, any provider via `CallableSTT` / `CallableTTS`; early end of turn and text streamed into speech; OpenAI Realtime and Gemini Live | [Hosted speech](how-to/voice-providers-and-phone.md#use-a-hosted-speech-provider), [Fast hosted voices](how-to/voxcat-providers.md), [Realtime models](how-to/voice-transports.md#openai-realtime-and-gemini-live) |
 | Call features: idle prompt and hang-up, lines the caller cannot cut, mute while tools run, an end-call tool, typed input, recording, a thinking sound, voicemail detection, a noise filter | [Voice call features](how-to/voice-call-features.md) |

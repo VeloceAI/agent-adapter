@@ -10,8 +10,9 @@ measured on its own (overhead per 20 ms frame). Times are ms after the caller's 
 
 Default delays are approximate vendor-stated figures; check them for your providers:
 streaming STT final words ~100 ms after the audio (Deepgram Nova-3, AssemblyAI Universal-
-Streaming), first LLM token ~350 ms for a fast hosted model (900 ms for a large one), first
-TTS audio ~90 ms (Cartesia Sonic ~90 ms, ElevenLabs Flash ~75 ms), a lookup API ~300 ms.
+Streaming), first LLM token ~350 ms for a fast hosted model (900 ms for a large one), then
+40 tokens a second, first TTS audio ~90 ms (Cartesia Sonic ~90 ms, ElevenLabs Flash ~75 ms),
+a lookup API ~300 ms. The STT's interim words are the whole question once it is spoken.
 """
 
 from __future__ import annotations
@@ -32,16 +33,17 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from agent_adapter import CallableModel, Executor, MemoryCache, Registry
-from agent_adapter.core.messages import LLMRequest, LLMResponse, Message
+from agent_adapter.core.messages import LLMRequest, LLMResponse, Message, StreamDone, TextDelta
 from agent_adapter.core.types import ToolCall
 from agent_adapter.voice import VoiceAgent, VoiceSession
 from agent_adapter.voice.ack import Acknowledgements
 from agent_adapter.voice.answers import AnswerCache
+from agent_adapter.voice.endpoint import EagerTurns
 from agent_adapter.voice.pcm import Resampler
 from agent_adapter.voice.speculate import SpeculativeTools
 from agent_adapter.voice.speed import Speed
 from agent_adapter.voice.testing import MemoryTransport, silence, tone
-from agent_adapter.voice.turns import SilenceTurns
+from agent_adapter.voice.turns import SilenceTurns, TurnDetector
 
 TICK_MS = 5  # the virtual line moves audio in 5 ms steps: the timing resolution
 
@@ -53,6 +55,7 @@ class Delays:
     slow_llm_ms: float = 900.0
     tts_ms: float = 90.0
     tool_ms: float = 300.0
+    tokens_per_s: float = 40.0
 
 
 @dataclass(frozen=True)
@@ -60,10 +63,12 @@ class Profile:
     name: str
     end_ms: float  # quiet that ends a turn
     early_ms: float  # quiet that starts the final transcription (and the speculative reply)
+    eager: bool = False  # EagerTurns: finished-looking words end the turn after 250 ms
 
 
 PROFILES = (
     Profile("silence end-of-turn (800 ms)", end_ms=800, early_ms=200),
+    Profile("VoxCat EagerTurns (600 ms, 250 ms when the words look done)", 600, 100, True),
     Profile("smart end-of-turn (160 ms)", end_ms=160, early_ms=60),
 )
 
@@ -148,9 +153,10 @@ class FakeSTT:
 class _FakeStream:
     def __init__(self, stt: FakeSTT) -> None:
         self.stt = stt
+        self.partial = ""
 
     def feed(self, pcm: bytes) -> None:
-        pass
+        self.partial = self.stt.text
 
     async def finish(self) -> str:
         await asyncio.sleep(self.stt.delays.stt_ms / 1000)
@@ -192,7 +198,25 @@ def fake_llm(delays: Delays, *, slow: bool = False, tool: bool = False) -> Calla
             )
         return "It is sunny in Oslo today. Anything else?"
 
-    return CallableModel(reply, provider="fake", model="fake")
+    async def stream(request: LLMRequest) -> AsyncIterator[TextDelta | StreamDone]:
+        result = await reply(request)
+        if isinstance(result, LLMResponse):
+            yield StreamDone(response=result)
+            return
+        for i, word in enumerate(result.split(" ")):  # one token a word, after the first
+            if i:
+                await asyncio.sleep(1 / delays.tokens_per_s)
+            yield TextDelta(text=word if i == 0 else " " + word)
+        message = Message(role="assistant", content=result)
+        done = LLMResponse(provider="fake", model="fake", text=result, message=message)
+        yield StreamDone(response=done)
+
+    return CallableModel(reply, provider="fake", model="fake", stream_fn=stream)
+
+
+def turns_for(profile: Profile) -> TurnDetector:
+    turns = SilenceTurns(start_ms=40, end_ms=profile.end_ms)
+    return EagerTurns(turns, done_ms=250) if profile.eager else turns
 
 
 def registry_for(delays: Delays) -> Registry:
@@ -232,7 +256,7 @@ async def one_turn(
         transport,
         stt=FakeSTT(question, delays),
         tts=(speed.answers.voice(FakeTTS(delays)) if speed and speed.answers else FakeTTS(delays)),
-        turns=SilenceTurns(start_ms=40, end_ms=profile.end_ms),
+        turns=turns_for(profile),
         early_ms=profile.early_ms,
     )
     executor = Executor(registry_for(delays), cache=MemoryCache())

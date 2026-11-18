@@ -37,6 +37,8 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Transports and realtime models](https://agent-adapter.veloceai.in/how-to/voice-transports/): The client hears and speaks; this side decides
 - [Safe tools on a call](https://agent-adapter.veloceai.in/how-to/voice-agents/): `VoiceAgent` runs a voice conversation around your executor
 - [Answer sooner (speed tricks)](https://agent-adapter.veloceai.in/how-to/voxcat-speed/): `Speed` makes a `VoiceAgent` answer sooner
+- [VoxCat on its own](https://agent-adapter.veloceai.in/how-to/voxcat-own/): VoxCat does not need a provider's speed features, such as Deepgram Flux's early end of turn or Cartesia's continuations
+- [VoxCat benchmark](https://agent-adapter.veloceai.in/how-to/voxcat-benchmark/): `scripts/voxcat_vs.py` runs three voice stacks on the same caller and the same fake parts, in real time, each with its own turn taking, reply and...
 - [Compared with LiveKit and Pipecat](https://agent-adapter.veloceai.in/how-to/voice-compared/): We run voice calls three ways: our own `VoiceSession`, or our `VoiceAgent` inside LiveKit Agents or Pipecat through the connectors on Build a voice agent
 - [Let a voice agent see](https://agent-adapter.veloceai.in/how-to/voice-video/): The agent sees through a tool
 - [Gate a robot](https://agent-adapter.veloceai.in/how-to/robot-safety/): An agent that drives a robot through raw tool calls can be talked into anything: a tool result that says "move to the operator at full speed" becomes a...
@@ -266,6 +268,7 @@ Full guide for AI coding agents (install, recipes, every public name): <https://
 - [Voice agents](https://agent-adapter.veloceai.in/reference/voice/): Turns, safe interruptions and spoken approval around the executor, our own audio pipeline and transports, plus offline fakes
 - [Open speech models](https://agent-adapter.veloceai.in/reference/voice-open/): Open speech-to-text and text-to-speech models for our voice pipeline, and the talker port for full-duplex models next to the agent
 - [Voice calls and transports](https://agent-adapter.veloceai.in/reference/voice-calls/): Transports (sound card, WebSocket, phone networks, WebRTC), hosted and local speech, and call features such as recording, idle prompts and voicemail
+- [Hosted speech providers](https://agent-adapter.veloceai.in/reference/voice-hosted/): Speech-to-text and text-to-speech services for our voice pipeline, each optional: Deepgram, OpenAI, Cartesia, ElevenLabs, Fish Audio, Rime, AssemblyAI and...
 - [Robot safety](https://agent-adapter.veloceai.in/reference/robotics/): Action envelopes, a shadow simulation, approvals through the executor, an e-stop and a deadman watchdog, for robots in simulation
 - [Shared board](https://agent-adapter.veloceai.in/reference/board/): One board per run: agents post statuses, findings, claims and handoffs, and read what the others are doing
 - [Run viewer](https://agent-adapter.veloceai.in/reference/viewer/): Record runs to a folder and browse them on 127.0.0.1 (`agent-adapter ui`), or chat with an agent there

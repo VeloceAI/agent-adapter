@@ -62,6 +62,7 @@ HOSTS: tuple[Recipe, ...] = (
         requires=("langchain_core",),
         setup=POLICY + "from langchain_core.messages import HumanMessage\n"
         'state = {"messages": [HumanMessage(content="hi")]}',
+        full_only=True,
     ),
     Recipe(
         "compress any framework's message list",

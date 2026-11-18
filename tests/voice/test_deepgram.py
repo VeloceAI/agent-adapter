@@ -203,3 +203,18 @@ def test_deeply_nested_json_is_ignored_not_raised():
     from agent_adapter.voice._ws import parse
 
     assert parse("[" * 100_000 + "]" * 100_000) == {}
+
+
+async def test_the_stream_keeps_interim_words_for_an_early_reply():
+    live = FakeLive({"Finalize": [results("seven", from_finalize=True)]})
+    stream = stt(live).open(16_000)
+    stream.feed(b"\x01\x00" * 100)
+    live._inbox.put_nowait(results("book a", final=False))
+    await settle()
+    assert stream.partial == "book a"  # type: ignore[attr-defined]
+    live._inbox.put_nowait(results("book a table"))
+    live._inbox.put_nowait(results("at", final=False))
+    await settle()
+    assert stream.partial == "book a table at"  # type: ignore[attr-defined]
+    assert await stream.finish() == "book a table seven"
+    assert "interim_results=true" in live.url

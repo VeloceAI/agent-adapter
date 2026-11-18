@@ -146,6 +146,8 @@ nav:
           - Transports and realtime models: how-to/voice-transports.md
           - Safe tools on a call: how-to/voice-agents.md
           - Answer sooner (speed tricks): how-to/voxcat-speed.md
+          - VoxCat on its own: how-to/voxcat-own.md
+          - VoxCat benchmark: how-to/voxcat-benchmark.md
           - Compared with LiveKit and Pipecat: how-to/voice-compared.md
       - Video:
           - Let a voice agent see: how-to/voice-video.md

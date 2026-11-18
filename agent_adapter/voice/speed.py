@@ -40,6 +40,8 @@ class Speed:
     - `acks`: short pre-rendered lines while a slow reply is on its way.
     - `answers` with `tenant`: replies to repeated questions, with their audio.
     - `warmup`: connections, lines and read-only prefetches at call start.
+    - `first_words`: speak a reply's first clause once it has this many words, not its
+      first whole sentence (None: sentence by sentence).
     """
 
     def __init__(
@@ -51,6 +53,7 @@ class Speed:
         answers: AnswerCache | None = None,
         tenant: str = "",
         warmup: Warmup | None = None,
+        first_words: int | None = 4,
     ) -> None:
         if answers is not None and not tenant:
             raise ToolUsageError("Speed(answers=...) needs tenant=, so tenants never share")
@@ -62,6 +65,7 @@ class Speed:
         self.answers = answers
         self.tenant = tenant
         self.warmup = warmup
+        self.first_words = first_words
 
     def check(self, registry: Registry) -> None:
         if self.tools is not None:

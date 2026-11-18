@@ -120,20 +120,21 @@ Each `TurnTiming` in `session.timings` has the stages of its turn, and the
 
 `python scripts/voxcat_speed.py` runs the real pipeline with fake STT, LLM and TTS on a
 virtual clock, with approximate vendor-stated delays: STT final words 100 ms, first token
-350 ms (900 ms for the slow model), first TTS audio 90 ms, a lookup tool 300 ms. Flags
-change them. Times are ms after the caller's last speech.
+350 ms (900 ms for the slow model) then 40 tokens a second, first TTS audio 90 ms, a lookup
+tool 300 ms. Flags change them. Times are ms after the caller's last speech.
 
-| Scenario | 800 ms silence end-of-turn | 160 ms smart end-of-turn |
-|---|---|---|
-| plain question, no tricks | 1245 | 605 |
-| plain question, speculative reply | 895 | 605 |
-| tool question, no tricks | 1895 | 1255 |
-| tool question, speculative reply, tool waits | 1545 | 1255 |
-| tool question, speculative reply and tool | 1395 | 1255 |
-| slow model: first sound with an acknowledgement | 805 | 165 |
-| repeated question: answer cache | 805 | 165 |
+| Scenario | 800 ms silence | [EagerTurns](voxcat-own.md) (600 ms, 250 ms when done) | 160 ms smart |
+|---|---|---|---|
+| plain question, no tricks | 1395 | 845 | 755 |
+| plain question, speculative reply | 895 | 695 | 655 |
+| tool question, no tricks | 2045 | 1495 | 1405 |
+| tool question, speculative reply, tool waits | 1695 | 1345 | 1305 |
+| tool question, speculative reply and tool | 1445 | 1345 | 1305 |
+| slow model: first sound with an acknowledgement | 805 | 255 | 165 |
+| repeated question: answer cache | 805 | 255 | 165 |
 
-With a 160 ms end-of-turn, an acknowledgement or a cached answer makes the first sound
-at 165 ms. With an 800 ms silence end-of-turn, the speculative reply saves 350 ms, and
-early tools save 150 ms more on a tool question. The pipeline's own CPU time per 20 ms frame
-was 49 µs at 16 kHz and 0.4 ms for 8 kHz phone audio (most of it resampling) on a laptop.
+With an 800 ms silence end-of-turn, the speculative reply saves 500 ms and early tools 250
+ms more on a tool question. `EagerTurns` needs no model and no provider feature and lands
+close to a 160 ms semantic end-of-turn. The pipeline's own CPU time per 20 ms frame was
+about 25 µs at 16 kHz and 0.2 ms for 8 kHz phone audio (most of it resampling) on a laptop.
+Against LiveKit and Pipecat on the same parts: [VoxCat benchmark](voxcat-benchmark.md).

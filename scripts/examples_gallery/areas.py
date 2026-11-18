@@ -90,6 +90,7 @@ AREA_OF = {
     "viewer_fan_out": "parallel",
     "voice_agent": "approval",
     "voxcat_speed": "cost-cache",
+    "voxcat_fast": "cost-cache",
     "voxcat_quality": "approval",
     "voxcat_providers_offline": "approval",
     "voxcat_open_models": "basics",

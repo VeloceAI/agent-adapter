@@ -15,6 +15,11 @@ from agent_adapter.voice.ports import Speaker
 logger = logging.getLogger(__name__)
 
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+_CLAUSE_END = re.compile(r"(?<=[,;:])\s+|\s+[-\u2013\u2014]\s+")
+
+
+def _opener(text: str) -> bool:
+    return len(text.split()) <= 2 and text.rstrip().endswith((",", ".", "!"))
 
 
 def sentences(text: str) -> list[str]:
@@ -33,8 +38,10 @@ class _Line:
 class SpeechQueue:
     """Feeds `speaker` one sentence at a time; `stop` cuts it and drops what is left."""
 
-    def __init__(self, speaker: Speaker) -> None:
+    def __init__(self, speaker: Speaker, *, first_words: int | None = None) -> None:
         self._speaker = speaker
+        self.first_words = first_words
+        self._fresh = True  # no model text of this reply queued yet
         self._buffer = ""
         self._queue: asyncio.Queue[_Line] = asyncio.Queue()
         self._task: asyncio.Task[None] | None = None
@@ -49,15 +56,36 @@ class SpeechQueue:
         return self._holds > 0
 
     def feed(self, chunk: str) -> None:
-        """Add streamed model text; each finished sentence is queued to speak."""
+        """Add streamed model text; each finished sentence is queued to speak.
+
+        With `first_words`, a reply's first line goes out at its first clause break once it
+        has that many words (or at twice that many), so speech starts sooner. A short opener
+        ("Sure,", "Okay.") goes out alone at once, and the line after it is eager too.
+        """
         self._buffer += chunk
         *done, self._buffer = _SENTENCE_END.split(self._buffer)
+        if not done and self._fresh and self.first_words:
+            done = self._first_clause(self.first_words)
         for sentence in done:
+            self._fresh = self._fresh and _opener(sentence)
             self.put(sentence)
+
+    def _first_clause(self, least: int) -> list[str]:
+        for match in _CLAUSE_END.finditer(self._buffer):
+            head = self._buffer[: match.start()]
+            if len(head.split()) >= least or _opener(head):
+                self._buffer = self._buffer[match.end() :]
+                return [head]
+        words = self._buffer.split()
+        if len(words) > least * 2 and self._buffer[-1:].isspace():
+            head, _, self._buffer = self._buffer.rstrip().rpartition(" ")
+            self._buffer += " "
+            return [head]
+        return []
 
     def flush(self) -> None:
         """Queue whatever text is left after the model finished."""
-        rest, self._buffer = self._buffer.strip(), ""
+        rest, self._buffer, self._fresh = self._buffer.strip(), "", True
         if rest:
             self.put(rest)
 
@@ -87,7 +115,7 @@ class SpeechQueue:
 
     async def stop(self) -> None:
         """Cut speech now: stop the speaker and drop the queue and the unfinished text."""
-        self._buffer = ""
+        self._buffer, self._fresh = "", True
         current, self._current = self._current, None
         while not self._queue.empty():
             self._queue.get_nowait()

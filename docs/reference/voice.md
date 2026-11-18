@@ -92,6 +92,18 @@ Also exported here, documented under the canonical path: [`AudioTransport`](#age
 
 Also exported here, documented under the canonical path: [`EchoGuard`](#agent_adapter.voice.EchoGuard).
 
+## `agent_adapter.voice.endpoint`
+
+::: agent_adapter.voice.endpoint
+    options:
+      members: [EagerTurns, looks_done]
+
+## `agent_adapter.voice.config`
+
+::: agent_adapter.voice.config
+    options:
+      members: [MODEL_NAMES, Part, STT_NAMES, TTS_NAMES, VoiceConfig, load]
+
 ## `agent_adapter.voice.silero`
 
 ::: agent_adapter.voice.silero

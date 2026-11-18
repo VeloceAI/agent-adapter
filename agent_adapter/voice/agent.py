@@ -124,7 +124,7 @@ class VoiceAgent:
         self.registry = registry if registry is not None else executor.registry
         self.max_steps = max_steps
         self.ctx: ToolContext = self.executor.context(run_id=run_id or new_id("call_"))
-        self._speech = SpeechQueue(speaker)
+        self._speech = SpeechQueue(speaker, first_words=speed.first_words if speed else None)
         self._system = [Message(role="system", content=instructions)] if instructions else []
         self.history: list[Message] = []
         self._turn: asyncio.Task[None] | None = None

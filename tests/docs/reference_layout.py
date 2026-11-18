@@ -266,6 +266,7 @@ PAGES: dict[str, tuple[str, str, tuple[str, ...]]] = {
                 ".pcm",
                 ".turns",
                 ".endpoint",
+                ".config",
                 ".silero",
                 ".smart_turn",
                 ".realtime",

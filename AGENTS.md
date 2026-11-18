@@ -421,16 +421,7 @@ policy = CompressionPolicy(
 reply = await model.generate(aa.LLMRequest(messages=history, compression=policy))
 ```
 
-### 27. Compress messages in a LangGraph node → `langgraph_compressor`
-
-```python
-from agent_adapter.integrations.langgraph import langgraph_compressor
-
-compressor = langgraph_compressor(policy)  # `policy` as in the recipe above
-messages = await compressor(state["messages"])  # in your node, before the model
-```
-
-### 28. Compress any framework's message list → `compress_for()` / `compress_for_sync()`
+### 27. Compress any framework's message list → `compress_for()` / `compress_for_sync()`
 
 ```python
 from agent_adapter.context import compress_for_sync
@@ -439,14 +430,14 @@ smaller, report = compress_for_sync(chat_dicts, policy, format="openai")
 print(report.tokens_before, report.tokens_after)  # `smaller` is still chat dicts
 ```
 
-### 29. Attach tools to any framework → `aa.attach()` (by name or by framework object)
+### 28. Attach tools to any framework → `aa.attach()` (by name or by framework object)
 
 ```python
 tools = aa.attach("openai", registry, executor=executor)  # Chat Completions tools
 # aa.attach(agent_or_graph, registry, executor=executor): LangGraph, Agents SDK...
 ```
 
-### 30. Import tools from an OpenAPI document (or an MCP server) → `import_openapi` (or `import_mcp`)
+### 29. Import tools from an OpenAPI document (or an MCP server) → `import_openapi` (or `import_mcp`)
 
 ```python
 from agent_adapter.integrations.openapi import import_openapi
@@ -457,7 +448,7 @@ import_openapi(registry, **api, operations=["getForecast"])  # reads: no approva
 import_openapi(registry, **api, operations=["cancelBooking"], confirm=True)
 ```
 
-### 31. Serve tools from FastAPI → `await executor.run()` in an async route
+### 30. Serve tools from FastAPI → `await executor.run()` in an async route
 
 ```python
 from fastapi import FastAPI
@@ -470,7 +461,7 @@ async def weather(city: str) -> str:
     return await executor.run("get_weather", {"city": city})
 ```
 
-### 32. Serve tools from Flask → `executor.run_sync()` in a view
+### 31. Serve tools from Flask → `executor.run_sync()` in a view
 
 ```python
 from flask import Flask
@@ -483,7 +474,7 @@ def weather(city: str) -> str:
     return executor.run_sync("get_weather", {"city": city}, timeout=30)
 ```
 
-### 33. Serve tools from Django → `await executor.run()` in an async view (`run_sync` in a sync one)
+### 32. Serve tools from Django → `await executor.run()` in an async view (`run_sync` in a sync one)
 
 ```python
 from django.http import JsonResponse
@@ -493,7 +484,7 @@ async def weather(request, city: str) -> JsonResponse:
     return JsonResponse({"text": await executor.run("get_weather", {"city": city})})
 ```
 
-### 34. Run tools in a Celery task → `executor.run_sync()` in the task
+### 33. Run tools in a Celery task → `executor.run_sync()` in the task
 
 ```python
 from celery import Celery
@@ -506,7 +497,7 @@ def weather(city: str) -> str:
     return executor.run_sync("get_weather", {"city": city}, timeout=30)
 ```
 
-### 35. Run tools in AWS Lambda (SQS, EventBridge, direct) → `tool_handler`
+### 34. Run tools in AWS Lambda (SQS, EventBridge, direct) → `tool_handler`
 
 ```python
 from agent_adapter.handlers import tool_handler
@@ -514,7 +505,7 @@ from agent_adapter.handlers import tool_handler
 handler = tool_handler(executor, tools={"get_weather"}, timeout=30)  # entry point
 ```
 
-### 36. Run tools from any queue (RabbitMQ, Kafka, Pub/Sub) → `handle_envelope`
+### 35. Run tools from any queue (RabbitMQ, Kafka, Pub/Sub) → `handle_envelope`
 
 ```python
 from agent_adapter.handlers import handle_envelope
@@ -523,7 +514,7 @@ body = {"tool": "get_weather", "arguments": {"city": "Oslo"}}  # the message bod
 reply = await handle_envelope(executor, body, tools={"get_weather"}, message_id="m1")
 ```
 
-### 37. Build a flow (steps, branches, fan-out, pauses) → `aa.Flow`, `aa.FlowRunner`, `Call` / `Route` / `Map` / `Join`
+### 36. Build a flow (steps, branches, fan-out, pauses) → `aa.Flow`, `aa.FlowRunner`, `Call` / `Route` / `Map` / `Join`
 
 ```python
 from pydantic import BaseModel
@@ -540,7 +531,7 @@ flow = aa.Flow("trip", state=Trip).node("look", look).end("look")
 result = await aa.FlowRunner(executor).run(flow, {"city": "Oslo"})
 ```
 
-### 38. Serve tools over MCP → `streamable_http_app`
+### 37. Serve tools over MCP → `streamable_http_app`
 
 ```python
 from agent_adapter.integrations.mcp import streamable_http_app
@@ -549,7 +540,7 @@ app = streamable_http_app(registry, executor=executor)  # ASGI app at /mcp
 # no auth= + token_verifier=: anonymous, so it serves loopback clients only
 ```
 
-### 39. Serve tools over HTTP for other languages → `create_app`
+### 38. Serve tools over HTTP for other languages → `create_app`
 
 ```python
 from agent_adapter.server import Principal, bearer_auth, create_app
@@ -558,7 +549,7 @@ auth = bearer_auth({"s3cret": Principal(id="web-app")})  # tokens from a vault
 app = create_app(registry, executor=executor, authenticate=auth)  # uvicorn mod:app
 ```
 
-### 40. Serve tools as an A2A agent → `a2a_app`
+### 39. Serve tools as an A2A agent → `a2a_app`
 
 ```python
 from agent_adapter.integrations.a2a import a2a_app, static_bearer
@@ -574,7 +565,7 @@ app = a2a_app(
 )
 ```
 
-### 41. Improve tool descriptions and prompts against eval cases → `CallableHost`, `optimise` (or the optimiser CLI)
+### 40. Improve tool descriptions and prompts against eval cases → `CallableHost`, `optimise` (or the optimiser CLI)
 
 ```python
 from agent_adapter.optimiser import CallableHost, OptimiserConfig, load_cases, optimise
@@ -585,7 +576,7 @@ result = await optimise(host, OptimiserConfig(), proposer=model, model=model)
 print(result.patch)  # a reviewable diff; nothing is applied
 ```
 
-### 42. See runs in a browser (timeline, flow graph, approvals) → `agent_adapter.viewer.record()`, then `agent-adapter ui`
+### 41. See runs in a browser (timeline, flow graph, approvals) → `agent_adapter.viewer.record()`, then `agent-adapter ui`
 
 ```python
 from agent_adapter.viewer import record
@@ -594,7 +585,7 @@ record(executor)  # every run goes to .agent_adapter/runs
 # then, in a terminal: agent-adapter ui
 ```
 
-### 43. Chat with any agent or model in a local page → `viewer.serve(...)` or `agent-adapter ui --agent`
+### 42. Chat with any agent or model in a local page → `viewer.serve(...)` or `agent-adapter ui --agent`
 
 ```python
 from agent_adapter.viewer import ChatMessage, ChatSession, serve
@@ -621,6 +612,8 @@ if __name__ == "__main__":
 - Remember a chat user across chats (recall each turn, save facts or a summary)
 - Show reviewers similar past approvals; propose confirm rules a person accepts
 - Fill a document template (Markdown, HTML, XML, text) from many model calls, with citations
+- Run a fast voice call (VoxCat) from one config file, with any STT and TTS
+- Compress messages in a LangGraph node
 - Run a flow inside a flow, or cache a node
 - Evaluate an agent on eval cases (scores, JUnit for CI, regressions)
 
@@ -688,6 +681,7 @@ Symptoms and their fixes: <https://agent-adapter.veloceai.in/troubleshooting/>.
 - `agent-adapter migrate src/ --diff`: list framework tool definitions and suggest registry code (read-only)
 - `agent-adapter policy check policy.yaml --env prod`: validate a policy file and print the rules it sets
 - `agent-adapter audit verify .agent_adapter/audit`: verify a signed audit log, or export it as JSONL or CSV
+- `agent-adapter voice serve voxcat.yaml`: check or run a VoxCat voice call from one config file
 - `agent-adapter eval app:agent cases.jsonl --save`: also save the report; `agent-adapter ui` shows it under Evals (`--evals FOLDER`)
 - `agent-adapter guide --full`: the guide plus every public signature
 - `python -m agent_adapter guide --section recipes`: the same CLI without the script
